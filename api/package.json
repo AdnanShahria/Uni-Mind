@@ -1,0 +1,14 @@
+{
+  "name": "unimind-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.109.2",
+    "@cloudflare/workers-types": "^4.20241022.0"
+  }
+}
