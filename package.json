@@ -14,5 +14,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "fastapi": "^0.0.8",
+    "pg": "^8.21.0",
+    "uvicorn": "^0.0.1-security"
   }
 }

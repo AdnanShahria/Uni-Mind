@@ -11,7 +11,7 @@ const navLinks = [
   { name: 'About', href: '#about' },
 ];
 
-export const Navbar = () => {
+export const Navbar = ({ onOpenAuth }: { onOpenAuth: (tab: 'login' | 'register') => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -59,10 +59,16 @@ export const Navbar = () => {
 
         {/* Buttons */}
         <div className="hidden md:flex items-center gap-4">
-          <button className="px-5 py-2 text-sm font-semibold text-slate-200 hover:text-white transition-colors">
+          <button 
+            onClick={() => onOpenAuth('login')}
+            className="px-5 py-2 text-sm font-semibold text-slate-200 hover:text-white transition-colors"
+          >
             Login
           </button>
-          <button className="px-6 py-2.5 text-sm font-semibold text-white rounded-lg bg-primary hover:bg-primary-glow shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(96,165,250,0.6)] transition-all transform hover:-translate-y-0.5">
+          <button 
+            onClick={() => onOpenAuth('register')}
+            className="px-6 py-2.5 text-sm font-semibold text-white rounded-lg bg-primary hover:bg-primary-glow shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_30px_rgba(96,165,250,0.6)] transition-all transform hover:-translate-y-0.5"
+          >
             Join Beta
           </button>
         </div>
@@ -98,10 +104,16 @@ export const Navbar = () => {
               ))}
               <hr className="border-white/10 my-2" />
               <div className="flex flex-col gap-3">
-                <button className="px-5 py-3 rounded-lg text-sm font-semibold bg-white/5 text-slate-200 hover:bg-white/10">
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); onOpenAuth('login'); }}
+                  className="px-5 py-3 rounded-lg text-sm font-semibold bg-white/5 text-slate-200 hover:bg-white/10"
+                >
                   Login
                 </button>
-                <button className="px-5 py-3 text-sm font-semibold text-white rounded-lg bg-primary shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); onOpenAuth('register'); }}
+                  className="px-5 py-3 text-sm font-semibold text-white rounded-lg bg-primary shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                >
                   Join Beta
                 </button>
               </div>

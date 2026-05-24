@@ -3,8 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-main: #f8fafc;
+    --text-main: #0f172a;
+    /* Invert colors for light mode so that white/opacity classes act like dark/opacity on a light background */
+    --color-white-rgb: 0, 0, 0;
+    --color-slate-900-rgb: 255, 255, 255;
+    --color-slate-800-rgb: 241, 245, 249;
+    --color-slate-200-rgb: 51, 65, 85;
+    --color-slate-400-rgb: 100, 116, 139;
+    --color-slate-500-rgb: 148, 163, 184;
+  }
+
+  .dark {
+    --bg-main: #030712;
+    --text-main: #f8fafc;
+    /* Keep original colors for dark mode */
+    --color-white-rgb: 255, 255, 255;
+    --color-slate-900-rgb: 15, 23, 42;
+    --color-slate-800-rgb: 30, 41, 59;
+    --color-slate-200-rgb: 226, 232, 240;
+    --color-slate-400-rgb: 148, 163, 184;
+    --color-slate-500-rgb: 100, 116, 139;
+  }
+
   body {
-    @apply bg-background text-slate-50 overflow-x-hidden selection:bg-primary-glow/30;
+    @apply bg-background text-[var(--text-main)] overflow-x-hidden selection:bg-primary-glow/30 transition-colors duration-300;
   }
 
   /* Custom styled scrollbar */
@@ -66,4 +90,22 @@
 
 .animate-marquee {
   animation: marquee 25s linear infinite !important;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Reverse spin for loading animations */
+@keyframes spin-reverse {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+.animate-spin-reverse {
+  animation: spin-reverse 1.5s linear infinite;
 }

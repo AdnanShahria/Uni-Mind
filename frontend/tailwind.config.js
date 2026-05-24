@@ -14,7 +14,15 @@ export default {
         garamond: ['"EB Garamond"', 'serif'],
       },
       colors: {
-        background: '#030712', // dark navy/black
+        background: 'var(--bg-main)',
+        white: 'rgb(var(--color-white-rgb) / <alpha-value>)',
+        slate: {
+          900: 'rgb(var(--color-slate-900-rgb) / <alpha-value>)',
+          800: 'rgb(var(--color-slate-800-rgb) / <alpha-value>)',
+          200: 'rgb(var(--color-slate-200-rgb) / <alpha-value>)',
+          400: 'rgb(var(--color-slate-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--color-slate-500-rgb) / <alpha-value>)',
+        },
         primary: {
           DEFAULT: '#3b82f6', // electric blue
           glow: '#60a5fa',

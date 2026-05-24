@@ -1,47 +1,58 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-import { Navbar } from './components/Navbar';
-import { HeroSection } from './components/HeroSection';
-import { ShowcaseBanner } from './components/ShowcaseBanner';
-import { TrustStats } from './components/TrustStats';
-import { FeatureCards } from './components/FeatureCards';
-import { HowItWorks } from './components/HowItWorks';
-import { SocialCommunity } from './components/SocialCommunity';
-import { AIShowcase } from './components/AIShowcase';
-import { ResearchSection } from './components/ResearchSection';
-import { MobilePreview } from './components/MobilePreview';
-import { Testimonials } from './components/Testimonials';
-import { FutureVision } from './components/FutureVision';
-import { FinalCTA } from './components/FinalCTA';
-import { Footer } from './components/Footer';
+// Pages
+import { LandingPage } from './pages/LandingPage';
+import { AuthPageRoute } from './pages/AuthPageRoute';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { FeedPage } from './pages/FeedPage';
+import { NotesPage } from './pages/notes/NotesPage';
+import { AITutorPage } from './pages/ai-tutor/AITutorPage';
+import { CommunitiesPage } from './pages/communities/CommunitiesPage';
+import { MessagesPage } from './pages/messages/MessagesPage';
+import { PlannerPage } from './pages/planner/PlannerPage';
+import { ResearchPage } from './pages/research/ResearchPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
+
+// Layout
+import { AppLayout } from './components/app/AppLayout';
+
+// Context
+import { ThemeProvider } from './contexts/ThemeContext';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden font-poppins selection:bg-primary/30 selection:text-white">
-      {/* Global Background Effects */}
-      <div className="fixed inset-0 bg-grid-pattern z-0 opacity-20 pointer-events-none" />
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob" />
-      <div className="fixed top-[40%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob animation-delay-2000" />
-      <div className="fixed bottom-[-10%] left-[20%] w-[40%] h-[40%] rounded-full bg-accent/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob animation-delay-4000" />
+    <ThemeProvider>
+      <Toaster position="bottom-right" toastOptions={{
+        style: {
+          background: '#1e293b',
+          color: '#f8fafc',
+          border: '1px solid rgba(255,255,255,0.1)',
+        }
+      }} />
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPageRoute />} />
 
-      <Navbar />
-
-      <main className="relative z-10 pt-16">
-        <HeroSection />
-        <ShowcaseBanner />
-        <TrustStats />
-        <FeatureCards />
-        <HowItWorks />
-        <SocialCommunity />
-        <AIShowcase />
-        <ResearchSection />
-        <MobilePreview />
-        <Testimonials />
-        <FutureVision />
-        <FinalCTA />
-      </main>
-
-      <Footer />
-    </div>
+          {/* Authenticated App Routes (wrapped in AppLayout with sidebar + topbar) */}
+          <Route path="/app" element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="feed" element={<FeedPage />} />
+            <Route path="notes" element={<NotesPage />} />
+            <Route path="ai" element={<AITutorPage />} />
+            <Route path="communities" element={<CommunitiesPage />} />
+            <Route path="messages" element={<MessagesPage />} />
+            <Route path="planner" element={<PlannerPage />} />
+            <Route path="research" element={<ResearchPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="profile/:id" element={<ProfilePage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

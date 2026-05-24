@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Rocket } from 'lucide-react';
 
-export const FinalCTA = () => {
+export const FinalCTA = ({ onOpenAuth }: { onOpenAuth: (tab: 'login' | 'register') => void }) => {
   return (
     <section className="py-12 relative z-10">
       <div className="max-w-5xl mx-auto px-6">
@@ -28,7 +28,10 @@ export const FinalCTA = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-3 w-full sm:w-auto">
-              <button className="px-5 py-2.5 bg-primary hover:bg-primary-glow text-white font-bold rounded-lg text-xs md:text-sm transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] transform hover:-translate-y-0.5">
+              <button 
+                onClick={() => onOpenAuth('register')}
+                className="px-5 py-2.5 bg-primary hover:bg-primary-glow text-white font-bold rounded-lg text-xs md:text-sm transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] transform hover:-translate-y-0.5"
+              >
                 Join Beta
               </button>
               <button className="px-5 py-2.5 glass-panel text-white font-bold rounded-lg text-xs md:text-sm hover:bg-white/10 transition-all border border-white/20">

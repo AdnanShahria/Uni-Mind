@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Search, Layout, Database, Sparkles, ChevronRight, FileText, Users, Brain, Server, HardDrive, Activity } from 'lucide-react';
 
-export const HeroSection = () => {
+export const HeroSection = ({ onOpenAuth }: { onOpenAuth: (tab: 'login' | 'register') => void }) => {
   const [isSynthesized, setIsSynthesized] = useState(false);
   const [activeTab, setActiveTab] = useState<'files' | 'database'>('files');
   const [isClosed, setIsClosed] = useState(false);
@@ -39,7 +39,10 @@ export const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button className="group relative px-6 py-3.5 bg-white text-black font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+            <button 
+              onClick={() => onOpenAuth('register')}
+              className="group relative px-6 py-3.5 bg-white text-black font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+            >
               Start building free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
