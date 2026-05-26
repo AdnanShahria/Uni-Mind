@@ -53,7 +53,7 @@ export default {
     if (url.pathname === "/auth/register" && request.method === "POST") {
       try {
         const body: any = await request.json();
-        const { name, email, institution, major, role, password } = body;
+        const { name, email, institution, district, country, major, role, password } = body;
         
         if (!email || !password || !name) {
           return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -81,6 +81,8 @@ export default {
                 data: {
                   name,
                   institution,
+                  district,
+                  country,
                   major,
                   role
                 }
@@ -99,6 +101,8 @@ export default {
                   email: data.email || data.user?.email,
                   name,
                   institution,
+                  district,
+                  country,
                   major,
                   role
                 }
@@ -135,6 +139,8 @@ export default {
           email,
           name,
           institution,
+          district,
+          country,
           major,
           role,
           password
@@ -149,6 +155,8 @@ export default {
             email: newUser.email,
             name: newUser.name,
             institution: newUser.institution,
+            district: newUser.district,
+            country: newUser.country,
             major: newUser.major,
             role: newUser.role
           }

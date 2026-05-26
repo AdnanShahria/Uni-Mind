@@ -24,8 +24,8 @@ export default {
           500: 'rgb(var(--color-slate-500-rgb) / <alpha-value>)',
         },
         primary: {
-          DEFAULT: '#3b82f6', // electric blue
-          glow: '#60a5fa',
+          DEFAULT: 'rgb(var(--color-primary-rgb) / <alpha-value>)',
+          glow: 'rgb(var(--color-primary-glow-rgb) / <alpha-value>)',
         },
         secondary: {
           DEFAULT: '#8b5cf6', // purple

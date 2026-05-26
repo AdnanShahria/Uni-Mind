@@ -1,6 +1,6 @@
 import { Globe, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { ActionModal } from '../../components/ActionModal';
+import { CreateCommunityModal } from './CreateCommunityModal';
 
 export const CommunitiesHeader = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,12 +28,9 @@ export const CommunitiesHeader = () => {
         </div>
       </div>
       
-      <ActionModal 
+      <CreateCommunityModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title="Create New Community" 
-        placeholder="Community name, topic, or focus area..." 
-        actionText="Create Community"
       />
     </>
   );

@@ -37,8 +37,10 @@ export const TrendingTopics = ({ onTagClick, activeTag }: TrendingTopicsProps) =
             <div
               key={i}
               onClick={() => onTagClick(topic.tag)}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                isActive ? 'bg-primary/10 border border-primary/20' : 'hover:bg-white/[0.04]'
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors duration-200 border border-transparent ${
+                isActive 
+                  ? 'bg-white/[0.08]' 
+                  : 'hover:bg-white/[0.04]'
               }`}
             >
               <div>

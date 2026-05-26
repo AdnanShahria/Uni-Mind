@@ -20,6 +20,8 @@
     --text-main: #f8fafc;
     /* Keep original colors for dark mode */
     --color-white-rgb: 255 255 255;
+    /* Dedicated card/border color — slate-blue tint instead of white */
+    --color-border-rgb: 100 116 160;
     --color-slate-900-rgb: 15 23 42;
     --color-slate-800-rgb: 30 41 59;
     --color-slate-200-rgb: 226 232 240;
@@ -27,45 +29,203 @@
     --color-slate-500-rgb: 100 116 139;
   }
 
+  /* ===== MIDNIGHT OCEAN THEME ===== */
+  .midnight-ocean {
+    --bg-main: #060c1f;
+    --text-main: #e2f4ff;
+    --color-white-rgb: 226 244 255;
+    --color-slate-900-rgb: 6 12 31;
+    --color-slate-800-rgb: 10 22 50;
+    --color-slate-200-rgb: 148 220 255;
+    --color-slate-400-rgb: 100 180 220;
+    --color-slate-500-rgb: 72 130 160;
+  }
+
+  /* ===== NEBULA PURPLE THEME ===== */
+  .nebula-purple {
+    --bg-main: #0e0618;
+    --text-main: #ede0ff;
+    --color-white-rgb: 237 224 255;
+    --color-slate-900-rgb: 14 6 24;
+    --color-slate-800-rgb: 26 11 53;
+    --color-slate-200-rgb: 210 180 255;
+    --color-slate-400-rgb: 160 120 220;
+    --color-slate-500-rgb: 110 75 160;
+  }
+
+  /* ===== MATRIX SCHOLAR THEME ===== */
+  .matrix-scholar {
+    --bg-main: #000000;
+    --text-main: #00ff88;
+    --color-white-rgb: 0 255 136;
+    --color-slate-900-rgb: 0 0 0;
+    --color-slate-800-rgb: 5 15 5;
+    --color-slate-200-rgb: 0 220 80;
+    --color-slate-400-rgb: 0 160 60;
+    --color-slate-500-rgb: 0 100 40;
+  }
+
+  /* ===== AURORA DARK THEME ===== */
+  .aurora-dark {
+    --bg-main: #0d0d14;
+    --text-main: #ffe0f7;
+    --color-white-rgb: 255 224 247;
+    --color-slate-900-rgb: 13 13 20;
+    --color-slate-800-rgb: 22 10 34;
+    --color-slate-200-rgb: 240 180 255;
+    --color-slate-400-rgb: 200 130 230;
+    --color-slate-500-rgb: 140 80 170;
+  }
+
+  /* ===== SOLAR SCHOLAR THEME ===== */
+  .solar-scholar {
+    --bg-main: #120c00;
+    --text-main: #fff3d4;
+    --color-white-rgb: 255 243 212;
+    --color-slate-900-rgb: 18 12 0;
+    --color-slate-800-rgb: 35 24 0;
+    --color-slate-200-rgb: 255 200 80;
+    --color-slate-400-rgb: 200 150 50;
+    --color-slate-500-rgb: 140 100 30;
+  }
+
+  /* ===== ACCENT COLORS ===== */
+  .accent-blue {
+    --color-primary-rgb: 59 130 246;     /* #3b82f6 */
+    --color-primary-glow-rgb: 96 165 250; /* #60a5fa */
+  }
+  .accent-purple {
+    --color-primary-rgb: 168 85 247;     /* #a855f7 */
+    --color-primary-glow-rgb: 192 132 252;/* #c084fc */
+  }
+  .accent-teal {
+    --color-primary-rgb: 20 184 166;     /* #14b8a6 */
+    --color-primary-glow-rgb: 45 212 191; /* #2dd4bf */
+  }
+  .accent-pink {
+    --color-primary-rgb: 236 72 153;     /* #ec4899 */
+    --color-primary-glow-rgb: 244 114 182;/* #f472b6 */
+  }
+  .accent-amber {
+    --color-primary-rgb: 245 158 11;     /* #f59e0b */
+    --color-primary-glow-rgb: 251 191 36; /* #fbbf24 */
+  }
+  .accent-emerald {
+    --color-primary-rgb: 16 185 129;     /* #10b981 */
+    --color-primary-glow-rgb: 52 211 153; /* #34d399 */
+  }
+
+  /* ===== FONT SIZES ===== */
+  :root {
+    --font-scale: 1;
+    --radius-card: 16px;       /* Global card & nav-item border radius */
+    --radius-sidebar: 16px;    /* Sidebar outer radius — matches cards */
+  }
+  .font-size-small { --font-scale: 0.9; }
+  .font-size-medium { --font-scale: 1; }
+  .font-size-large { --font-scale: 1.1; }
+
+  /* Apply base font size scaling if desired - Tailwind uses classes so this is optional, 
+     but setting base HTML size works for em/rem */
+  html {
+    font-size: calc(16px * var(--font-scale));
+  }
+}
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    /* ... rest of the vars are above ... */
+  }
+
   body {
     @apply bg-background text-[var(--text-main)] overflow-x-hidden selection:bg-primary-glow/30 transition-colors duration-300;
   }
+}
 
-  /* Custom styled scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+/* =========================================
+   SCROLLBAR STYLES (OUTSIDE TAILWIND LAYERS)
+   ========================================= */
 
-  ::-webkit-scrollbar-track {
-    background: #030712;
-  }
+/* Default values */
+:root {
+  --sb-width: 8px;
+  --sb-track: rgba(var(--color-slate-900-rgb), 1);
+  --sb-thumb: rgba(var(--color-primary-rgb), 0.18);
+  --sb-thumb-hover: rgba(var(--color-primary-rgb), 0.35);
+  --sb-thumb-border: 2px solid rgba(var(--color-slate-900-rgb), 1);
+  --sb-display: auto;
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: rgba(96, 165, 250, 0.18);
-    border-radius: 9999px;
-    border: 2px solid #030712;
-  }
+html.scrollbar-minimal {
+  --sb-width: 4px;
+  --sb-track: transparent;
+  --sb-thumb: rgba(var(--color-primary-rgb), 0.3);
+  --sb-thumb-hover: rgba(var(--color-primary-rgb), 0.6);
+  --sb-thumb-border: none;
+}
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(96, 165, 250, 0.35);
-  }
+html.scrollbar-green {
+  --sb-width: 10px;
+  --sb-track: #1e293b;
+  --sb-thumb: #10b981;
+  --sb-thumb-hover: #059669;
+  --sb-thumb-border: 2px solid #1e293b;
+}
 
-  /* Firefox */
-  html {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(96, 165, 250, 0.18) #030712;
-    overflow-x: hidden;
-  }
+html.scrollbar-hidden {
+  --sb-display: none;
+}
+
+/* Global scrollbar rules */
+::-webkit-scrollbar {
+  width: var(--sb-width);
+  height: var(--sb-width);
+  display: var(--sb-display);
+}
+::-webkit-scrollbar-track {
+  background: var(--sb-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb);
+  border-radius: 9999px;
+  border: var(--sb-thumb-border);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sb-thumb-hover);
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sb-thumb) var(--sb-track);
+}
+html.scrollbar-hidden {
+  scrollbar-width: none;
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-xl;
+    @apply bg-white/5 backdrop-blur-md shadow-xl;
+    border: 1px solid rgba(100, 120, 160, 0.15);
   }
   
   .glass-card {
-    @apply bg-white/[0.05] backdrop-blur-lg border border-white/10 hover:border-primary-glow/50 transition-all duration-300;
+    @apply bg-white/[0.03] backdrop-blur-md transition-colors duration-200;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Premium row-level hover — no white border flash */
+  .interactive-row {
+    @apply transition-colors duration-200;
+    border: 1px solid transparent;
+  }
+  .interactive-row:hover {
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .text-gradient {
@@ -76,6 +236,13 @@
     background-size: 40px 40px;
     background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+  .card-radius {
+    border-radius: var(--radius-card);
+  }
+
+  .sidebar-radius {
+    border-radius: var(--radius-sidebar);
   }
 }
 
@@ -117,3 +284,31 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* =============================================
+   GLOBAL BORDER COLOR OVERRIDE — DARK MODE
+   All Tailwind border-white/* utilities are
+   remapped to a cool slate-blue tint so no
+   bright white borders appear in dark mode.
+   ============================================= */
+
+/* Per-class precise overrides */
+.dark .border-white\/5          { border-color: rgba(100, 120, 160, 0.06)  !important; }
+.dark .border-white\/\[0\.03\]  { border-color: rgba(100, 120, 160, 0.05)  !important; }
+.dark .border-white\/\[0\.04\]  { border-color: rgba(100, 120, 160, 0.06)  !important; }
+.dark .border-white\/\[0\.05\]  { border-color: rgba(100, 120, 160, 0.07)  !important; }
+.dark .border-white\/\[0\.06\]  { border-color: rgba(100, 120, 160, 0.09)  !important; }
+.dark .border-white\/\[0\.08\]  { border-color: rgba(100, 120, 160, 0.12)  !important; }
+.dark .border-white\/10         { border-color: rgba(100, 120, 160, 0.14)  !important; }
+.dark .border-white\/\[0\.10\]  { border-color: rgba(100, 120, 160, 0.14)  !important; }
+.dark .border-white\/\[0\.12\]  { border-color: rgba(100, 120, 160, 0.16)  !important; }
+.dark .border-white\/\[0\.15\]  { border-color: rgba(100, 120, 160, 0.18)  !important; }
+.dark .border-white\/15         { border-color: rgba(100, 120, 160, 0.18)  !important; }
+.dark .border-white\/20         { border-color: rgba(100, 120, 160, 0.22)  !important; }
+.dark .border-2.border-white\/\[0\.06\] { border-color: rgba(100, 120, 160, 0.10) !important; }
+
+/* Directional variants (dividers) */
+.dark .border-b-white\/\[0\.03\]{ border-bottom-color: rgba(100, 120, 160, 0.05) !important; }
+.dark .border-b-white\/\[0\.04\]{ border-bottom-color: rgba(100, 120, 160, 0.06) !important; }
+.dark .border-b-white\/\[0\.06\]{ border-bottom-color: rgba(100, 120, 160, 0.09) !important; }
+.dark .border-t-white\/\[0\.06\]{ border-top-color:    rgba(100, 120, 160, 0.09) !important; }

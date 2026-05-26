@@ -14,4 +14,6 @@ export interface NoteType {
   starred: boolean;
   color: string;
   aiSummary: boolean;
+  visibility?: 'private' | 'class' | 'public';
+  sharedLinkToken?: string;
 }

@@ -41,7 +41,7 @@ export const SuggestedGroups = () => {
           return (
             <div
               key={i}
-              className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] cursor-pointer transition-all"
+              className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-transparent cursor-pointer transition-colors duration-200 hover:bg-white/[0.04]"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${group.color} flex items-center justify-center`}>
@@ -54,10 +54,10 @@ export const SuggestedGroups = () => {
               </div>
               <button 
                 onClick={() => toggleJoin(group.name)}
-                className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-colors ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
                   isJoined 
-                    ? 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-emerald-400' 
-                    : 'bg-primary/10 hover:bg-primary/20 border-primary/20 text-primary-glow'
+                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400' 
+                    : 'bg-primary/15 hover:bg-primary/25 text-primary-glow'
                 }`}
               >
                 {isJoined ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}

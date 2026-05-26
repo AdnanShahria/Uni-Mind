@@ -1,6 +1,6 @@
 import { Brain, RotateCcw } from 'lucide-react';
 
-export const AITutorHeader = () => {
+export const AITutorHeader = ({ onNewChat }: { onNewChat: () => void }) => {
   return (
     <div className="shrink-0 px-6 py-4 border-b border-white/[0.06] bg-gradient-to-r from-purple-500/[0.04] to-primary/[0.04]">
       <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -19,7 +19,10 @@ export const AITutorHeader = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-xs text-slate-300 font-poppins transition-colors">
+          <button
+            onClick={onNewChat}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] text-xs text-slate-300 font-poppins transition-all hover:scale-105 active:scale-95"
+          >
             <RotateCcw className="w-3.5 h-3.5" />
             New Chat
           </button>

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Image as ImageIcon, FileText, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { CreatePostModal } from './CreatePostModal';
 
 const fadeIn = {
@@ -15,6 +15,19 @@ interface PostInputProps {
 
 export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [selectedNote, setSelectedNote] = useState<File | null>(null);
+  const [isAIAssistActive, setIsAIAssistActive] = useState(false);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const noteInputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = () => {
+    setIsModalOpen(false);
+    setSelectedPhoto(null);
+    setSelectedNote(null);
+    setIsAIAssistActive(false);
+  };
 
   return (
     <>
@@ -23,12 +36,37 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
         className="glass-card rounded-2xl p-5 shadow-sm cursor-text"
         onClick={() => setIsModalOpen(true)}
       >
+        <input 
+          type="file" 
+          accept="image/*" 
+          className="hidden" 
+          ref={photoInputRef} 
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              setSelectedPhoto(e.target.files[0]);
+              setIsModalOpen(true);
+            }
+          }} 
+        />
+        <input 
+          type="file" 
+          accept=".pdf,.doc,.docx,.txt" 
+          className="hidden" 
+          ref={noteInputRef} 
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              setSelectedNote(e.target.files[0]);
+              setIsModalOpen(true);
+            }
+          }} 
+        />
+
         <div className="flex items-center gap-4">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold font-poppins shrink-0 shadow-lg">
             {currentUser?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1">
-            <div className="w-full h-12 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 flex items-center text-sm text-slate-400 font-poppins hover:bg-white/[0.06] transition-colors cursor-pointer">
+            <div className="w-full h-12 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 flex items-center text-sm text-slate-400 font-poppins hover:bg-white/[0.06] hover:border-white/[0.1] transition-colors duration-200 cursor-pointer">
               What are you researching or thinking about?
             </div>
           </div>
@@ -36,13 +74,32 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
         
         <div className="flex items-center justify-between mt-4 pl-[60px]">
           <div className="flex items-center gap-1.5">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-emerald-400 transition-colors text-xs font-poppins font-medium">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                photoInputRef.current?.click();
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-emerald-400 transition-colors text-xs font-poppins font-medium"
+            >
               <ImageIcon className="w-4 h-4 text-emerald-400/70" /> Image
             </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-amber-400 transition-colors text-xs font-poppins font-medium">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                noteInputRef.current?.click();
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-amber-400 transition-colors text-xs font-poppins font-medium"
+            >
               <FileText className="w-4 h-4 text-amber-400/70" /> Document
             </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-purple-400 transition-colors text-xs font-poppins font-medium">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAIAssistActive(true);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-purple-400 transition-colors text-xs font-poppins font-medium"
+            >
               <Sparkles className="w-4 h-4 text-purple-400/70" /> AI Draft
             </button>
           </div>
@@ -55,9 +112,12 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
 
       <CreatePostModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={handleClose} 
         currentUser={currentUser} 
         onPostCreated={onPostCreated} 
+        initialPhoto={selectedPhoto}
+        initialNote={selectedNote}
+        initialAIAssist={isAIAssistActive}
       />
     </>
   );

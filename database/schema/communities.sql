@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.communities (
     type VARCHAR(100) NOT NULL, -- e.g., 'Department', 'Research Group', 'Batch', 'Interest Group'
     description TEXT,
     created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    visibility VARCHAR(50) DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

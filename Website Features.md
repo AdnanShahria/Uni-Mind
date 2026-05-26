@@ -1,224 +1,142 @@
-Build a modern, futuristic, AI-powered educational platform website called “UNIMIND”.
-
-UNIMIND is not just a note-sharing app — it is a complete AI-powered academic ecosystem and educational social network for schools, colleges, universities, researchers, teachers, and students.
-
-The website must look premium, futuristic, clean, highly animated, responsive, and production-ready.
-
-Tech Stack:
-- Frontend: Next.js 15 + TypeScript
-- Styling: Tailwind CSS
-- Animation: Framer Motion
-- Backend-ready Architecture
-- Component-based clean architecture
-- Dark mode default
-- Mobile-first responsive design
-- SEO optimized
-- Fast-loading modern UI
-- Glassmorphism + soft neon futuristic educational theme
-- Use reusable UI components
-
-Design Inspiration:
-Mix of:
-- Notion
-- Discord
-- Linear
-- GitHub
-- Perplexity AI
-- Coursera
-- Facebook Community
-- Apple-level smoothness
-
-Main Brand Identity:
-- Theme: AI + Education + Collaboration + Research
-- Feel: Intelligent, futuristic, premium, student-friendly
-- Main colors:
-  - Deep black background
-  - Electric blue
-  - Purple gradients
-  - Cyan highlights
-  - Soft glowing UI
-
-==================================================
-MAIN WEBSITE STRUCTURE
-==================================================
-
-1. HERO SECTION
-- Massive futuristic hero section
-- AI animated background
-- Floating educational particles/books/data nodes
-- Large heading:
-  “The AI-Powered Academic Operating System”
-- Subheading explaining:
-  AI Tutor + Academic Social Media + Smart Notes + Research Ecosystem
-- CTA buttons:
-  - Join Beta
-  - Explore Features
-- Include animated dashboard mockup
-
-2. TRUST / STATS SECTION
-Show:
-- Notes Shared
-- Students Connected
-- AI Queries Solved
-- Universities Supported
-- Research Communities
-
-3. CORE FEATURES SECTION
-Create beautiful animated cards for features like:
-- AI Tutor
-- Smart Notes
-- AI Summaries
-- AI Flashcards
-- Academic Social Feed
-- University Communities
-- Messenger System
-- Research Collaboration
-- Semantic AI Search
-- Personalized Study Planner
-- AI Exam Assistant
-- OCR Handwritten Notes
-- AI Learning Analytics
-- Study Groups
-- Research Assistant AI
-
-4. HOW UNIMIND WORKS
-Step-by-step animated workflow:
-1. Join your institution
-2. Connect with classmates
-3. Upload resources
-4. AI organizes content
-5. Learn smarter with AI
-
-5. SOCIAL + COMMUNITY SECTION
-Show:
-- Academic social media feed
-- Group discussions
-- Batch communities
-- Department communities
-- Messaging system
-- Collaborative learning rooms
-
-6. AI ECOSYSTEM SECTION
-Create futuristic AI showcase cards:
-- AI Tutor
-- AI Question Generator
-- AI Study Roadmap
-- AI Research Assistant
-- AI Career Guidance
-- AI Topic Explanation
-- AI Revision Planner
-
-Add glowing animated neural-network visualizations.
-
-7. RESEARCH & INSTITUTION SECTION
-For:
-- Researchers
-- Universities
-- Teachers
-- Institutions
-
-Show:
-- Research collaboration
-- Institution dashboards
-- Educational analytics
-- Knowledge preservation
-- AI indexing systems
-
-8. MOBILE APP PREVIEW SECTION
-Show animated mobile mockups:
-- Student dashboard
-- Notes feed
-- AI tutor chat
-- Messenger
-- Study planner
-
-9. TESTIMONIAL SECTION
-Modern glassmorphism cards with fake demo testimonials from:
-- Students
-- Researchers
-- Teachers
-
-10. FUTURE VISION SECTION
-Highlight:
-“Building the future AI operating system for education.”
-
-Add:
-- Smart campuses
-- AI-powered universities
-- Global researcher network
-- Educational intelligence systems
-
-11. CTA SECTION
-Large futuristic CTA:
-“Join the Future of Learning”
-
-Buttons:
-- Join Beta
-- Contact Team
-- Become Campus Ambassador
-
-12. FOOTER
-Include:
-- Product
-- Features
-- Research
-- Community
-- Developers
-- Privacy
-- Terms
-- Social links
-
-==================================================
-IMPORTANT UI REQUIREMENTS
-==================================================
-
-- Add smooth scroll animations
-- Add floating glowing elements
-- Use motion effects everywhere
-- Add hover interactions
-- Add loading transitions
-- Use premium typography
-- Add futuristic dashboards/screenshots placeholders
-- Use reusable component architecture
-- Fully responsive
-- Clean folder structure
-- Production-ready code quality
-
-==================================================
-EXTRA FEATURES TO PREPARE STRUCTURE FOR
-==================================================
-
-Prepare frontend architecture for future modules:
-- Authentication system
-- AI chatbot
-- University-wise communities
-- Resource sharing
-- Realtime messaging
-- Semantic search
-- AI recommendation engine
-- Research collaboration
-- Admin dashboard
-- Analytics system
-- Notification system
-
-==================================================
-OUTPUT REQUIREMENTS
-==================================================
-
-Generate:
-- Complete homepage
-- Modern reusable components
-- Navbar
-- Footer
-- Animated sections
-- Responsive layouts
-- Clean code
-- Type-safe architecture
-- Proper file structure
-- Beautiful UI/UX
-- SEO metadata
-- Placeholder API structure
-- Ready for backend integration
-
-The final output should feel like:
-“The future of AI-powered education and academic collaboration.”
+University-wise account system
+School/college/university community system
+Student profile system
+Researcher profile system
+Teacher/instructor profiles
+Department-based communities
+Batch-based communities
+Course-wise communities
+Academic social feed
+Educational social networking
+Follow/friend system
+Student-to-student messaging system
+Group messaging/chat system
+Study group creation
+Academic discussion threads
+Resource sharing in chats
+Real-time notifications
+Academic announcements system
+Smart note upload system
+PDF upload support
+Handwritten note upload
+Presentation/slides upload
+Video resource upload
+Audio lecture upload
+Course material archive
+Topic-wise note organization
+Semester-wise organization
+Subject-wise organization
+AI-powered note categorization
+AI-generated note summaries
+AI-generated short notes
+AI flashcard generation
+AI practice question generation
+AI MCQ generation
+AI descriptive question generation
+AI Tutor chatbot
+Syllabus-aware AI assistant
+Topic explanation AI
+Beginner-friendly explanation mode
+Advanced explanation mode
+AI study roadmap generation
+Personalized study suggestions
+AI revision planner
+Exam preparation assistant
+Previous question analysis
+Important topic prediction
+Repeated question detection
+Teacher pattern analysis
+Smart semantic search
+Natural language search
+OCR for handwritten notes
+Search inside PDFs
+Search inside images
+Search by topic/concept
+Smart recommendation engine
+Related resource suggestions
+Trending notes section
+Most helpful resources ranking
+Resource review system
+Resource rating system
+Quality scoring for notes
+Upvote/downvote system
+Bookmark/save resources
+Personal study library
+Download resources offline
+Cloud sync system
+Personalized dashboard
+Academic performance analytics
+Weak topic detection
+Learning progress tracking
+Study consistency tracking
+Topic mastery analysis
+Quiz performance analysis
+AI learning insights
+Daily study streak system
+Gamified learning rewards
+Academic leaderboard
+Achievement badges
+Smart reminders system
+Deadline/task management
+Assignment tracking
+Class schedule management
+Study planner/calendar
+Collaborative note editing
+Shared workspaces
+Team project collaboration
+Research collaboration tools
+Research paper sharing
+Citation/reference manager
+Research assistant AI
+Thesis helper AI
+AI presentation generator
+AI document summarizer
+AI translation support
+Multi-language support
+Voice-to-text note system
+Text-to-speech support
+Accessibility-friendly UI
+Dark mode support
+Mobile-first design
+Cross-platform support
+Secure authentication system
+Google login
+Email/OTP login
+Role-based access control
+Admin dashboard
+Institution management panel
+Moderation/report system
+Anti-spam protection
+Content verification system
+AI content moderation
+Privacy controls
+Secure cloud storage
+Fast edge content delivery
+AI-powered search indexing
+Semantic vector database integration
+Real-time backend architecture
+API integration support
+Educational API ecosystem
+Institution-specific AI models
+University-specific resource indexing
+Department-specific AI knowledge base
+AI career guidance system
+Internship/resource board
+Academic event system
+Workshop/seminar communities
+Alumni networking system
+Mentor-student connection system
+Campus collaboration ecosystem
+Global researcher networking
+AI-generated academic insights
+Educational data intelligence
+Smart campus ecosystem integration
+Community reputation system
+Verified educator badges
+Collaborative AI learning rooms
+AI-powered classroom assistant
+Institution-wide academic analytics
+Smart educational recommendation engine
+Full AI-powered academic operating system vision 
+basically a Social Media of Intillectuals
+🚀

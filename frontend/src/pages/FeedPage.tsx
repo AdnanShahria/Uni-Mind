@@ -34,7 +34,7 @@ export const FeedPage = () => {
     // First try with users join
     let { data, error } = await supabase
       .from('posts')
-      .select('*, users(name, role)')
+      .select('*, users(name, role, avatar_url)')
       .order('created_at', { ascending: false });
 
     // Fallback if users relation fails (e.g. schema not fully applied)

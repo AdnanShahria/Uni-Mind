@@ -4,7 +4,8 @@ import {
   ArrowLeft, School, Mail, Lock, User, 
   GraduationCap, CheckCircle2, Sparkles, 
   Brain, Database, Layout, Eye, EyeOff, 
-  Activity, ArrowRight, Check
+  Activity, ArrowRight, Check, X, AlertCircle, 
+  HelpCircle, PlusCircle
 } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 
@@ -28,6 +29,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     name: '',
     email: '',
     institution: '',
+    district: '',
+    country: '',
+    isUnlistedInstitution: false,
     major: '',
     session: '',
     role: 'Undergraduate',
@@ -45,6 +49,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
   const [loadingStep, setLoadingStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Metadata Request Form State
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestEmail, setRequestEmail] = useState('');
+  const [requestType, setRequestType] = useState<'institution' | 'major' | 'session'>('institution');
+  const [actionType, setActionType] = useState<'add' | 'rename'>('add');
+  const [oldValue, setOldValue] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [requestError, setRequestError] = useState('');
 
   const loadingSteps = [
     'Verifying Academic Credentials...',
@@ -77,6 +91,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   const handleRegChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    if (name === "institutionSelect") {
+      if (value === "unlisted") {
+         setRegForm(prev => ({ ...prev, isUnlistedInstitution: true, institution: '', district: '', country: '' }));
+      } else {
+         setRegForm(prev => ({ ...prev, isUnlistedInstitution: false, institution: value, district: '', country: '' }));
+      }
+      if (errors.institution) setErrors(prev => { const copy = { ...prev }; delete copy.institution; return copy; });
+      return;
+    }
+
     setRegForm(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => {
@@ -119,6 +144,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       tempErrors.email = 'Please provide a valid email';
     }
     if (!regForm.institution.trim()) tempErrors.institution = 'Institution is required';
+    if (regForm.isUnlistedInstitution && (!regForm.district.trim() || !regForm.country.trim())) {
+      tempErrors.institution = 'District and Country are required for unlisted institutions';
+    }
     if (!regForm.major.trim()) tempErrors.major = 'Field of study is required';
     if (regForm.password.length < 6) tempErrors.password = 'Password must be at least 6 characters';
     if (!regForm.agree) tempErrors.agree = 'You must agree to the Beta Access Terms';
@@ -156,6 +184,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           data: {
             name: regForm.name,
             institution: regForm.institution,
+            district: regForm.district,
+            country: regForm.country,
             major: regForm.major,
             session: regForm.session,
             role: regForm.role,
@@ -185,6 +215,50 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       console.warn("Auth error:", err.message || err);
       setStatus('idle');
       setErrors({ general: err.message || 'An unexpected error occurred' });
+    }
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestEmail.trim()) {
+      setRequestError('Email is required');
+      return;
+    }
+    if (!newValue.trim()) {
+      setRequestError('Value is required');
+      return;
+    }
+    if (actionType === 'rename' && !oldValue.trim()) {
+      setRequestError('Existing name is required');
+      return;
+    }
+
+    setRequestStatus('submitting');
+    setRequestError('');
+
+    try {
+      const { error } = await supabase.from('metadata_requests').insert([
+        {
+          requester_email: requestEmail,
+          request_type: requestType,
+          action_type: actionType,
+          old_value: actionType === 'rename' ? oldValue : null,
+          new_value: newValue,
+          status: 'pending'
+        }
+      ]);
+
+      if (error) {
+        setRequestStatus('error');
+        setRequestError(error.message || 'Failed to submit request');
+      } else {
+        setRequestStatus('success');
+        setOldValue('');
+        setNewValue('');
+      }
+    } catch (err: any) {
+      setRequestStatus('error');
+      setRequestError(err.message || 'An unexpected error occurred');
     }
   };
 
@@ -433,17 +507,43 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       {/* Institution */}
                       <div>
                         <label className="block text-[11px] font-semibold text-slate-300 font-poppins mb-1.5 uppercase tracking-wide">University / Institution</label>
-                        <div className="relative">
-                          <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                          <input
-                            type="text"
-                            name="institution"
-                            value={regForm.institution}
-                            onChange={handleRegChange}
-                            placeholder="Stanford University"
-                            className={`w-full h-11 bg-white/5 border ${errors.institution ? 'border-red-500/50' : 'border-white/10 focus:border-primary-glow/50'} rounded-xl px-3 pl-10 text-xs sm:text-sm text-slate-200 placeholder-slate-600 outline-none transition-all`}
-                          />
-                        </div>
+                        {!regForm.isUnlistedInstitution ? (
+                          <div className="relative">
+                            <select
+                              name="institutionSelect"
+                              onChange={handleRegChange}
+                              value={regForm.institution || ""}
+                              className={`w-full h-11 bg-[#090d16] border ${errors.institution ? 'border-red-500/50' : 'border-white/10 focus:border-primary-glow/50'} rounded-xl px-3 text-xs sm:text-sm text-slate-200 outline-none cursor-pointer appearance-none transition-all`}
+                            >
+                              <option value="" disabled>Select Institution</option>
+                              <option value="Bangladesh University of Engineering and Technology">Bangladesh University of Engineering and Technology</option>
+                              <option value="University of Dhaka">University of Dhaka</option>
+                              <option value="Shahjalal University of Science & Technology">Shahjalal University of Science & Technology</option>
+                              <option value="Stanford University">Stanford University</option>
+                              <option value="unlisted" className="text-primary-glow font-bold">Can't find your institution? Add new</option>
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs font-bold font-poppins">▼</div>
+                          </div>
+                        ) : (
+                          <div className="relative flex flex-col gap-3">
+                            <div className="relative">
+                              <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                              <input
+                                type="text"
+                                name="institution"
+                                value={regForm.institution}
+                                onChange={handleRegChange}
+                                placeholder="Enter Custom Institution Name"
+                                className={`w-full h-11 bg-white/5 border ${errors.institution ? 'border-red-500/50' : 'border-white/10 focus:border-primary-glow/50'} rounded-xl px-3 pl-10 text-xs sm:text-sm text-slate-200 placeholder-slate-600 outline-none transition-all`}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="text" name="district" value={regForm.district} onChange={handleRegChange} placeholder="District" className="w-1/2 h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-xs sm:text-sm text-slate-200 outline-none focus:border-primary-glow/50" />
+                              <input type="text" name="country" value={regForm.country} onChange={handleRegChange} placeholder="Country" className="w-1/2 h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-xs sm:text-sm text-slate-200 outline-none focus:border-primary-glow/50" />
+                            </div>
+                            <button type="button" onClick={() => setRegForm(prev => ({...prev, isUnlistedInstitution: false, institution: ''}))} className="text-[10px] text-primary-glow text-left hover:underline">← Back to list</button>
+                          </div>
+                        )}
                         {errors.institution && <p className="text-[10px] text-red-400 mt-1 font-poppins font-medium">{errors.institution}</p>}
                       </div>
 
@@ -455,11 +555,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           <input
                             type="text"
                             name="major"
+                            list="majors"
                             value={regForm.major}
                             onChange={handleRegChange}
-                            placeholder="Quantum Computing"
+                            placeholder="e.g. Computer Science"
                             className={`w-full h-11 bg-white/5 border ${errors.major ? 'border-red-500/50' : 'border-white/10 focus:border-primary-glow/50'} rounded-xl px-3 pl-10 text-xs sm:text-sm text-slate-200 placeholder-slate-600 outline-none transition-all`}
                           />
+                          <datalist id="majors">
+                            <option value="Computer Science & Engineering" />
+                            <option value="Electrical & Electronic Engineering" />
+                            <option value="Mechanical Engineering" />
+                            <option value="Civil Engineering" />
+                            <option value="Business Administration" />
+                            <option value="Economics" />
+                            <option value="Physics" />
+                            <option value="Mathematics" />
+                            <option value="Medicine" />
+                            <option value="Law" />
+                          </datalist>
                         </div>
                         {errors.major && <p className="text-[10px] text-red-400 mt-1 font-poppins font-medium">{errors.major}</p>}
                       </div>
@@ -474,11 +587,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           <input
                             type="text"
                             name="session"
+                            list="sessions"
                             value={regForm.session}
                             onChange={handleRegChange}
                             placeholder="e.g. 2021-2022"
                             className={`w-full h-11 bg-white/5 border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 pl-10 text-xs sm:text-sm text-slate-200 placeholder-slate-600 outline-none transition-all`}
                           />
+                          <datalist id="sessions">
+                            <option value="2019-2020" />
+                            <option value="2020-2021" />
+                            <option value="2021-2022" />
+                            <option value="2022-2023" />
+                            <option value="2023-2024" />
+                            <option value="2024-2025" />
+                          </datalist>
                         </div>
                       </div>
 
@@ -560,6 +682,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       <Sparkles className="w-4 h-4 text-blue-200 animate-pulse" />
                       Request Beta Access
                     </button>
+
+                    {/* Metadata Suggestion / Request Link */}
+                    <div className="text-center mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRequestEmail(regForm.email || '');
+                          setShowRequestModal(true);
+                          setRequestStatus('idle');
+                          setRequestError('');
+                        }}
+                        className="text-[11px] text-slate-400 hover:text-primary-glow transition-colors font-poppins underline bg-transparent border-none cursor-pointer"
+                      >
+                        Missing your university, major, or session? Suggest a change
+                      </button>
+                    </div>
                   </form>
                 )}
 
@@ -752,6 +890,184 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         </div>
 
       </div>
+
+      {/* Suggestion / Rename Request Modal */}
+      <AnimatePresence>
+        {showRequestModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative w-full max-w-lg overflow-hidden glass-panel border border-white/10 rounded-3xl bg-slate-950/90 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl p-6 sm:p-8"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowRequestModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 hover:border-white/10 transition-all cursor-pointer animate-duration-150"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-center gap-3.5 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary/20 to-secondary/20 border border-primary/30 flex items-center justify-center text-primary-glow">
+                  <HelpCircle className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-outfit">Suggest Metadata Change</h3>
+                  <p className="text-xs text-slate-400 font-poppins font-light leading-relaxed">
+                    Request new university additions or report typos in majors and sessions.
+                  </p>
+                </div>
+              </div>
+
+              {requestStatus === 'success' ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center justify-center text-center py-6"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-4">
+                    <Check className="w-6 h-6 stroke-[3]" />
+                  </div>
+                  <h4 className="text-base font-bold text-white font-poppins">Request Submitted!</h4>
+                  <p className="text-xs text-slate-400 font-poppins font-light max-w-xs mt-2 leading-relaxed">
+                    Thank you! The UniMind Academic Registry board will review your request shortly.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequestStatus('idle');
+                      setShowRequestModal(false);
+                    }}
+                    className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    Close Window
+                  </button>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleRequestSubmit} className="space-y-4 font-poppins">
+                  {requestError && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-medium flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{requestError}</span>
+                    </div>
+                  )}
+
+                  {/* Requester Email */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 uppercase tracking-wide">Requester Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="email"
+                        required
+                        value={requestEmail}
+                        onChange={(e) => setRequestEmail(e.target.value)}
+                        placeholder="your.email@university.edu"
+                        className="w-full h-11 bg-white/5 border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 pl-10 text-xs sm:text-sm text-slate-200 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Request Type */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 uppercase tracking-wide">Change Category</label>
+                      <div className="relative">
+                        <select
+                          value={requestType}
+                          onChange={(e) => setRequestType(e.target.value as any)}
+                          className="w-full h-11 bg-[#090d16] border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 text-xs text-slate-200 outline-none appearance-none transition-all cursor-pointer"
+                        >
+                          <option value="institution">University / Inst.</option>
+                          <option value="major">Field / Major</option>
+                          <option value="session">Session / Batch</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">▼</div>
+                      </div>
+                    </div>
+
+                    {/* Action Type */}
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 uppercase tracking-wide">Action Requested</label>
+                      <div className="relative">
+                        <select
+                          value={actionType}
+                          onChange={(e) => setActionType(e.target.value as any)}
+                          className="w-full h-11 bg-[#090d16] border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 text-xs text-slate-200 outline-none appearance-none transition-all cursor-pointer"
+                        >
+                          <option value="add">Add Unlisted</option>
+                          <option value="rename">Rename / Fix Typo</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">▼</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Existing name (typo) field if rename selected */}
+                  {actionType === 'rename' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 uppercase tracking-wide">Current Listed Name (with typo)</label>
+                      <input
+                        type="text"
+                        required
+                        value={oldValue}
+                        onChange={(e) => setOldValue(e.target.value)}
+                        placeholder="e.g. Dhaka Univarsity"
+                        className="w-full h-11 bg-white/5 border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 text-xs sm:text-sm text-slate-200 outline-none transition-all"
+                      />
+                    </motion.div>
+                  )}
+
+                  {/* New value field */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 uppercase tracking-wide">
+                      {actionType === 'add' ? 'Proposed New Entry Name' : 'Corrected Name'}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newValue}
+                      onChange={(e) => setNewValue(e.target.value)}
+                      placeholder={
+                        requestType === 'institution' ? 'e.g. University of Dhaka' :
+                        requestType === 'major' ? 'e.g. Software Engineering' : 'e.g. 2025-2026'
+                      }
+                      className="w-full h-11 bg-white/5 border border-white/10 focus:border-primary-glow/50 rounded-xl px-3 text-xs sm:text-sm text-slate-200 outline-none transition-all"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={requestStatus === 'submitting'}
+                    className="w-full h-12 bg-primary hover:bg-primary-glow text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center gap-2 transform hover:-translate-y-0.5 mt-6 cursor-pointer disabled:opacity-50"
+                  >
+                    {requestStatus === 'submitting' ? (
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <PlusCircle className="w-4 h-4" />
+                    )}
+                    <span>Submit Suggestion</span>
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS public.notes (
     file_url VARCHAR(1024), -- if an external PDF/document was uploaded
     is_ai_summarized BOOLEAN DEFAULT FALSE,
     is_starred BOOLEAN DEFAULT FALSE,
+    visibility VARCHAR(50) DEFAULT 'private' CHECK (visibility IN ('private', 'class', 'public')),
+    shared_link_token UUID DEFAULT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -44,3 +46,16 @@ CREATE TRIGGER update_notes_modtime
     BEFORE UPDATE ON public.notes
     FOR EACH ROW
     EXECUTE PROCEDURE public.update_modified_column();
+
+-- =======================================================
+-- Table: note_shares
+-- =======================================================
+
+CREATE TABLE IF NOT EXISTS public.note_shares (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    note_id UUID REFERENCES public.notes(id) ON DELETE CASCADE NOT NULL,
+    shared_with_user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    permission VARCHAR(50) DEFAULT 'view' CHECK (permission IN ('view', 'edit')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE(note_id, shared_with_user_id)
+);

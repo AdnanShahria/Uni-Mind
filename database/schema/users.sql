@@ -10,13 +10,22 @@ CREATE TABLE IF NOT EXISTS public.users (
     name VARCHAR(255) NOT NULL,                    -- Full name of the user
     email VARCHAR(255) UNIQUE NOT NULL,            -- Academic email (unique constraint)
     institution VARCHAR(255) NOT NULL,             -- Associated University / Research Institution
+    district VARCHAR(100),                         -- District of the institution (for unlisted ones)
+    country VARCHAR(100),                          -- Country of the institution (for unlisted ones)
     major VARCHAR(255) NOT NULL,                   -- Major / Field of Study
     session VARCHAR(100),                          -- Academic Session / Batch (e.g., 2021-2022)
     role VARCHAR(100) NOT NULL,                    -- Academic role (e.g. Researcher, PhD, Student)
     bio TEXT,                                      -- User biography
     graduations TEXT[],                            -- Array of educational histories/graduations
     relationship_status VARCHAR(100),              -- Relationship/Collaboration status
-    avatar_url TEXT,                               -- URL to user's avatar
+    avatar_url TEXT,                               -- URL to user's avatar image
+    cover_url TEXT,                                -- URL to profile cover/banner image
+    website_url TEXT,                              -- Personal or research website URL
+    social_links JSONB DEFAULT '{}'::JSONB,        -- JSON object: { twitter, linkedin, github, researchgate }
+    skills TEXT[],                                 -- Array of skills/technologies
+    interests TEXT[],                              -- Array of academic interests/topics
+    followers_count INTEGER DEFAULT 0,             -- Cached follower count
+    following_count INTEGER DEFAULT 0,             -- Cached following count
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -52,12 +61,14 @@ CREATE TRIGGER update_users_modtime
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.users (id, name, email, institution, major, session, role)
+  INSERT INTO public.users (id, name, email, institution, district, country, major, session, role)
   VALUES (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', 'Scholar'),
     new.email,
     coalesce(new.raw_user_meta_data->>'institution', 'UniMind Cloud'),
+    new.raw_user_meta_data->>'district',
+    new.raw_user_meta_data->>'country',
     coalesce(new.raw_user_meta_data->>'major', 'Deep Work'),
     new.raw_user_meta_data->>'session',
     coalesce(new.raw_user_meta_data->>'role', 'Undergraduate')

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Image as ImageIcon, FileText, Sparkles, Hash } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../../utils/supabaseClient';
 
 interface CreatePostModalProps {
@@ -8,15 +8,27 @@ interface CreatePostModalProps {
   onClose: () => void;
   currentUser: any;
   onPostCreated: () => void;
+  initialPhoto?: File | null;
+  initialNote?: File | null;
+  initialAIAssist?: boolean;
 }
 
-export const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }: CreatePostModalProps) => {
+export const CreatePostModal = ({ 
+  isOpen, 
+  onClose, 
+  currentUser, 
+  onPostCreated,
+  initialPhoto = null,
+  initialNote = null,
+  initialAIAssist = false
+}: CreatePostModalProps) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [isAIAssistActive, setIsAIAssistActive] = useState(false);
+  const [isAnnouncement, setIsAnnouncement] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [selectedNote, setSelectedNote] = useState<File | null>(null);
@@ -24,6 +36,25 @@ export const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }:
   const photoInputRef = useRef<HTMLInputElement>(null);
   const noteInputRef = useRef<HTMLInputElement>(null);
   
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedPhoto(initialPhoto || null);
+      setSelectedNote(initialNote || null);
+      setIsAIAssistActive(!!initialAIAssist);
+      setIsAnnouncement(false);
+    } else {
+      setTitle('');
+      setContent('');
+      setTags([]);
+      setTagInput('');
+      setSelectedPhoto(null);
+      setSelectedNote(null);
+      setIsAIAssistActive(false);
+      setIsAnnouncement(false);
+      setAiPrompt('');
+    }
+  }, [isOpen, initialPhoto, initialNote, initialAIAssist]);
+
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -43,13 +74,69 @@ export const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }:
     if (!content.trim() || !currentUser) return;
     
     setIsPosting(true);
+    let mediaUrls: string[] = [];
+    let postType = 'text';
+
+    if (isAnnouncement) {
+      postType = 'announcement';
+    } else if (selectedPhoto) {
+      postType = 'image';
+      try {
+        const fileExt = selectedPhoto.name.split('.').pop();
+        const fileName = `${currentUser.id}-${Date.now()}-${Math.random()}.${fileExt}`;
+        const filePath = `posts/photos/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedPhoto);
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+          mediaUrls.push(publicUrl);
+        } else {
+          console.warn("Supabase storage upload failed for photo, trying base64 fallback:", uploadError);
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(selectedPhoto);
+          });
+          mediaUrls.push(base64);
+        }
+      } catch (err) {
+        console.error("Error uploading photo:", err);
+      }
+    }
+
+    if (selectedNote && !isAnnouncement) {
+      postType = 'document';
+      try {
+        const fileExt = selectedNote.name.split('.').pop();
+        const fileName = `${currentUser.id}-${Date.now()}-${Math.random()}.${fileExt}`;
+        const filePath = `posts/notes/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, selectedNote);
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+          mediaUrls.push(publicUrl);
+        } else {
+          console.warn("Supabase storage upload failed for document, trying base64 fallback:", uploadError);
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(selectedNote);
+          });
+          mediaUrls.push(base64);
+        }
+      } catch (err) {
+        console.error("Error uploading note document:", err);
+      }
+    }
+
     const { error } = await supabase.from('posts').insert([
       {
         author_id: currentUser.id,
         title: title.trim() || null,
         content: content.trim(),
-        type: 'text',
+        type: postType,
         tags: tags.map(t => `#${t}`), // Format tags nicely
+        media_urls: mediaUrls,
       }
     ]);
 
@@ -260,12 +347,25 @@ export const CreatePostModal = ({ isOpen, onClose, currentUser, onPostCreated }:
               </button>
               <div className="w-px h-6 bg-white/[0.1] mx-1"></div>
               <button 
+                type="button"
                 onClick={() => setIsAIAssistActive(!isAIAssistActive)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors text-xs font-poppins font-medium ${
                   isAIAssistActive ? 'bg-purple-500/20 text-purple-300' : 'hover:bg-white/[0.06] text-purple-400/70 hover:text-purple-400'
                 }`}
               >
                 <Sparkles className="w-4 h-4" /> AI Enhance
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => setIsAnnouncement(!isAnnouncement)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all text-xs font-poppins font-medium ${
+                  isAnnouncement 
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                    : 'hover:bg-white/[0.06] text-amber-500/70 hover:text-amber-400'
+                }`}
+              >
+                📢 Announcement
               </button>
             </div>
             

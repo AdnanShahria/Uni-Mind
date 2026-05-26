@@ -13,12 +13,15 @@ export const CommunitiesPage = () => {
 
   useEffect(() => {
     const fetchCommunities = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data } = await supabase
         .from('communities')
         .select(`
           *,
           community_members (count),
-          posts (count)
+          posts (count),
+          my_membership:community_members(role, user_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -34,11 +37,14 @@ export const CommunitiesPage = () => {
 
           const membersCount = c.community_members?.[0]?.count || 1;
           const postsCount = c.posts?.[0]?.count || 0;
+          const myMembership = c.my_membership?.find((m: any) => m.user_id === user?.id);
 
           return {
             id: c.id,
             name: c.name,
             type: c.type,
+            visibility: c.visibility || 'public',
+            myRole: myMembership ? myMembership.role : null,
             members: membersCount,
             posts: postsCount.toString(),
             active: Math.max(1, Math.floor(membersCount / 3)),

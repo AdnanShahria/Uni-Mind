@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../utils/supabaseClient';
 import {
   LayoutDashboard,
   Newspaper,
@@ -13,8 +14,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   LogOut,
+  Award,
 } from 'lucide-react';
 
 interface NavItem {
@@ -37,12 +38,32 @@ const mainNav: NavItem[] = [
 ];
 
 const bottomNav: NavItem[] = [
-  { icon: Settings, label: 'Settings', path: '/app/settings', color: 'text-slate-400' },
+  { icon: Settings, label: 'Settings', path: '/app/settings', color: 'text-slate-300' },
 ];
 
 export const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [userName, setUserName] = useState('Scholar');
+  const [userInitial, setUserInitial] = useState('S');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('users').select('name, avatar_url, role').eq('id', user.id).single();
+        const name = data?.name || user.user_metadata?.name || 'Scholar';
+        const role = data?.role || user.user_metadata?.role || '';
+        setUserName(name);
+        setUserInitial(name[0].toUpperCase());
+        setAvatarUrl(data?.avatar_url || '');
+        setIsAdmin(role.toLowerCase() === 'admin');
+      }
+    };
+    fetchUser();
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/app') return location.pathname === '/app';
@@ -53,225 +74,313 @@ export const Sidebar = () => {
     <div className="relative h-[calc(100vh-2rem)] z-40 shrink-0">
       <motion.aside
         initial={false}
-        animate={{ width: collapsed ? 72 : 260 }}
-        transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-        className="h-full flex flex-col border border-white/[0.08] bg-slate-900/60 backdrop-blur-xl select-none overflow-hidden rounded-[2rem] shadow-2xl"
+        animate={{ width: collapsed ? 84 : 220 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="h-full flex flex-col bg-white/[0.02] backdrop-blur-[40px] border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] select-none overflow-hidden sidebar-radius"
       >
-      {/* Brand Header */}
-      <div className="h-16 flex items-center px-4 border-b border-white/[0.06] shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="relative w-9 h-9 rounded-xl border border-primary/30 flex items-center justify-center overflow-hidden shrink-0">
-            <img src="/logo.png" className="w-full h-full object-cover" alt="UniMind" />
-            <div className="absolute inset-0 bg-primary/10 blur-sm" />
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-                className="min-w-0"
-              >
-                <span className="text-lg font-bold font-poppins tracking-wider text-slate-100 whitespace-nowrap">
-                  Uni<span className="text-gradient">Mind</span>
-                </span>
-                <p className="text-[8px] text-primary-glow font-semibold uppercase tracking-[0.2em] leading-none mt-0.5 font-poppins">
-                  Academic OS
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden scrollbar-none">
-        {/* AI Quick Action */}
-        <div className="px-1 mb-3">
-          {collapsed ? (
-            <motion.div
-              onClick={() => setCollapsed(false)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-center py-2.5 rounded-xl bg-slate-800/50 border border-white/10 hover:bg-slate-800 hover:border-primary/30 transition-all cursor-pointer group"
+        {/* Brand Header */}
+        <div className="h-[64px] flex items-center px-4 shrink-0 relative">
+          <div className="absolute bottom-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/[0.1] to-transparent" />
+          
+          <div className="flex items-center gap-3 min-w-0 w-full">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-white/[0.1] to-white/[0.02] border border-white/[0.1] flex items-center justify-center overflow-hidden shrink-0 shadow-lg"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-b from-slate-700 to-slate-900 border border-slate-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center text-slate-400 group-hover:text-primary-glow group-hover:border-primary/50 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_10px_rgba(96,165,250,0.3)] transition-all">
-                <ChevronRight className="w-4 h-4 ml-0.5" />
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} className="w-full h-full object-cover" alt={userName} />
+              ) : (
+                <span className="text-white font-bold text-base font-poppins">{userInitial}</span>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent opacity-50" />
             </motion.div>
-          ) : (
-            <div className="grid grid-cols-10 gap-2">
-              <NavLink to="/app/ai" className="col-span-7 block">
+            <AnimatePresence>
+              {!collapsed && (
                 <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-primary/15 via-secondary/10 to-accent/10 border border-primary/20 hover:border-primary/40 transition-all cursor-pointer group h-full"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="min-w-0 flex-1"
                 >
-                  <Sparkles className="w-4.5 h-4.5 text-primary-glow shrink-0 group-hover:animate-pulse" style={{ width: 18, height: 18 }} />
-                  <span className="text-[11px] font-semibold text-slate-200 font-poppins whitespace-nowrap truncate">
-                    Ask AI Tutor
+                  <span className="text-[13px] font-bold font-poppins text-white whitespace-nowrap truncate block drop-shadow-md tracking-wide">
+                    {userName}
                   </span>
+                  <p className="text-[8px] text-white/50 font-semibold uppercase tracking-[0.2em] leading-none mt-0.5 font-poppins">
+                    Academic OS
+                  </p>
                 </motion.div>
-              </NavLink>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setCollapsed(true)}
-                className="col-span-3 rounded-xl bg-slate-800/40 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:border-primary/30 transition-all h-full group"
-              >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-b from-slate-700 to-slate-900 border border-slate-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center text-slate-400 group-hover:text-primary-glow group-hover:border-primary/50 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_10px_rgba(96,165,250,0.3)] transition-all">
-                  <ChevronLeft className="w-4 h-4 mr-0.5" />
-                </div>
-              </motion.button>
-            </div>
-          )}
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* Label */}
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-3 pt-1 pb-2 text-[9px] font-bold text-slate-500 uppercase tracking-[0.18em] font-poppins"
-            >
-              Main
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {mainNav.map((item) => {
-          const active = isActive(item.path);
-          return (
-            <NavLink key={item.path} to={item.path} end={item.path === '/app'}>
+        {/* Navigation */}
+        <nav className="flex-1 py-4 px-3 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-none">
+          {/* AI Quick Action */}
+          <div className="mb-4 px-1">
+            {collapsed ? (
               <motion.div
-                whileHover={{ x: collapsed ? 0 : 2 }}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer group ${collapsed ? 'justify-center' : ''} ${
-                  active
-                    ? 'bg-white/[0.08] text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-                }`}
+                onClick={() => setCollapsed(false)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center justify-center px-3 mx-1 py-2 card-radius bg-white/[0.015] border border-white/[0.03] hover:bg-white/[0.03] hover:border-white/[0.06] transition-all duration-300 cursor-pointer backdrop-blur-sm group"
               >
-                {/* Active indicator */}
-                {active && (
+                <div className="flex items-center justify-center shrink-0 w-7 h-7 rounded-full border border-white/[0.08] transition-all duration-300 z-10 bg-transparent group-hover:border-white/[0.2]">
+                  <ChevronRight 
+                    className="text-white/50 group-hover:text-white transition-colors duration-300"
+                    style={{ width: 14, height: 14 }}
+                    strokeWidth={2}
+                  />
+                </div>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-5 gap-2 h-[38px]">
+                <div className="col-span-4 block h-full">
                   <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute left-0 top-0 bottom-0 my-auto w-[3px] h-5 rounded-r-full bg-primary-glow shadow-[0_0_8px_rgba(96,165,250,0.5)]"
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
-
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-b ${active ? 'from-slate-700 to-slate-800 border-primary/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_10px_rgba(96,165,250,0.2)]' : 'from-slate-800/20 to-slate-900/20 border-slate-700/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_2px_4px_rgba(0,0,0,0.2)]'} border flex items-center justify-center shrink-0 transition-all duration-300 group-hover:border-slate-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_8px_rgba(255,255,255,0.1)]`}>
-                  <item.icon
-                    className={`transition-colors ${active ? item.color || 'text-primary-glow' : 'text-slate-400 group-hover:text-slate-200'}`}
-                    style={{ width: 16, height: 16 }}
-                  />
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 px-3 py-1.5 card-radius bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-white/[0.08] backdrop-blur-xl shadow-lg hover:bg-white/[0.12] hover:border-white/[0.2] transition-all duration-300 group h-full cursor-pointer relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/0 via-white/10 to-purple-400/0 opacity-0 group-hover:opacity-100 group-hover:translate-x-full transition-all duration-700 ease-out skew-x-12" />
+                    <img src="/logo.png" className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] transition-transform duration-300" style={{ width: 18, height: 18 }} alt="UniMind" />
+                    <span className="text-[12px] font-bold text-white tracking-wide font-poppins whitespace-nowrap truncate">
+                      UniMind
+                    </span>
+                  </motion.div>
                 </div>
-
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -5 }}
-                      transition={{ duration: 0.15 }}
-                      className={`text-[13px] font-medium font-poppins whitespace-nowrap ${active ? 'text-white' : ''}`}
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-
-                {/* Badge */}
-                {item.badge && (
-                  <AnimatePresence>
-                    {!collapsed ? (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="ml-auto text-[10px] font-bold text-white bg-primary/80 rounded-full w-5 h-5 flex items-center justify-center font-poppins shrink-0"
-                      >
-                        {item.badge}
-                      </motion.span>
-                    ) : (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-glow animate-pulse" />
-                    )}
-                  </AnimatePresence>
-                )}
-              </motion.div>
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Bottom section */}
-      <div className="border-t border-white/[0.06] px-2 py-2 space-y-0.5 shrink-0">
-        {bottomNav.map((item) => {
-          const active = isActive(item.path);
-          return (
-            <NavLink key={item.path} to={item.path}>
-              <motion.div
-                whileHover={{ x: collapsed ? 0 : 2 }}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 cursor-pointer group ${collapsed ? 'justify-center' : ''} ${
-                  active
-                    ? 'bg-white/[0.08] text-white'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-800/20 to-slate-900/20 border border-slate-700/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_2px_4px_rgba(0,0,0,0.2)] flex items-center justify-center shrink-0 transition-all duration-300 group-hover:border-slate-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_0_8px_rgba(255,255,255,0.1)]">
-                  <item.icon className="text-slate-400 group-hover:text-slate-200 transition-colors" style={{ width: 16, height: 16 }} />
-                </div>
-                <AnimatePresence>
-                  {!collapsed && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="text-[13px] font-medium font-poppins whitespace-nowrap"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </NavLink>
-          );
-        })}
-
-        {/* User avatar + Logout */}
-        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all cursor-pointer group ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold font-poppins shrink-0 shadow-md">
-            A
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setCollapsed(true)}
+                  className="col-span-1 h-full card-radius bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.15] transition-all shadow-lg backdrop-blur-md group"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                </motion.button>
+              </div>
+            )}
           </div>
+
+          {/* Label */}
           <AnimatePresence>
             {!collapsed && (
-              <motion.div
+              <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
+                className="px-3 pb-1 pt-1 text-[9px] font-bold text-white/40 uppercase tracking-[0.2em] font-poppins"
               >
-                <p className="text-[12px] font-medium text-slate-200 font-poppins truncate">Scholar</p>
-                <p className="text-[10px] text-slate-500 font-poppins truncate">Free Plan</p>
-              </motion.div>
+                Main
+              </motion.p>
             )}
           </AnimatePresence>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <LogOut className="w-4 h-4 text-slate-600 group-hover:text-red-400 transition-colors shrink-0" />
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+          {(() => {
+            const navItems = [...mainNav];
+            if (isAdmin) {
+              navItems.push({ icon: Award, label: 'Admin Panel', path: '/app/admin', color: 'text-red-400' });
+            }
+            return navItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <NavLink key={item.path} to={item.path} end={item.path === '/app'} className="block outline-none">
+                  <motion.div
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative flex items-center gap-3.5 pl-4 pr-3 py-2 card-radius transition-all duration-300 cursor-pointer group ${collapsed ? 'justify-center px-3 mx-1' : ''} ${
+                      active
+                        ? 'bg-white/[0.06] border border-white/[0.1] shadow-[0_2px_12px_rgba(0,0,0,0.15)] text-white backdrop-blur-md'
+                        : 'bg-white/[0.015] border border-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.03] hover:border-white/[0.06] backdrop-blur-sm'
+                    }`}
+                  >
+                  {/* Active background glow */}
+                  {active && (
+                    <motion.div
+                      layoutId="sidebar-active-glow"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/[0.04] to-transparent opacity-50"
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+
+                  {/* Active Indicator — Glowing Curly Brace */}
+                  {active && (
+                    <motion.div
+                      layoutId="sidebar-active-indicator"
+                      className="absolute left-0 top-0 bottom-0 flex items-center justify-center pointer-events-none"
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                    >
+                      <svg
+                        width="8" height="30" viewBox="0 0 8 30"
+                        className={item.color || 'text-[#a5f3fc]'}
+                        style={{ filter: 'drop-shadow(0 0 5px currentColor) drop-shadow(0 0 8px currentColor)' }}
+                      >
+                        <path
+                          d="M1,1 C3,1 3.5,3.5 3.5,7 C3.5,10 6,13 7,15 C6,17 3.5,20 3.5,23 C3.5,26.5 3,29 1,29 A1,1 0 0,1 0,28 L0,2 A1,1 0 0,1 1,1 Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </motion.div>
+                  )}
+
+                  <div className={`flex items-center justify-center shrink-0 w-7 h-7 rounded-full border transition-all duration-300 z-10 ${
+                    active 
+                      ? 'border-[#87CEEB]/30 bg-transparent drop-shadow-[0_0_8px_rgba(135,206,235,0.2)]' 
+                      : 'border-white/[0.08] bg-transparent group-hover:border-white/[0.2]'
+                  }`}>
+                    <item.icon
+                      className={`transition-colors duration-300 ${active ? item.color || 'text-white' : 'text-white/50 group-hover:text-white'}`}
+                      style={{ width: 14, height: 14 }}
+                      strokeWidth={active ? 2.5 : 2}
+                    />
+                  </div>
+
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className={`text-[12.5px] font-medium font-poppins whitespace-nowrap z-10 ${active ? 'text-white drop-shadow-sm' : ''}`}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Badge */}
+                  {item.badge && (
+                    <AnimatePresence>
+                      {!collapsed ? (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          exit={{ scale: 0 }}
+                          className="ml-auto text-[9px] font-bold text-white bg-white/10 backdrop-blur-md rounded-full w-4 h-4 flex items-center justify-center font-poppins shrink-0 shadow-lg border border-white/[0.08] z-10"
+                        >
+                          {item.badge}
+                        </motion.span>
+                      ) : (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary-glow animate-pulse z-10" />
+                      )}
+                    </AnimatePresence>
+                  )}
+                  </motion.div>
+                </NavLink>
+              );
+            });
+          })()}
+        </nav>
+
+        {/* Bottom section */}
+        <div className="p-3 space-y-2 shrink-0 relative">
+          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-white/[0.1] to-transparent" />
+          
+          {bottomNav.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <NavLink key={item.path} to={item.path} className="block outline-none">
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex items-center gap-3.5 pl-3 pr-3 py-2 card-radius transition-all duration-300 cursor-pointer group ${collapsed ? 'justify-center px-3 mx-1' : ''} ${
+                    active
+                      ? 'bg-white/[0.06] border border-white/[0.1] shadow-[0_2px_12px_rgba(0,0,0,0.15)] text-white backdrop-blur-md'
+                      : 'bg-white/[0.015] border border-white/[0.03] text-white/60 hover:text-white hover:bg-white/[0.03] hover:border-white/[0.06] backdrop-blur-sm'
+                  }`}
+                >
+                  {/* Active Indicator — Glowing Curly Brace */}
+                  {active && (
+                    <motion.div
+                      layoutId="sidebar-bottom-active-indicator"
+                      className="absolute left-0 top-0 bottom-0 flex items-center justify-center pointer-events-none"
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                    >
+                      <svg
+                        width="8" height="30" viewBox="0 0 8 30"
+                        className={item.color || 'text-[#a5f3fc]'}
+                        style={{ filter: 'drop-shadow(0 0 5px currentColor) drop-shadow(0 0 8px currentColor)' }}
+                      >
+                        <path
+                          d="M1,1 C3,1 3.5,3.5 3.5,7 C3.5,10 6,13 7,15 C6,17 3.5,20 3.5,23 C3.5,26.5 3,29 1,29 A1,1 0 0,1 0,28 L0,2 A1,1 0 0,1 1,1 Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </motion.div>
+                  )}
+
+                  <div className={`flex items-center justify-center shrink-0 w-7 h-7 rounded-full border transition-all duration-300 z-10 ${
+                    active 
+                      ? 'border-[#87CEEB]/30 bg-transparent drop-shadow-[0_0_8px_rgba(135,206,235,0.2)]' 
+                      : 'border-white/[0.08] bg-transparent group-hover:border-white/[0.2]'
+                  }`}>
+                    <item.icon 
+                      className={`transition-colors duration-300 ${active ? item.color || 'text-white' : 'text-white/50 group-hover:text-white'}`}
+                      style={{ width: 14, height: 14 }}
+                      strokeWidth={active ? 2.5 : 2}
+                    />
+                  </div>
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className={`text-[12.5px] font-medium font-poppins whitespace-nowrap z-10 ${active ? 'text-white drop-shadow-sm' : ''}`}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </NavLink>
+            );
+          })}
+
+          {/* Normal LogOut Button */}
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}
+            className="block w-full outline-none mt-1"
+          >
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-3.5 pl-3 pr-3 py-2 card-radius transition-all duration-300 cursor-pointer group bg-white/[0.015] border border-white/[0.03] hover:bg-red-500/[0.05] hover:border-red-500/[0.1] backdrop-blur-sm ${collapsed ? 'justify-center px-3 mx-1' : ''}`}
+            >
+              <div className={`flex items-center justify-center shrink-0 w-7 h-7 rounded-full border transition-all duration-300 z-10 border-white/[0.08] bg-transparent group-hover:border-red-500/[0.2]`}>
+                <LogOut 
+                  className="transition-colors duration-300 text-white/50 group-hover:text-red-400"
+                  style={{ width: 14, height: 14 }}
+                  strokeWidth={2}
+                />
+              </div>
+              <AnimatePresence>
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-[12.5px] font-medium font-poppins whitespace-nowrap z-10 text-white/60 group-hover:text-red-400 transition-colors"
+                  >
+                    Logout
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </button>
         </div>
-      </div>
-
       </motion.aside>
-
     </div>
   );
 };
+
