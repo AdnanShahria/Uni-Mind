@@ -2,8 +2,3 @@ name = "unimind"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "frontend/dist"
-
-# R2 bucket binding — accessible as context.env.UNIMIND_BUCKET in functions
-[[r2_buckets]]
-binding = "UNIMIND_BUCKET"
-bucket_name = "unimind"

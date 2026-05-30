@@ -12,7 +12,6 @@ export interface Env {
   TURSO_AUTH_TOKEN: string;
   R2_BUCKET_NAME: string;
   OPENAI_API_KEY: string;
-  UNIMIND_BUCKET?: R2Bucket;  // R2 binding from wrangler.toml
 }
 
 export default {
