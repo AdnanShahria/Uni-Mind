@@ -5,16 +5,20 @@ import { ResearchHeader } from './ResearchHeader';
 import { ResearchPapersList } from './ResearchPapersList';
 import { CollaboratorsList } from './CollaboratorsList';
 import { ResearchStats } from './ResearchStats';
+import { PaperSearch } from './PaperSearch';
 
 export const ResearchPage = () => {
   const [userName, setUserName] = useState('Scholar');
+  const [userId, setUserId] = useState<string | null>(null);
   const [dbPapers, setDbPapers] = useState<any[]>([]);
   const [dbCollaborators, setDbCollaborators] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'library' | 'search'>('library');
 
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await turso.auth.getUser();
       if (user) {
+        setUserId(user.id);
         setUserName(user.user_metadata?.name?.split(' ')[0] || 'Scholar');
 
         // Fetch Papers
@@ -33,7 +37,8 @@ export const ResearchPage = () => {
             year: p.year || new Date(p.created_at).getFullYear().toString(),
             citations: p.citations || 0,
             status: p.status,
-            color: p.status === 'completed' ? 'text-emerald-400' : p.status === 'reading' ? 'text-blue-400' : 'text-amber-400'
+            color: p.status === 'completed' ? 'text-emerald-400' : p.status === 'reading' ? 'text-blue-400' : 'text-amber-400',
+            abstract: p.abstract
           })));
         }
 
@@ -55,19 +60,58 @@ export const ResearchPage = () => {
         }
       }
     };
-    fetchData();
-  }, []);
+    // Re-fetch when switching back to library to show newly saved papers
+    if (activeTab === 'library') {
+      fetchData();
+    } else {
+      // Just fetch user info if not fetched
+      if (!userId) fetchData();
+    }
+  }, [activeTab]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-[1400px] mx-auto">
-      <ResearchHeader userName={userName} />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ResearchPapersList displayPapers={dbPapers} />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-[1400px] mx-auto h-[calc(100vh-64px)] flex flex-col">
+      <div className="shrink-0">
+        <ResearchHeader userName={userName} />
         
-        <div className="space-y-4">
-          <CollaboratorsList collaborators={dbCollaborators} />
-          <ResearchStats />
+        <div className="flex items-center gap-4 mb-6 border-b border-white/[0.06] pb-1">
+          <button
+            onClick={() => setActiveTab('library')}
+            className={`px-4 py-2 text-[13px] font-semibold font-poppins transition-colors relative ${
+              activeTab === 'library' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            My Library
+            {activeTab === 'library' && (
+              <motion.div layoutId="research-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`px-4 py-2 text-[13px] font-semibold font-poppins transition-colors relative ${
+              activeTab === 'search' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Search arXiv
+            {activeTab === 'search' && (
+              <motion.div layoutId="research-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+          {activeTab === 'library' ? (
+            <ResearchPapersList displayPapers={dbPapers} />
+          ) : (
+            <PaperSearch userId={userId} />
+          )}
+          
+          <div className="space-y-4 overflow-y-auto pr-2">
+            <CollaboratorsList collaborators={dbCollaborators} />
+            <ResearchStats />
+          </div>
         </div>
       </div>
     </motion.div>

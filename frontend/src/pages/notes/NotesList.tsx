@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { FileText, Sparkles, Clock, Star, Share2, MoreHorizontal, Search, Trash2, Edit3 } from 'lucide-react';
 import { NoteType } from './types';
 import { fadeIn } from './data';
-import { NoteDetailModal } from './NoteDetailModal';
+import { NoteWorkspaceModal } from './workspace';
 import { toast } from 'react-hot-toast';
 
 interface NotesListProps {
@@ -122,7 +122,7 @@ export const NotesList = ({
           <div
             className={
               viewMode === 'list'
-                ? 'rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden divide-y divide-white/[0.04]'
+                ? 'rounded-2xl bg-white/[0.02] border border-white/[0.06] divide-y divide-white/[0.04]'
                 : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
             }
           >
@@ -135,8 +135,8 @@ export const NotesList = ({
                 transition={{ delay: 0.1 + (i % 10) * 0.05 }}
                 className={
                   viewMode === 'list'
-                    ? 'flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative'
-                    : 'flex flex-col p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-3 relative'
+                    ? `flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative first:rounded-t-2xl last:rounded-b-2xl ${openMenuId === note.id ? 'z-50' : 'z-0'}`
+                    : `flex flex-col p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-3 relative ${openMenuId === note.id ? 'z-50' : 'z-0'}`
                 }
               >
                 <div
@@ -161,6 +161,11 @@ export const NotesList = ({
                     {note.aiSummary && (
                       <span className="flex items-center gap-1 text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0">
                         <Sparkles className="w-2.5 h-2.5" /> AI
+                      </span>
+                    )}
+                    {note.fileUrl && (
+                      <span className="flex items-center gap-1 text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={note.fileUrl}>
+                        <FileText className="w-2.5 h-2.5" /> PDF/Image
                       </span>
                     )}
                   </div>
@@ -247,7 +252,7 @@ export const NotesList = ({
       </motion.div>
 
       {/* Note Detail Modal */}
-      <NoteDetailModal
+      <NoteWorkspaceModal
         note={selectedNote}
         isOpen={!!selectedNote}
         onClose={() => setSelectedNote(null)}

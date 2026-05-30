@@ -94,6 +94,7 @@ export const NotesPage = () => {
           aiSummary: n.is_ai_summarized || false,
           visibility: n.visibility || 'private',
           sharedLinkToken: n.shared_link_token || undefined,
+          fileUrl: n.file_url || null,
         };
       }));
     } else {

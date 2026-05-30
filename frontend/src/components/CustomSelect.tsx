@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Search } from 'lucide-react';
 
@@ -32,6 +33,8 @@ export const CustomSelect = ({ value, onChange, options, placeholder, disabled =
 
   const actionOptions = options.filter(opt => opt.isAction);
 
+  const authContainer = document.getElementById('auth-container');
+
   const toggleDropdown = () => {
     if (disabled) return;
     if (!isOpen) {
@@ -45,6 +48,98 @@ export const CustomSelect = ({ value, onChange, options, placeholder, disabled =
     setIsOpen(false);
     setSearchQuery('');
   };
+
+  const modalContent = (
+    <div className="absolute inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6" onClick={() => setIsOpen(false)}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg flex flex-col bg-[#0b1121]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[101] overflow-hidden max-h-[85vh]"
+      >
+        {/* Header with Title and Close Button */}
+        <div className="p-4 sm:p-5 border-b border-white/[0.04] bg-slate-950/40 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-slate-100 font-outfit">
+            Select {placeholder.replace('Select ', '')}
+          </h3>
+          <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        {/* Premium Glassmorphic Searchbar */}
+        <div className="p-3 sm:p-4 border-b border-white/[0.04] bg-slate-950/20">
+          <div className="relative w-full flex items-center">
+            <Search className="absolute left-3.5 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder={`Search...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950/60 border border-white/10 outline-none text-sm text-slate-100 placeholder-slate-500 focus:border-primary-glow/50 focus:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all font-poppins"
+            />
+          </div>
+        </div>
+
+        {/* Scrollable Options List */}
+        <div className="overflow-y-auto flex-1 custom-scrollbar py-2">
+          {filteredOptions.length === 0 ? (
+            <div className="px-6 py-8 text-center text-sm text-slate-500 font-poppins flex flex-col items-center gap-2">
+              <Search className="w-8 h-8 text-slate-700 mb-2" />
+              <p>No results found for "{searchQuery}"</p>
+            </div>
+          ) : (
+            filteredOptions.map((opt, idx) => {
+              const isSelected = opt.value === value;
+              let textClass = "text-slate-300 hover:text-white";
+              if (opt.isCustom) {
+                textClass = "text-emerald-400 hover:text-emerald-300 font-medium";
+              } else if (isSelected) {
+                textClass = "text-white font-semibold bg-white/10";
+              }
+
+              return (
+                <button
+                  key={`${opt.value}-${idx}`}
+                  type="button"
+                  onClick={() => handleSelect(opt.value)}
+                  className={`w-full text-left px-4 sm:px-6 py-3 transition-colors duration-150 ease-out hover:bg-white/[0.06] flex items-center justify-between cursor-pointer ${textClass}`}
+                >
+                  <div className="flex flex-col text-left truncate pr-4">
+                    <span className="text-sm sm:text-base truncate">{opt.label}</span>
+                    {opt.subtitle && (
+                      <span className="text-[11px] sm:text-xs text-slate-500 font-light truncate mt-1">{opt.subtitle}</span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-primary-glow animate-pulse shrink-0" />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Fixed Footer for Action Buttons */}
+        {actionOptions.length > 0 && (
+          <div className="border-t border-white/[0.06] bg-slate-950/60 p-2 sm:p-3 shrink-0">
+            {actionOptions.map((opt, idx) => (
+              <button
+                key={`action-${opt.value}-${idx}`}
+                type="button"
+                onClick={() => handleSelect(opt.value)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-glow/10 hover:bg-primary-glow/20 border border-primary-glow/20 transition-all duration-200 text-primary-glow font-semibold text-sm cursor-pointer"
+              >
+                <span className="truncate">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>
+  );
 
   return (
     <div className={`relative w-full ${disabled ? 'pointer-events-none opacity-60' : 'opacity-100'} transition-all duration-300`}>
@@ -65,92 +160,13 @@ export const CustomSelect = ({ value, onChange, options, placeholder, disabled =
         <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary-glow' : ''}`} />
       </button>
 
-      {/* Floating Dropdown List */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Click-outside listener overlay */}
-            <div className="fixed inset-0 z-40 cursor-default animate-fade-in" onClick={() => setIsOpen(false)} />
-            
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute left-0 right-0 mt-2 max-h-[380px] flex flex-col bg-[#0b1121]/95 backdrop-blur-xl border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden"
-            >
-              {/* Premium Glassmorphic Searchbar */}
-              <div className="p-2 border-b border-white/[0.04] bg-slate-950/20 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <div className="relative w-full flex items-center">
-                  <Search className="absolute left-3 w-3.5 h-3.5 text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder={`Search ${placeholder.toLowerCase()}...`}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-9 pl-9 pr-4 rounded-lg bg-slate-950/60 border border-white/5 outline-none text-xs text-slate-100 placeholder-slate-500 focus:border-primary-glow/30 focus:shadow-[0_0_10px_rgba(59,130,246,0.15)] transition-all font-poppins"
-                    onClick={(e) => e.stopPropagation()} // Prevent closing dropdown on input click
-                  />
-                </div>
-              </div>
-
-              {/* Scrollable Options List */}
-              <div className="overflow-y-auto flex-1 max-h-[252px] custom-scrollbar py-1">
-                {filteredOptions.length === 0 ? (
-                  <div className="px-4 py-3 text-center text-xs text-slate-500 font-poppins">
-                    No results found
-                  </div>
-                ) : (
-                  filteredOptions.map((opt, idx) => {
-                    const isSelected = opt.value === value;
-                    let textClass = "text-slate-300 hover:text-white";
-                    if (opt.isCustom) {
-                      textClass = "text-emerald-400 hover:text-emerald-300 font-medium";
-                    } else if (isSelected) {
-                      textClass = "text-white font-semibold bg-white/5";
-                    }
-
-                    return (
-                      <button
-                        key={`${opt.value}-${idx}`}
-                        type="button"
-                        onClick={() => handleSelect(opt.value)}
-                        className={`w-full text-left px-4 py-2 sm:py-2.5 text-xs sm:text-sm transition-colors duration-150 ease-out hover:bg-white/[0.04] flex items-center justify-between cursor-pointer ${textClass}`}
-                      >
-                        <div className="flex flex-col text-left truncate">
-                          <span className="truncate">{opt.label}</span>
-                          {opt.subtitle && (
-                            <span className="text-[10px] text-slate-500 font-light truncate mt-0.5">{opt.subtitle}</span>
-                          )}
-                        </div>
-                        {isSelected && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary-glow animate-pulse shrink-0 ml-2" />
-                        )}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Fixed Footer for Action Buttons */}
-              {actionOptions.length > 0 && (
-                <div className="border-t border-white/[0.06] bg-slate-950/40 shrink-0">
-                  {actionOptions.map((opt, idx) => (
-                    <button
-                      key={`action-${opt.value}-${idx}`}
-                      type="button"
-                      onClick={() => handleSelect(opt.value)}
-                      className="w-full text-left px-4 py-2.5 text-xs sm:text-sm transition-all duration-200 hover:bg-white/[0.04] text-primary-glow hover:text-primary-glow/85 font-bold cursor-pointer"
-                    >
-                      <span className="truncate">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Floating Dropdown Modal via Portal */}
+      {authContainer && createPortal(
+        <AnimatePresence>
+          {isOpen && modalContent}
+        </AnimatePresence>,
+        authContainer
+      )}
     </div>
   );
 };

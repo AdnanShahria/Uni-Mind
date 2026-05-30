@@ -1,5 +1,6 @@
 const API_URL = 'http://localhost:8787';
 let cachedMetadata: any = null;
+let mockFlashcards = new Map<string, any>();
 
 const getStoredUser = () => {
   const token = localStorage.getItem('unimind_token');
@@ -305,6 +306,25 @@ export const turso: any = {
             if (table === 'users' && builder._single) {
               const u = getStoredUser();
               result.data = u;
+            } else if (table === 'flashcards') {
+              if (builder._action === 'select') {
+                const all = Array.from(mockFlashcards.values());
+                const noteId = builder._eq?.value;
+                result.data = noteId ? all.filter(f => f.note_id === noteId) : all;
+              } else if (builder._action === 'insert') {
+                const inserts = Array.isArray(builder._data) ? builder._data : [builder._data];
+                inserts.forEach((fc: any) => {
+                  const id = crypto.randomUUID();
+                  mockFlashcards.set(id, { id, ...fc, created_at: new Date().toISOString() });
+                });
+                result.data = inserts;
+              } else if (builder._action === 'update') {
+                const id = builder._eq?.value;
+                if (id && mockFlashcards.has(id)) {
+                   mockFlashcards.set(id, { ...mockFlashcards.get(id), ...builder._data });
+                }
+                result.data = [];
+              }
             } else {
               result.data = [];
             }

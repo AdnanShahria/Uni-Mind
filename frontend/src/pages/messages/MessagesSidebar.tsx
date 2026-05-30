@@ -1,16 +1,18 @@
 import { motion } from 'framer-motion';
-import { MessageCircle, Search, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, Search, MoreHorizontal, Edit } from 'lucide-react';
 
 export const MessagesSidebar = ({
   isLoading,
   conversations,
   activeConv,
-  setActiveConv
+  setActiveConv,
+  onNewChat
 }: {
   isLoading: boolean;
   conversations: any[];
   activeConv: any;
   setActiveConv: (conv: any) => void;
+  onNewChat: () => void;
 }) => {
   return (
     <div className="w-80 border-r border-white/[0.06] flex flex-col bg-[#050810]/50 shrink-0">
@@ -20,9 +22,18 @@ export const MessagesSidebar = ({
           <MessageCircle className="w-5 h-5 text-cyan-400" />
           Messages
         </h2>
-        <button className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={onNewChat}
+            className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            title="New Message"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Search */}

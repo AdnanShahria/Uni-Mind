@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS notes (
     is_starred BOOLEAN DEFAULT 0,
     visibility TEXT DEFAULT 'private' CHECK (visibility IN ('private', 'class', 'public')),
     shared_link_token TEXT UNIQUE,
+    studio_data TEXT, -- JSON column for generated study guides, mind maps, etc.
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -362,4 +363,16 @@ CREATE TABLE IF NOT EXISTS ai_suggestions (
 
 CREATE INDEX IF NOT EXISTS idx_ai_suggestions_user ON ai_suggestions(user_id);
 
+-- Table: flashcards
+CREATE TABLE IF NOT EXISTS flashcards (
+    id TEXT PRIMARY KEY,
+    note_id TEXT REFERENCES notes(id) ON DELETE CASCADE NOT NULL,
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    status TEXT DEFAULT 'new' NOT NULL, -- 'new', 'learning', 'mastered'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
 
+CREATE INDEX IF NOT EXISTS idx_flashcards_note ON flashcards(note_id);
+CREATE INDEX IF NOT EXISTS idx_flashcards_user ON flashcards(user_id);

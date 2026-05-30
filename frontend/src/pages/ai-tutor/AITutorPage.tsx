@@ -4,24 +4,52 @@ import { AITutorHeader } from './AITutorHeader';
 import { ChatMessages } from './ChatMessages';
 import { SuggestedPrompts } from './SuggestedPrompts';
 import { MessageInput } from './MessageInput';
+import toast from 'react-hot-toast';
+import * as pdfjsLib from 'pdfjs-dist';
+// Using mammoth from window or basic import. Mammoth doesn't have types and can be tricky in Vite if not configured.
+// @ts-ignore
+import mammoth from 'mammoth';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 // ─── Groq API ──────────────────────────────────────────────────────────────
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-const SYSTEM_PROMPT = `You are UniMind AI Tutor — an expert academic assistant for university students. 
-Help students understand complex topics clearly and concisely. 
-Format responses with markdown: use **bold** for key terms, numbered lists for steps, bullet points for summaries, and code blocks for code.
-Keep responses focused, educational, and encouraging. Always end with a follow-up suggestion or question.`;
+const SYSTEM_PROMPT = `You are UniMind AI Tutor — a super advanced academic assistant for university students. 
+You are an expert in explaining complex topics clearly, step-by-step problem solving, and generating quizzes or summaries.
+Format your responses beautifully using Markdown. 
+Use LaTeX for math equations (e.g. $E=mc^2$ or $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$). 
+Use formatted code blocks for code snippets.
+Be concise, accurate, and highly educational.`;
 
-async function callGroq(history: { role: string; content: string }[], userMessage: string): Promise<string> {
+async function callGroqStream(
+  history: { role: string; content: string }[],
+  userMessage: string,
+  attachedFileType: 'text' | 'image' | null,
+  attachedFileContent: string | null,
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  const model = attachedFileType === 'image' ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile';
+  
+  let formattedUserMessage: any = userMessage;
+
+  if (attachedFileType === 'text' && attachedFileContent) {
+    formattedUserMessage = `[Attached Context]\n${attachedFileContent}\n\nUser Message: ${userMessage}`;
+  } else if (attachedFileType === 'image' && attachedFileContent) {
+    formattedUserMessage = [
+      { type: "text", text: userMessage || "Please describe this image." },
+      { type: "image_url", image_url: { url: attachedFileContent } }
+    ];
+  }
+
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...history.slice(-10).map(m => ({
+    ...history.slice(-15).map(m => ({
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content
     })),
-    { role: 'user', content: userMessage }
+    { role: 'user', content: formattedUserMessage }
   ];
 
   const res = await fetch(GROQ_URL, {
@@ -31,156 +59,58 @@ async function callGroq(history: { role: string; content: string }[], userMessag
       'Authorization': `Bearer ${GROQ_API_KEY}`
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model,
       messages,
       temperature: 0.7,
-      max_tokens: 1024
+      max_tokens: 2048,
+      stream: true
     })
   });
 
-  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Groq API error: ${res.status} - ${err}`);
+  }
+  if (!res.body) throw new Error('No response body');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let fullContent = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+    for (const line of lines) {
+      if (line === 'data: [DONE]') return fullContent;
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          const text = data.choices[0]?.delta?.content || '';
+          fullContent += text;
+          onChunk(text);
+        } catch (e) {
+          // ignore parse errors for partial chunks
+        }
+      }
+    }
+  }
+
+  return fullContent;
 }
 
-// ─── Smart Contextual Simulation ────────────────────────────────────────────
-function buildSmartResponse(question: string): string {
-  const q = question.toLowerCase();
-
-  if (q.includes('explain') || q.includes('what is') || q.includes('define')) {
-    const topic = question.replace(/explain|what is|define|me|the|a|an/gi, '').trim();
-    return `## Understanding ${topic || 'This Concept'}
-
-**${topic || 'This concept'}** is a fundamental idea with several important dimensions.
-
-**Key Points:**
-1. It forms the foundation for understanding related topics
-2. The core principle involves a structured relationship between components
-3. Applications span across multiple domains
-
-**Why It Matters:**
-- Connects directly to exam topics in your course
-- Builds intuition for more advanced concepts
-- Used in real-world problem solving
-
-**Simple Analogy:**
-Think of it like a system where each part depends on the others — changing one affects the whole.
-
----
-Would you like me to **create practice questions** on this topic, or shall I go **deeper into any specific aspect**? 📚`;
+// ─── Smart Contextual Simulation (Fallback) ───────────────────────────────
+async function simulateStream(question: string, onChunk: (c: string) => void): Promise<string> {
+  const fallback = `## Great Question! 🎓\n\nYou asked: "${question}"\n\nI am currently in **Offline Simulation Mode** because no Groq API Key was found.\n\nBut here is a math equation anyway:\n$$ \\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} $$`;
+  const chunks = fallback.split(' ');
+  for (let i = 0; i < chunks.length; i++) {
+    onChunk(chunks[i] + ' ');
+    await new Promise(r => setTimeout(r, 50)); // typing effect
   }
-
-  if (q.includes('solve') || q.includes('calculate') || q.includes('find') || q.includes('how to')) {
-    return `## Step-by-Step Solution
-
-Let me break this down systematically:
-
-**Step 1: Identify What We Know**
-- Extract the given information
-- Note the unknowns you need to find
-
-**Step 2: Choose the Right Approach**
-- Select the appropriate formula or method
-- Check if there are constraints or special cases
-
-**Step 3: Apply & Simplify**
-\`\`\`
-Input → Process → Output
-\`\`\`
-
-**Step 4: Verify Your Answer**
-- Check units and dimensions
-- Does the answer make intuitive sense?
-
----
-💡 **Tip:** Always write out each step during exams — partial credit adds up!
-
-Want me to **walk through a specific example**, or help you with **practice problems**? 🎯`;
-  }
-
-  if (q.includes('flashcard') || q.includes('quiz') || q.includes('test me') || q.includes('practice')) {
-    return `## Practice Questions 🎓
-
-Here are **5 quick-fire questions** to test your knowledge:
-
-**Q1.** What is the core definition of the concept in question?
-- Think: fundamental principles
-
-**Q2.** How does this relate to adjacent topics in your course?
-- Think: connections and dependencies
-
-**Q3.** Name 3 real-world applications.
-- Think: where you see this outside textbooks
-
-**Q4.** What are the most common mistakes students make?
-- Think: edge cases and misconceptions
-
-**Q5.** If you had to explain this to a 10-year-old, what would you say?
-- Think: simple analogies
-
----
-💬 **Reply with your answers** and I'll give you detailed feedback! Or say **"Next topic"** to move on. ✅`;
-  }
-
-  if (q.includes('summarize') || q.includes('summary') || q.includes('notes')) {
-    return `## Summary & Key Takeaways 📋
-
-Here's a concise summary for your notes:
-
-### Core Concepts
-- **Concept A:** Fundamental building block
-- **Concept B:** Extends A with additional properties  
-- **Concept C:** Application layer built on A and B
-
-### Important Formulas / Rules
-\`Formula or Rule 1\` — Use when: specific condition
-\`Formula or Rule 2\` — Use when: alternative condition
-
-### Common Exam Topics
-1. Definition and scope
-2. Comparison with similar concepts
-3. Application to real-world scenarios
-4. Edge cases and exceptions
-
-### Memory Tricks
-> 💡 Create acronyms or visual associations for key terms
-
----
-Want me to turn this into **flashcards**, or add more detail to any section? 🗂️`;
-  }
-
-  // Default intelligent response
-  return `## Great Question! 🎓
-
-Let me help you with that.
-
-**Here's what I understand about your question:**
-> "${question}"
-
-**Breaking It Down:**
-
-1. **The Core Idea** — This topic sits at the intersection of theory and application, making it especially important for both exams and real-world use.
-
-2. **Key Concepts to Grasp First:**
-   - Foundational definitions and terminology
-   - The underlying principles that govern the behavior
-   - How exceptions and edge cases are handled
-
-3. **Practical Understanding:**
-   - Start with simple examples before moving to complex ones
-   - Connect new knowledge to things you already know
-   - Test yourself with worked examples
-
-4. **Study Strategy:**
-   - Active recall beats re-reading
-   - Spaced repetition for long-term retention
-   - Teaching the concept to someone else solidifies understanding
-
----
-🚀 **Next Steps:** Would you like me to:
-- Generate **practice questions** on this topic?
-- Create a **study plan** for your upcoming exam?
-- Give a **deeper explanation** of any specific part?`;
+  return fallback;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -192,9 +122,17 @@ export const AITutorPage = () => {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
+  const [isFastResearch, setIsFastResearch] = useState(false);
+  
+  // File Context
+  const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
+  const [attachedFileContent, setAttachedFileContent] = useState<string | null>(null);
+  const [attachedFileType, setAttachedFileType] = useState<'text' | 'image' | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const GREETING = "Hello! I'm your **AI Tutor** 🎓\n\nI can help you:\n- **Understand** complex topics in any subject\n- **Solve** problems step by step\n- **Generate** flashcards and practice questions\n- **Summarize** your notes with AI\n\nWhat would you like to learn today?";
+  const GREETING = "Hello! I'm your **Super Advanced AI Tutor** 🎓\n\nI can help you with:\n- **Understanding** complex topics\n- **Solving** math and coding problems\n- **Analyzing** documents and images you attach (.txt, .pdf, .docx, .jpg, .png)\n\nWhat would you like to learn today?";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -218,7 +156,6 @@ export const AITutorPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch prompts (with graceful failure)
       try {
         const { data: prompts } = await turso.from('ai_prompts').select('*');
         if (prompts && prompts.length > 0) setDbPrompts(prompts);
@@ -229,7 +166,6 @@ export const AITutorPage = () => {
         setUserId(user.id);
         setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Scholar');
 
-        // Fetch or create conversation
         const { data: convs } = await turso
           .from('ai_conversations')
           .select('id')
@@ -259,7 +195,6 @@ export const AITutorPage = () => {
           }
         }
       } else {
-        // Not logged in: show greeting anyway
         setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
       }
     };
@@ -269,61 +204,155 @@ export const AITutorPage = () => {
   const handleNewChat = async () => {
     setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
     setInput('');
+    handleFileRemove();
     if (userId) {
       const newId = await initConversation(userId);
       setActiveConvId(newId);
     }
   };
 
+  const handleFileAttach = async (file: File) => {
+    setIsParsing(true);
+    setAttachedFileName(file.name);
+
+    try {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setAttachedFileContent(e.target?.result as string);
+          setAttachedFileType('image');
+          setIsParsing(false);
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item: any) => item.str).join(' ') + '\n';
+        }
+        setAttachedFileContent(text);
+        setAttachedFileType('text');
+        setIsParsing(false);
+      } else if (file.name.endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        setAttachedFileContent(result.value);
+        setAttachedFileType('text');
+        setIsParsing(false);
+      } else {
+        // Assume text file
+        const text = await file.text();
+        setAttachedFileContent(text);
+        setAttachedFileType('text');
+        setIsParsing(false);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to parse file');
+      handleFileRemove();
+      setIsParsing(false);
+    }
+  };
+
+  const handleFileRemove = () => {
+    setAttachedFileName(null);
+    setAttachedFileContent(null);
+    setAttachedFileType(null);
+  };
+
   const handleSend = async (overrideInput?: string) => {
     const messageText = (overrideInput ?? input).trim();
-    if (!messageText) return;
+    if (!messageText && !attachedFileContent) return;
 
     setInput('');
     setIsTyping(true);
 
-    const tempUserMsg = { id: Date.now(), role: 'user', content: messageText, timestamp: 'Just now' };
+    // Keep references to current state before clearing
+    const currentFileType = attachedFileType;
+    const currentFileContent = attachedFileContent;
+
+    // Clear attachment after sending
+    handleFileRemove();
+
+    let researchContext = '';
+    if (isFastResearch && userId) {
+      try {
+        const { data: notes } = await turso
+          .from('notes')
+          .select('title, content')
+          .eq('author_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (notes && notes.length > 0) {
+          researchContext = "\n\n[Fast Research Context - Recent Notes]\n" + notes.map((n: any) => `Title: ${n.title}\nContent: ${n.content?.substring(0, 500)}...`).join('\n\n');
+        }
+      } catch (e) {
+        console.error("Fast research error", e);
+      }
+    }
+
+    const displayMessage = currentFileContent 
+      ? `*(Attached ${attachedFileName})*\n\n${messageText}` 
+      : messageText;
+      
+    const backendMessageText = messageText + researchContext;
+
+    const tempUserMsg = { id: Date.now(), role: 'user', content: displayMessage, timestamp: 'Just now' };
     setMessages(prev => [...prev, tempUserMsg]);
 
-    // Save user msg to DB
     if (activeConvId) {
       await turso.from('ai_messages').insert([{
         conversation_id: activeConvId,
         role: 'user',
-        content: messageText
+        content: displayMessage
       }]);
     }
 
+    // Prepare a placeholder for the AI message that will stream
+    const aiMsgId = Date.now() + 1;
+    setMessages(prev => [...prev, { id: aiMsgId, role: 'assistant', content: '', timestamp: 'Just now' }]);
+
     try {
-      let aiContent = '';
+      let finalContent = '';
 
       if (GROQ_API_KEY) {
-        // Real Groq API call
         const history = messages.filter(m => m.role === 'user' || m.role === 'assistant');
-        aiContent = await callGroq(history, messageText);
+        finalContent = await callGroqStream(
+          history, 
+          backendMessageText, 
+          currentFileType, 
+          currentFileContent, 
+          (chunk) => {
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMsgId ? { ...msg, content: msg.content + chunk } : msg
+            ));
+          }
+        );
       } else {
-        // Smart simulation with a realistic delay
-        await new Promise(r => setTimeout(r, 1200 + Math.random() * 800));
-        aiContent = buildSmartResponse(messageText);
+        finalContent = await simulateStream(backendMessageText, (chunk) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMsgId ? { ...msg, content: msg.content + chunk } : msg
+          ));
+        });
       }
-
-      const aiMsg = { id: Date.now() + 1, role: 'assistant', content: aiContent, timestamp: 'Just now' };
 
       if (activeConvId) {
-        const { data: inserted } = await turso.from('ai_messages').insert([{
+        await turso.from('ai_messages').insert([{
           conversation_id: activeConvId,
           role: 'assistant',
-          content: aiContent
-        }]).select().single();
-        setMessages(prev => [...prev, inserted || aiMsg]);
-      } else {
-        setMessages(prev => [...prev, aiMsg]);
+          content: finalContent
+        }]);
       }
     } catch (err) {
-      // Fallback on API error
-      await new Promise(r => setTimeout(r, 800));
-      const fallback = buildSmartResponse(messageText);
-      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: fallback, timestamp: 'Just now' }]);
+      console.error(err);
+      const fallback = "Oops! I ran into an error connecting to my brain. Please try again.";
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId ? { ...msg, content: fallback } : msg
+      ));
     } finally {
       setIsTyping(false);
     }
@@ -341,9 +370,10 @@ export const AITutorPage = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           <ChatMessages
             messages={messages}
-            isTyping={isTyping}
+            isTyping={isTyping && messages.length > 0 && messages[messages.length - 1].role !== 'assistant'} 
             userName={userName}
             messagesEndRef={messagesEndRef}
+            onAction={handleSend}
           />
 
           {messages.length <= 1 && (
@@ -359,7 +389,12 @@ export const AITutorPage = () => {
         input={input}
         setInput={setInput}
         handleSend={() => handleSend()}
-        isTyping={isTyping}
+        isTyping={isTyping || isParsing}
+        attachedFileName={attachedFileName}
+        onFileAttach={handleFileAttach}
+        onFileRemove={handleFileRemove}
+        isFastResearch={isFastResearch}
+        setIsFastResearch={setIsFastResearch}
       />
     </div>
   );

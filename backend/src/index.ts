@@ -404,7 +404,7 @@ export default {
 
         if (request.method === "POST") {
           const body: any = await request.json();
-          const { folder_id, title, course, content, file_url, is_starred, visibility } = body;
+          const { folder_id, title, course, content, file_url, is_starred, visibility, studio_data } = body;
           
           if (!title || typeof title !== "string" || !title.trim()) {
             return new Response(JSON.stringify({ error: "Note title is required" }), { status: 400, headers: corsHeaders });
@@ -414,11 +414,11 @@ export default {
           if (db) {
             await db.execute({
               sql: `INSERT OR REPLACE INTO notes (
-                id, author_id, folder_id, title, course, content, file_url, is_starred, visibility
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                id, author_id, folder_id, title, course, content, file_url, is_starred, visibility, studio_data
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               args: [
                 noteId, payload.userId, folder_id || null, title.trim(), course || "",
-                content || "", file_url || "", is_starred ? 1 : 0, visibility || "private"
+                content || "", file_url || "", is_starred ? 1 : 0, visibility || "private", studio_data || null
               ]
             });
           }

@@ -181,8 +181,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   }, [initialTab]);
 
   useEffect(() => {
-    // Hide scrollbar globally when onboarding page is mounted
-    document.documentElement.classList.add('scrollbar-hidden');
+    // Hide scrollbar globally on desktop/laptop screens when onboarding page is mounted
+    if (window.innerWidth >= 1024) {
+      document.documentElement.classList.add('scrollbar-hidden');
+    }
 
     const fetchApprovedMetadata = async () => {
       try {
@@ -536,6 +538,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setStatus('loading');
     setErrors({});
 
+    console.log("Submitting Registration Payload:", {
+      email: regForm.email,
+      name: regForm.name,
+      institution: regForm.institution,
+      major: regForm.major,
+      session: regForm.session,
+      role: regForm.role
+    });
+
     try {
       const { data, error } = await turso.auth.signUp({
         email: regForm.email,
@@ -567,6 +578,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           name: data.user.user_metadata?.name || regForm.name,
           institution: data.user.user_metadata?.institution || regForm.institution,
           major: data.user.user_metadata?.major || regForm.major,
+          session: data.user.user_metadata?.session || regForm.session,
           role: data.user.user_metadata?.role || regForm.role,
         });
 
@@ -727,6 +739,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           name: data.user.user_metadata?.name || 'Scholar',
           institution: data.user.user_metadata?.institution || 'UniMind Cloud',
           major: data.user.user_metadata?.major || 'Deep Work',
+          session: data.user.user_metadata?.session || 'N/A',
           role: data.user.user_metadata?.role || 'Researcher',
         });
       }
@@ -757,7 +770,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-[#030712] relative overflow-hidden font-poppins selection:bg-primary/30 selection:text-white flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="h-[100dvh] bg-[#030712] relative overflow-hidden font-poppins selection:bg-primary/30 selection:text-white flex items-center justify-center p-4 pt-24 sm:p-6 lg:p-8">
       {/* Background radial glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-screen pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] rounded-full bg-secondary/10 blur-[150px] mix-blend-screen pointer-events-none" />
@@ -776,13 +789,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       </div>
 
       <motion.div 
+        id="auth-container"
         layout 
         transition={{ type: "spring", stiffness: 180, damping: 25 }}
-        className="relative z-10 w-full max-w-6xl rounded-[32px] overflow-hidden glass-panel border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] grid grid-cols-1 lg:grid-cols-12 bg-slate-950/40 backdrop-blur-xl"
+        className="relative z-10 w-full max-w-6xl max-h-full rounded-[32px] overflow-hidden glass-panel border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col lg:grid lg:grid-cols-12 bg-slate-950/40 backdrop-blur-xl"
       >
         
         {/* LEFT PANEL: BRANDING & BENEFITS SHOWCASE */}
-        <div className="lg:col-span-5 relative p-8 sm:p-10 md:p-12 bg-gradient-to-br from-slate-950 via-[#0a0f1d] to-[#040813] border-b lg:border-b-0 lg:border-r border-white/10 flex flex-col justify-between overflow-hidden">
+        <div className="hidden lg:flex lg:col-span-5 relative p-8 sm:p-10 md:p-12 bg-gradient-to-br from-slate-950 via-[#0a0f1d] to-[#040813] border-b lg:border-b-0 lg:border-r border-white/10 flex-col justify-between overflow-hidden">
           <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 blur-3xl rounded-full pointer-events-none" />
 
@@ -846,7 +860,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         </div>
 
         {/* RIGHT PANEL: INTERACTIVE LOGIN/REGISTER FORMS OR LOADING/SUCCESS */}
-        <div className="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-center min-h-[550px] relative overflow-hidden">
+        <div className="lg:col-span-7 p-6 sm:p-10 md:p-12 flex flex-col justify-center h-full min-h-[400px] lg:min-h-[550px] relative overflow-hidden">
           {/* Subtle Right Panel Ambient Glows */}
           <div className="absolute top-[20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-primary/5 to-secondary/5 blur-[120px] pointer-events-none z-0" />
           
@@ -860,7 +874,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="w-full relative z-10"
+                className="w-full relative z-10 flex-1 flex flex-col max-h-[450px] sm:max-h-[480px]"
               >
                 {/* Form Tabs */}
                 <div className="flex p-1 bg-slate-950/60 backdrop-blur-md rounded-xl border border-white/5 max-w-sm mb-8 relative z-10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">
@@ -918,8 +932,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                 {/* REGISTER FORM */}
                 {activeTab === 'register' && (
-                  <form onSubmit={handleRegSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <form onSubmit={handleRegSubmit} className="flex-1 space-y-3 overflow-y-auto custom-scrollbar pr-2 pb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Name */}
                       <div className="group flex flex-col">
                         <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Full Name</label>
@@ -957,47 +971,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Institution */}
-                      <div className="group flex flex-col">
-                        <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">University / Institution</label>
-                        {!regForm.isUnlistedInstitution ? (
-                          <div className="relative">
-                            <CustomSelect
-                              value={regForm.institution}
-                              onChange={handleInstitutionSelect}
-                              options={institutionOptions}
-                              placeholder="Select Institution"
-                            />
-                            {regForm.institution && (
-                              <div className="flex justify-end mt-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const rawVal = regForm.institution;
-                                    const cleanName = rawVal.includes(' | Location: ') ? rawVal.split(' | Location: ')[0] : rawVal;
-                                    setRequestEmail(regForm.email || '');
-                                    setRequestType('institution');
-                                    setActionType('rename');
-                                    setOldValue(cleanName);
-                                    setNewValue('');
-                                    setShowRequestModal(true);
-                                    setRequestStatus('idle');
-                                    setRequestError('');
-                                  }}
-                                  className="text-[10px] text-slate-400 hover:text-primary-glow hover:underline transition-colors font-poppins cursor-pointer bg-transparent border-none outline-none"
-                                >
-                                  Report spelling typo in this name
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="relative flex flex-col gap-3"
-                          >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Institution & Major / Custom Uni Fields Layout */}
+                      {regForm.isUnlistedInstitution ? (
+                        <>
+                          {/* Custom Institution Column 1 (Left) */}
+                          <div className="group flex flex-col">
+                            <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">University / Institution</label>
                             <div className="relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] overflow-hidden">
                               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#2563eb] to-[#8b5cf6]" />
                               <School className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-glow" />
@@ -1010,8 +990,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                 className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none pl-11 pr-4 font-poppins"
                               />
                             </div>
-                            <div className="flex gap-2">
-                              <div className="w-1/3 relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
+                            <div className="flex justify-between items-center mt-1">
+                              <button 
+                                type="button" 
+                                onClick={() => setRegForm(prev => ({...prev, isUnlistedInstitution: false, institution: ''}))} 
+                                className="text-[10px] text-primary-glow hover:underline font-poppins font-medium mt-1.5"
+                              >
+                                ← Back to list
+                              </button>
+                            </div>
+                            {errors.institution && <p className="text-[10px] text-red-400 mt-1.5 font-poppins font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{errors.institution}</p>}
+                          </div>
+
+                          {/* Custom Institution Column 2 (Right - Required Fields) */}
+                          <div className="group flex flex-col">
+                            <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Required Fields</label>
+                            <div className="flex flex-col gap-2">
+                              {/* Row 1: Abbrev */}
+                              <div className="relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
                                 <input 
                                   type="text" 
                                   name="abbreviation" 
@@ -1021,40 +1017,36 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                   className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-3 font-poppins" 
                                 />
                               </div>
-                              <div className="w-1/3 relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
-                                <input 
-                                  type="text" 
-                                  name="district" 
-                                  value={regForm.district} 
-                                  onChange={handleRegChange} 
-                                  placeholder="District" 
-                                  className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-3 font-poppins" 
-                                />
-                              </div>
-                              <div className="w-1/3 relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
-                                <input 
-                                  type="text" 
-                                  name="country" 
-                                  value={regForm.country} 
-                                  onChange={handleRegChange} 
-                                  placeholder="Country" 
-                                  className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-3 font-poppins" 
-                                />
+                              {/* Row 2: District & Country */}
+                              <div className="flex gap-2">
+                                <div className="w-1/2 relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
+                                  <input 
+                                    type="text" 
+                                    name="district" 
+                                    value={regForm.district} 
+                                    onChange={handleRegChange} 
+                                    placeholder="District" 
+                                    className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-3 font-poppins" 
+                                  />
+                                </div>
+                                <div className="w-1/2 relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 overflow-hidden">
+                                  <input 
+                                    type="text" 
+                                    name="country" 
+                                    value={regForm.country} 
+                                    onChange={handleRegChange} 
+                                    placeholder="Country" 
+                                    className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-3 font-poppins" 
+                                  />
+                                </div>
                               </div>
                             </div>
-                            <div className="flex justify-between items-center mt-1">
-                              <button 
-                                type="button" 
-                                onClick={() => setRegForm(prev => ({...prev, isUnlistedInstitution: false, institution: ''}))} 
-                                className="text-[10px] text-primary-glow hover:underline font-poppins font-medium"
-                              >
-                                ← Back to list
-                              </button>
+                            <div className="flex justify-end items-center mt-1">
                               <button
                                 type="button"
                                 onClick={saveCustomInstitution}
                                 disabled={isSavingUni}
-                                className={`relative px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-[10px] transition-all cursor-pointer overflow-hidden ${
+                                className={`relative px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-[10px] transition-all cursor-pointer overflow-hidden mt-1.5 ${
                                   isSavingUni ? 'opacity-80 pointer-events-none' : 'animate-glow-pulse'
                                 }`}
                               >
@@ -1062,65 +1054,102 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                                 {isSavingUni ? 'Saving…' : 'Save University'}
                               </button>
                             </div>
-                          </motion.div>
-                        )}
-                        {errors.institution && <p className="text-[10px] text-red-400 mt-1.5 font-poppins font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{errors.institution}</p>}
-                      </div>
-
-                      {/* Major */}
-                      <div className="group flex flex-col transition-all duration-500">
-                        <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Field of Study / Major</label>
-                        {!regForm.isCustomMajor ? (
-                          <CustomSelect
-                            value={regForm.major}
-                            onChange={handleMajorSelect}
-                            options={majorOptions}
-                            placeholder="Select Field / Major"
-                            disabled={!regForm.institution.trim() || regForm.isUnlistedInstitution}
-                          />
-                        ) : (
-                          <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="relative flex flex-col gap-2"
-                          >
-                            <div className="relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] overflow-hidden">
-                              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#2563eb] to-[#8b5cf6]" />
-                              <GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-glow" />
-                              <input
-                                type="text"
-                                name="major"
-                                value={regForm.major}
-                                onChange={handleRegChange}
-                                placeholder="Enter Custom Field / Major"
-                                className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none pl-11 pr-4 font-poppins"
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Standard Institution Column 1 (Left) */}
+                          <div className="group flex flex-col">
+                            <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">University / Institution</label>
+                            <div className="relative">
+                              <CustomSelect
+                                value={regForm.institution}
+                                onChange={handleInstitutionSelect}
+                                options={institutionOptions}
+                                placeholder="Select Institution"
                               />
+                              {regForm.institution && (
+                                <div className="flex justify-end mt-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const rawVal = regForm.institution;
+                                      const cleanName = rawVal.includes(' | Location: ') ? rawVal.split(' | Location: ')[0] : rawVal;
+                                      setRequestEmail(regForm.email || '');
+                                      setRequestType('institution');
+                                      setActionType('rename');
+                                      setOldValue(cleanName);
+                                      setNewValue('');
+                                      setShowRequestModal(true);
+                                      setRequestStatus('idle');
+                                      setRequestError('');
+                                    }}
+                                    className="text-[10px] text-slate-400 hover:text-primary-glow hover:underline transition-colors font-poppins cursor-pointer bg-transparent border-none outline-none"
+                                  >
+                                    Report spelling typo in this name
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex justify-between items-center mt-1">
-                              <button 
-                                type="button" 
-                                onClick={() => setRegForm(prev => ({...prev, isCustomMajor: false, major: ''}))} 
-                                className="text-[10px] text-primary-glow hover:underline font-poppins font-medium"
+                            {errors.institution && <p className="text-[10px] text-red-400 mt-1.5 font-poppins font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{errors.institution}</p>}
+                          </div>
+
+                          {/* Standard Major Column 2 (Right) */}
+                          <div className="group flex flex-col transition-all duration-500">
+                            <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Field of Study / Major</label>
+                            {!regForm.isCustomMajor ? (
+                              <CustomSelect
+                                value={regForm.major}
+                                onChange={handleMajorSelect}
+                                options={majorOptions}
+                                placeholder="Select Field / Major"
+                                disabled={!regForm.institution.trim() || regForm.isUnlistedInstitution}
+                              />
+                            ) : (
+                              <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                className="relative flex flex-col gap-2"
                               >
-                                ← Back to list
-                              </button>
-                              <button
-                                type="button"
-                                onClick={saveCustomMajor}
-                                disabled={isSavingMajor}
-                                className={`relative px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-[10px] transition-all shadow-[0_2px_10px_rgba(16,185,129,0.2)] hover:shadow-[0_2px_15px_rgba(16,185,129,0.4)] cursor-pointer overflow-hidden ${isSavingMajor ? 'opacity-80 pointer-events-none' : ''}`}
-                              >
-                                {isSavingMajor && <span className="absolute inset-0 animate-shimmer rounded-xl" />}
-                                {isSavingMajor ? 'Saving…' : 'Save Major'}
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                        {errors.major && <p className="text-[10px] text-red-400 mt-1.5 font-poppins font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{errors.major}</p>}
-                      </div>
+                                <div className="relative rounded-xl transition-all duration-300 bg-slate-950/40 border border-white/5 focus-within:border-primary-glow/30 focus-within:shadow-[0_0_15px_rgba(59,130,246,0.15)] overflow-hidden">
+                                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-[#2563eb] to-[#8b5cf6]" />
+                                  <GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-glow" />
+                                  <input
+                                    type="text"
+                                    name="major"
+                                    value={regForm.major}
+                                    onChange={handleRegChange}
+                                    placeholder="Enter Custom Field / Major"
+                                    className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none pl-11 pr-4 font-poppins"
+                                  />
+                                </div>
+                                <div className="flex justify-between items-center mt-1">
+                                  <button 
+                                    type="button" 
+                                    onClick={() => setRegForm(prev => ({...prev, isCustomMajor: false, major: ''}))} 
+                                    className="text-[10px] text-primary-glow hover:underline font-poppins font-medium"
+                                  >
+                                    ← Back to list
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={saveCustomMajor}
+                                    disabled={isSavingMajor}
+                                    className={`relative px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-[10px] transition-all shadow-[0_2px_10px_rgba(16,185,129,0.2)] hover:shadow-[0_2px_15px_rgba(16,185,129,0.4)] cursor-pointer overflow-hidden ${isSavingMajor ? 'opacity-80 pointer-events-none' : ''}`}
+                                  >
+                                    {isSavingMajor && <span className="absolute inset-0 animate-shimmer rounded-xl" />}
+                                    {isSavingMajor ? 'Saving…' : 'Save Major'}
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                            {errors.major && <p className="text-[10px] text-red-400 mt-1.5 font-poppins font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{errors.major}</p>}
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Session / Batch */}
                       <div className="group flex flex-col transition-all duration-500">
                         <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Session / Batch</label>
@@ -1224,7 +1253,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 gap-3">
                       {/* Password */}
                       <div className="group flex flex-col">
                         <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Secure Password</label>
@@ -1279,7 +1308,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                       whileHover={{ scale: 1.015, translateY: -2 }}
                       whileTap={{ scale: 0.985 }}
                       type="submit"
-                      className="w-full h-12 bg-gradient-to-r from-[#2563eb] via-[#8b5cf6] to-[#06b6d4] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-[0_4px_20px_rgba(59,130,246,0.35)] hover:shadow-[0_4px_30px_rgba(139,92,246,0.5)] flex items-center justify-center gap-2 mt-6 cursor-pointer relative overflow-hidden group/btn"
+                      className="w-full h-11 bg-gradient-to-r from-[#2563eb] via-[#8b5cf6] to-[#06b6d4] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-[0_4px_20px_rgba(59,130,246,0.35)] hover:shadow-[0_4px_30px_rgba(139,92,246,0.5)] flex items-center justify-center gap-2 mt-4 cursor-pointer relative overflow-hidden group/btn"
                     >
                       <div className="absolute inset-0 w-1/2 h-full bg-white/10 skew-x-[-25deg] -translate-x-full group-hover/btn:animate-marquee pointer-events-none" style={{ animationDuration: '1.5s' }} />
                       <Sparkles className="w-4 h-4 text-blue-100 animate-pulse" />
@@ -1307,7 +1336,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                 {/* LOGIN FORM */}
                 {activeTab === 'login' && (
-                  <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <form onSubmit={handleLoginSubmit} className="flex-1 space-y-4 overflow-y-auto custom-scrollbar pr-2 pb-2">
                     {/* Academic Email */}
                     <div className="group flex flex-col">
                       <label className="text-[10px] font-bold text-slate-400 font-poppins mb-1.5 uppercase tracking-widest block transition-colors group-focus-within:text-primary-glow">Academic Email</label>
@@ -1466,8 +1495,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
                   <div className="space-y-2.5 font-poppins text-xs font-light text-slate-300">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Security Identity:</span>
-                      <span className="font-medium text-slate-200">{dbUser?.id || 'unimind-node-local'}</span>
+                      <span className="text-slate-500">Academic Email:</span>
+                      <span className="font-medium text-slate-200 truncate max-w-[180px]">{dbUser?.email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Academic Major:</span>
@@ -1475,11 +1504,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Academic Role:</span>
-                      <span className="font-medium text-slate-200">{dbUser?.role || 'Researcher'}</span>
+                      <span className="font-medium text-slate-200 truncate max-w-[180px]">{dbUser?.role || 'Researcher'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Database Space:</span>
-                      <span className="font-medium text-slate-200">10 GB isolated vault</span>
+                      <span className="text-slate-500">Session / Batch:</span>
+                      <span className="font-medium text-slate-200 truncate max-w-[180px]">{dbUser?.session || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -1647,7 +1676,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           required
                           value={associatedUni}
                           onChange={(e) => setAssociatedUni(e.target.value)}
-                          placeholder="e.g. Gazipur Agricultural University"
+                          placeholder="e.g. Example University"
                           className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none pl-11 pr-4 font-poppins"
                         />
                       </div>
@@ -1670,7 +1699,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                           required
                           value={oldValue}
                           onChange={(e) => setOldValue(e.target.value)}
-                          placeholder="e.g. Dhaka Univarsity"
+                          placeholder="e.g. Exampel University"
                           className="w-full h-11 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-600 outline-none px-4 font-poppins"
                         />
                       </div>
@@ -1690,7 +1719,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                         value={newValue}
                         onChange={(e) => setNewValue(e.target.value)}
                         placeholder={
-                          requestType === 'institution' ? 'e.g. University of Dhaka' :
+                          requestType === 'institution' ? 'e.g. Example University' :
                           requestType === 'major' ? 'e.g. Software Engineering' :
                           requestType === 'session' ? 'e.g. 2025-2026' : 'e.g. Professor / Mentor'
                         }

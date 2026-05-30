@@ -330,6 +330,40 @@ export const PlannerPage = () => {
     })();
   };
 
+  const handleApplyAiSchedule = async (newTasks: any[]) => {
+    const { data: { user } } = await turso.auth.getUser();
+    if (!user) return;
+
+    const inserts = newTasks.map(t => {
+      const insertObj: any = {
+        user_id: user.id,
+        title: t.title,
+        due_date: new Date(t.date).toISOString(),
+        status: 'pending',
+        priority: 'medium',
+        estimated_hours: t.estimated_hours || 1,
+      };
+      
+      // Only attach if it's a valid string ID
+      if (t.weekly_goal_id && typeof t.weekly_goal_id === 'string' && t.weekly_goal_id.length > 5) {
+        insertObj.weekly_goal_id = t.weekly_goal_id;
+      }
+      if (t.long_term_goal_id && typeof t.long_term_goal_id === 'string' && t.long_term_goal_id.length > 5) {
+        insertObj.long_term_goal_id = t.long_term_goal_id;
+      }
+      return insertObj;
+    });
+
+    try {
+      await turso.from('tasks').insert(inserts);
+    } catch (error) {
+      console.error('Failed to insert AI tasks', error);
+    }
+    
+    // Refresh
+    fetchData();
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-[1400px] mx-auto">
       <PlannerHeader 
@@ -425,6 +459,7 @@ export const PlannerPage = () => {
         tasks={dbTasks}
         goals={dbGoals}
         longTermGoals={dbLongTermGoals}
+        onApplySchedule={handleApplyAiSchedule}
       />
     </motion.div>
   );

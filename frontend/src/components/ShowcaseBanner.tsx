@@ -1,50 +1,10 @@
-import { useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
-import { Lock, RotateCw, ArrowLeft, ArrowRight, Sparkles, Share2, Eye } from 'lucide-react';
-
-interface Hotspot {
-  id: number;
-  top: string;
-  left: string;
-  title: string;
-  description: string;
-  badge: string;
-  color: string;
-}
-
-const hotspots: Hotspot[] = [
-  {
-    id: 1,
-    top: '32%',
-    left: '8%',
-    title: 'Smart Sidebar',
-    description: 'Instantly toggle between student cohorts, study notebooks, and custom subject directories.',
-    badge: 'Navigation',
-    color: 'from-blue-500 to-cyan-500'
-  },
-  {
-    id: 2,
-    top: '12%',
-    left: '82%',
-    title: 'Cognitive Synth AI',
-    description: 'Trigger real-time summarization, semantic graph linking, and personalized study roadmaps.',
-    badge: 'AI Engine',
-    color: 'from-violet-500 to-fuchsia-500'
-  },
-  {
-    id: 3,
-    top: '65%',
-    left: '50%',
-    title: 'Multiplayer Research Canvas',
-    description: 'Collaborate live with peers on infinite graph structures to map connections across papers.',
-    badge: 'DeepWork Graph',
-    color: 'from-emerald-500 to-teal-500'
-  }
-];
+import { useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { Lock, RotateCw, ArrowLeft, ArrowRight, Share2, Eye } from 'lucide-react';
+import { MockInnerView } from './MockInnerView';
 
 export const ShowcaseBanner = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [activeHotspot, setActiveHotspot] = useState<number | null>(null);
 
   // Hook scroll progress relative to this container
   const { scrollYProgress } = useScroll({
@@ -87,7 +47,7 @@ export const ShowcaseBanner = () => {
             Designed for <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-slate-100 via-slate-300 to-slate-400 font-semibold">Deep Focus</span>
           </h2>
           <p className="text-sm md:text-base text-slate-400 font-poppins font-light leading-relaxed">
-            Take a guided tour through your unified research dashboard. Click on the glowing core nodes to explore special built-in cognitive modules.
+            Take a guided tour through your unified research dashboard. Experience real-time collaboration and AI-powered insights.
           </p>
         </div>
 
@@ -141,73 +101,9 @@ export const ShowcaseBanner = () => {
             </div>
           </div>
 
-          {/* Banner Body Wrapper */}
+          {/* Banner Body Wrapper using MockInnerView */}
           <div className="relative overflow-hidden rounded-b-xl select-none">
-            {/* The Actual Banner Showcase Asset */}
-            <img 
-              src="/Banner_1.png" 
-              className="w-full h-auto object-cover border-t border-white/5 rounded-b-xl select-none pointer-events-none"
-              alt="UniMind DeepWork Platform Workspace Showcase"
-            />
-
-            {/* Glowing Interactive Hotspot Node System */}
-            {hotspots.map((hotspot) => {
-              const isActive = activeHotspot === hotspot.id;
-              return (
-                <div 
-                  key={hotspot.id}
-                  className="absolute"
-                  style={{ top: hotspot.top, left: hotspot.left }}
-                >
-                  {/* Glowing Node Button */}
-                  <button
-                    onClick={() => setActiveHotspot(isActive ? null : hotspot.id)}
-                    className="relative w-7 h-7 flex items-center justify-center cursor-pointer group/node z-30 focus:outline-none"
-                    title={`Explore ${hotspot.title}`}
-                  >
-                    {/* Ring scale animations */}
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-white/30 animate-ping opacity-60 pointer-events-none" />
-                    <span className="absolute inline-flex h-5 w-5 rounded-full bg-gradient-to-r from-primary to-secondary blur-[4px] opacity-80 group-hover/node:scale-125 transition-transform duration-300" />
-                    
-                    {/* Centered Node Solid Bullet */}
-                    <div className="relative w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-[0_0_12px_#fff]">
-                      <Sparkles className="w-2 h-2 text-violet-600" />
-                    </div>
-                  </button>
-
-                  {/* High Fidelity Glass Tooltip Popup Card */}
-                  <AnimatePresence>
-                    {isActive && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        transition={{ type: "spring", stiffness: 150, damping: 15 }}
-                        className="absolute bottom-10 -left-28 w-60 p-4 rounded-xl border border-white/15 bg-slate-950/85 backdrop-blur-md shadow-[0_15px_35px_rgba(0,0,0,0.8)] z-40"
-                      >
-                        {/* Title Header with custom gradient badges */}
-                        <div className="flex justify-between items-start mb-2">
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gradient-to-r ${hotspot.color} text-white`}>
-                            {hotspot.badge}
-                          </span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveHotspot(null);
-                            }}
-                            className="text-slate-500 hover:text-white transition-colors cursor-pointer text-xs font-bold font-poppins"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <h4 className="text-xs font-bold text-white mb-1.5 font-poppins">{hotspot.title}</h4>
-                        <p className="text-[11px] text-slate-300 leading-relaxed font-poppins">{hotspot.description}</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+            <MockInnerView />
           </div>
         </motion.div>
       </div>

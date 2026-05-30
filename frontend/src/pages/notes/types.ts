@@ -16,4 +16,13 @@ export interface NoteType {
   aiSummary: boolean;
   visibility?: 'private' | 'class' | 'public';
   sharedLinkToken?: string;
+  fileUrl?: string | null;
+}
+
+export interface FlashcardType {
+  id: string;
+  note_id: string;
+  question: string;
+  answer: string;
+  status: 'new' | 'learning' | 'mastered';
 }

@@ -11,6 +11,7 @@ import { CommunitiesPage } from './pages/communities/CommunitiesPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { PlannerPage } from './pages/planner/PlannerPage';
 import { ResearchPage } from './pages/research/ResearchPage';
+import { LeaderboardPage } from './pages/leaderboard/LeaderboardPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProfileSettingsPage } from './pages/settings/ProfileSettingsPage';
 import { EmailSettingsPage } from './pages/settings/EmailSettingsPage';
@@ -65,6 +66,7 @@ function App() {
             <Route path="messages" element={<MessagesPage />} />
             <Route path="planner" element={<PlannerPage />} />
             <Route path="research" element={<ResearchPage />} />
+            <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="admin" element={<AdminPanel />} />
             <Route path="settings">
               <Route index element={<SettingsPage />} />

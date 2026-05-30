@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   Award,
+  Trophy,
 } from 'lucide-react';
 
 interface NavItem {
@@ -28,6 +29,7 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app', color: 'text-primary-glow' },
+  { icon: Trophy, label: 'Leaderboard', path: '/app/leaderboard', color: 'text-yellow-400' },
   { icon: Newspaper, label: 'Feed', path: '/app/feed', badge: '3', color: 'text-blue-400' },
   { icon: StickyNote, label: 'Notes', path: '/app/notes', color: 'text-amber-400' },
   { icon: Bot, label: 'AI Tutor', path: '/app/ai', color: 'text-purple-400' },
