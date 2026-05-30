@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Video, Pin, MessageCircle, Paperclip, Image as ImageIcon, Smile, Send, CheckCheck, Sparkles, Reply, X, ThumbsUp, Heart } from 'lucide-react';
+import { Phone, Video, Pin, MessageCircle, Paperclip, Image as ImageIcon, Smile, Send, CheckCheck, Sparkles, Reply, X, ThumbsUp, Heart, ArrowLeft } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 interface ChatAreaProps {
@@ -10,9 +10,10 @@ interface ChatAreaProps {
   isSummarizing: boolean;
   smartReplies?: string[];
   onReact?: (messageId: string, emoji: string) => void;
+  onBack?: () => void;
 }
 
-export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isSummarizing, smartReplies = [], onReact }: ChatAreaProps) => {
+export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isSummarizing, smartReplies = [], onReact, onBack }: ChatAreaProps) => {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [replyToMsg, setReplyToMsg] = useState<any>(null);
@@ -97,8 +98,17 @@ export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isS
       {activeConv ? (
         <>
           {/* Chat Header */}
-          <div className="h-16 px-6 flex items-center justify-between border-b border-white/[0.06] shrink-0 bg-[#090d16] z-10">
-            <div className="flex items-center gap-3">
+          <div className="h-14 md:h-16 px-3 md:px-6 flex items-center justify-between border-b border-white/[0.06] shrink-0 bg-[#090d16] z-10">
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Mobile back button */}
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="md:hidden w-8 h-8 rounded-xl hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
               <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${activeConv.color || 'from-emerald-500 to-teal-500'} flex items-center justify-center text-white text-xs font-bold font-poppins`}>
                 {activeConv.avatar || 'DM'}
               </div>
@@ -118,8 +128,8 @@ export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isS
                   className="px-3 h-9 mr-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 flex items-center justify-center text-purple-400 font-semibold text-[11px] transition-colors disabled:opacity-50"
                   title="Summarize this thread with AI"
                 >
-                  <Sparkles className={`w-3.5 h-3.5 mr-1.5 ${isSummarizing ? 'animate-spin' : ''}`} />
-                  {isSummarizing ? 'Summarizing...' : 'AI Summary'}
+                  <Sparkles className={`w-3.5 h-3.5 sm:mr-1.5 ${isSummarizing ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isSummarizing ? 'Summarizing...' : 'AI Summary'}</span>
                 </button>
               )}
               <button className="w-9 h-9 rounded-xl hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
@@ -135,7 +145,7 @@ export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isS
           </div>
 
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 space-y-5 custom-scrollbar">
             {messages.map((msg, i) => (
               <motion.div
                 key={msg.id}
@@ -144,7 +154,7 @@ export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isS
                 transition={{ delay: i * 0.03 > 0.3 ? 0 : i * 0.03 }}
                 className={`flex group ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[65%] flex flex-col relative ${msg.isOwn ? 'items-end' : 'items-start'}`}>
+                <div className={`max-w-[80%] md:max-w-[65%] flex flex-col relative ${msg.isOwn ? 'items-end' : 'items-start'}`}>
                   
                   {/* Sender Name */}
                   {!msg.isOwn && <span className="text-[10px] text-slate-500 mb-1 ml-1">{msg.sender}</span>}
@@ -249,7 +259,7 @@ export const ChatArea = ({ activeConv, messages, onSendMessage, onSummarize, isS
           </AnimatePresence>
 
           {/* Input Area */}
-          <div className="px-6 py-4 border-t border-white/[0.06] bg-[#090d16] relative z-20">
+          <div className="px-3 md:px-6 py-3 md:py-4 border-t border-white/[0.06] bg-[#090d16] relative z-20">
             
             {/* Attachment Preview */}
             <AnimatePresence>

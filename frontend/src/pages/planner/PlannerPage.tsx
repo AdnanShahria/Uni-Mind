@@ -365,7 +365,7 @@ export const PlannerPage = () => {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-[1400px] mx-auto">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto">
       <PlannerHeader 
         userName={userName} 
         onOpenModal={() => { setEditItem(null); setIsModalOpen(true); }} 

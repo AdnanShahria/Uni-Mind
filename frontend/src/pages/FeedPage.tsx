@@ -113,12 +113,12 @@ export const FeedPage = () => {
     <motion.div
       initial="initial"
       animate="animate"
-      className="max-w-[1200px] mx-auto p-6 lg:p-8"
+      className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8"
     >
       {/* Page Header */}
-      <motion.div variants={fadeIn} className="mb-6">
-        <h1 className="text-2xl font-bold font-outfit text-white">Academic Feed</h1>
-        <p className="text-sm text-slate-400 font-poppins mt-1">
+      <motion.div variants={fadeIn} className="mb-3 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white">Academic Feed</h1>
+        <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1">
           Stay updated with your academic network
         </p>
       </motion.div>

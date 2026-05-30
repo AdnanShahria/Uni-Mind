@@ -33,7 +33,7 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
     <>
       <motion.div
         variants={fadeIn}
-        className="glass-card rounded-2xl p-5 shadow-sm cursor-text"
+        className="glass-card rounded-2xl p-3 shadow-sm cursor-text"
         onClick={() => setIsModalOpen(true)}
       >
         <input 
@@ -61,36 +61,36 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
           }} 
         />
 
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold font-poppins shrink-0 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold font-poppins shrink-0 shadow-lg">
             {currentUser?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1">
-            <div className="w-full h-12 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 flex items-center text-sm text-slate-400 font-poppins hover:bg-white/[0.06] hover:border-white/[0.1] transition-colors duration-200 cursor-pointer">
+            <div className="w-full h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 flex items-center text-sm text-slate-400 font-poppins hover:bg-white/[0.06] hover:border-white/[0.1] transition-colors duration-200 cursor-pointer">
               What are you researching or thinking about?
             </div>
           </div>
         </div>
         
-        <div className="flex items-center justify-between mt-4 pl-[60px]">
+        <div className="flex items-center justify-between mt-3 pl-[48px]">
           <div className="flex items-center gap-1.5">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 photoInputRef.current?.click();
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-emerald-400 transition-colors text-xs font-poppins font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-emerald-400 transition-colors text-[11px] sm:text-xs font-poppins font-medium"
             >
-              <ImageIcon className="w-4 h-4 text-emerald-400/70" /> Image
+              <ImageIcon className="w-3.5 h-3.5 text-emerald-400/70" /> Image
             </button>
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 noteInputRef.current?.click();
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-amber-400 transition-colors text-xs font-poppins font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-amber-400 transition-colors text-[11px] sm:text-xs font-poppins font-medium"
             >
-              <FileText className="w-4 h-4 text-amber-400/70" /> Document
+              <FileText className="w-3.5 h-3.5 text-amber-400/70" /> Document
             </button>
             <button 
               onClick={(e) => {
@@ -98,9 +98,9 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
                 setIsAIAssistActive(true);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-purple-400 transition-colors text-xs font-poppins font-medium"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-purple-400 transition-colors text-[11px] sm:text-xs font-poppins font-medium"
             >
-              <Sparkles className="w-4 h-4 text-purple-400/70" /> AI Draft
+              <Sparkles className="w-3.5 h-3.5 text-purple-400/70" /> AI Draft
             </button>
           </div>
         </div>

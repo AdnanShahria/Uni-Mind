@@ -72,7 +72,7 @@ export const ResearchPage = () => {
   }, [activeTab]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-[1400px] mx-auto h-[calc(100vh-64px)] flex flex-col">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto h-[calc(100vh-56px)] md:h-[calc(100vh-64px)] flex flex-col">
       <div className="shrink-0">
         <ResearchHeader userName={userName} />
         

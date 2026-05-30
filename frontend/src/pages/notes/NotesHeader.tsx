@@ -42,15 +42,15 @@ export const NotesHeader = ({
 
   return (
     <>
-      <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+      <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6">
           {!currentFolderId && (
             <div>
-              <h1 className="text-2xl font-bold font-outfit text-white flex items-center gap-2">
-                <StickyNote className="w-6 h-6 text-amber-400" />
-                Smart Notes
+              <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white flex items-center gap-2">
+                <StickyNote className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+                UniNote
               </h1>
-              <p className="text-sm text-slate-400 font-poppins mt-1">
+              <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1">
                 Organize, share, and enhance your notes with AI
               </p>
             </div>

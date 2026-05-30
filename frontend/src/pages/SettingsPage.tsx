@@ -100,13 +100,13 @@ export const SettingsPage = () => {
   }, []);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 lg:p-8 max-w-3xl mx-auto">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
 
       {/* Profile Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl glass-card p-6 mb-6 flex items-center gap-4"
+        className="rounded-2xl glass-card p-4 md:p-6 mb-6 flex flex-col md:flex-row items-start md:items-center gap-4"
       >
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xl font-bold font-poppins shadow-lg">
           {userProfile?.initial || 'S'}
@@ -137,7 +137,7 @@ export const SettingsPage = () => {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 shrink-0 w-full md:w-auto">
           <Link to="/app/settings/profile" className="flex items-center gap-2 p-2.5 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] rounded-xl transition-colors sm:min-w-[130px]">
             <User className="w-4 h-4 text-primary-glow" />
             <span className="text-xs font-medium text-slate-200">Profile Info</span>

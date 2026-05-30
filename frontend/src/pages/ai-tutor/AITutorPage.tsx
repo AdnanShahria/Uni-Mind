@@ -362,10 +362,10 @@ export const AITutorPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-64px)]">
       <AITutorHeader onNewChat={handleNewChat} />
 
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           <ChatMessages
             messages={messages}

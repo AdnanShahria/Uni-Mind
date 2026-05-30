@@ -10,7 +10,7 @@ export const AITutorHeader = ({ onNewChat }: { onNewChat: () => void }) => {
           </div>
           <div>
             <h1 className="text-lg font-bold font-outfit text-white flex items-center gap-2">
-              AI Tutor
+              UniTutor
               <span className="text-[9px] text-primary-glow font-bold uppercase tracking-wider font-poppins bg-primary/10 px-2 py-0.5 rounded-full">
                 Beta
               </span>

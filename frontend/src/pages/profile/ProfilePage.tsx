@@ -72,7 +72,7 @@ export const ProfilePage = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-[1000px] mx-auto p-6 lg:p-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-[1000px] mx-auto p-4 md:p-6 lg:p-8">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors font-poppins text-sm">
         <ArrowLeft className="w-4 h-4" /> Back
       </button>

@@ -156,7 +156,7 @@ export const AdminPanel = () => {
       initial="initial"
       animate="animate"
       variants={stagger}
-      className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8 font-poppins"
+      className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8 font-poppins"
     >
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">

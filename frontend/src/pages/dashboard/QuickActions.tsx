@@ -13,9 +13,10 @@ export const QuickActions = () => {
   return (
     <motion.div
       variants={fadeIn}
-      className="mt-8 p-4 rounded-2xl glass-card flex flex-wrap items-center gap-3"
+      className="mt-8 p-4 rounded-2xl glass-card"
     >
-      <span className="text-[11px] text-slate-500 font-poppins font-semibold uppercase tracking-wider mr-2">Quick Actions</span>
+      <span className="text-[11px] text-slate-500 font-poppins font-semibold uppercase tracking-wider mb-3 block">Quick Actions</span>
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3">
       {[
         { label: 'Upload Notes', icon: StickyNote, color: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20', path: '/app/notes' },
         { label: 'Ask AI', icon: Brain, color: 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20', path: '/app/ai' },
@@ -32,6 +33,7 @@ export const QuickActions = () => {
           {action.label}
         </button>
       ))}
+      </div>
     </motion.div>
   );
 };

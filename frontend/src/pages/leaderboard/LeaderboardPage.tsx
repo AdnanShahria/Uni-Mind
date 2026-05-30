@@ -76,7 +76,7 @@ export const LeaderboardPage = () => {
       initial="initial"
       animate="animate"
       variants={stagger}
-      className="p-6 lg:p-8 max-w-[1400px] mx-auto min-h-screen"
+      className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-screen"
     >
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>

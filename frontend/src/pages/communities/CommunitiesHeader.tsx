@@ -7,13 +7,13 @@ export const CommunitiesHeader = () => {
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold font-outfit text-white flex items-center gap-2">
-            <Globe className="w-6 h-6 text-emerald-400" />
+          <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white flex items-center gap-2">
+            <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
             Communities
           </h1>
-          <p className="text-sm text-slate-400 font-poppins mt-1">
+          <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1">
             Join academic groups, departments, and research circles
           </p>
         </div>

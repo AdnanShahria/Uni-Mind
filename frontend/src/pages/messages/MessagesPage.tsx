@@ -275,23 +275,30 @@ Format your output as a markdown list of key points. Keep it brief.`;
 
   return (
     <>
-      <div className="flex h-[calc(100vh-64px)]">
-        <MessagesSidebar
-          isLoading={isLoading}
-          conversations={dbConversations}
-          activeConv={activeConv}
-          setActiveConv={setActiveConv}
-          onNewChat={() => setIsNewChatOpen(true)}
-        />
-        <ChatArea
-          activeConv={activeConv}
-          messages={dbMessages}
-          onSendMessage={handleSendMessage}
-          onSummarize={handleSummarize}
-          isSummarizing={isSummarizing}
-          smartReplies={smartReplies}
-          onReact={handleReaction}
-        />
+      <div className="flex h-[calc(100vh-120px)] md:h-[calc(100vh-64px)]">
+        {/* On mobile: show sidebar when no active conv, hide when conv is selected */}
+        <div className={`${activeConv ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 shrink-0`}>
+          <MessagesSidebar
+            isLoading={isLoading}
+            conversations={dbConversations}
+            activeConv={activeConv}
+            setActiveConv={setActiveConv}
+            onNewChat={() => setIsNewChatOpen(true)}
+          />
+        </div>
+        {/* On mobile: show chat area only when a conv is selected */}
+        <div className={`${activeConv ? 'flex' : 'hidden md:flex'} flex-col flex-1 min-w-0`}>
+          <ChatArea
+            activeConv={activeConv}
+            messages={dbMessages}
+            onSendMessage={handleSendMessage}
+            onSummarize={handleSummarize}
+            isSummarizing={isSummarizing}
+            smartReplies={smartReplies}
+            onReact={handleReaction}
+            onBack={() => setActiveConv(null)}
+          />
+        </div>
       </div>
 
       <NewChatModal

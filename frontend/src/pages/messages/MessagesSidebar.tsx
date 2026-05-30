@@ -15,12 +15,12 @@ export const MessagesSidebar = ({
   onNewChat: () => void;
 }) => {
   return (
-    <div className="w-80 border-r border-white/[0.06] flex flex-col bg-[#050810]/50 shrink-0">
+    <div className="w-full border-r-0 md:border-r border-white/[0.06] flex flex-col bg-[#050810]/50 shrink-0">
       {/* Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-white/[0.06] shrink-0">
         <h2 className="text-lg font-bold font-outfit text-white flex items-center gap-2">
           <MessageCircle className="w-5 h-5 text-cyan-400" />
-          Messages
+          UniChat
         </h2>
         <div className="flex items-center gap-1">
           <button 

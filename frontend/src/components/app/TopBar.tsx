@@ -160,13 +160,20 @@ export const TopBar = () => {
   };
 
   return (
-    <header className="h-16 border border-white/[0.08] bg-slate-900/60 backdrop-blur-xl flex items-center justify-between px-6 z-30 shrink-0 rounded-[2rem] shadow-xl">
-      {/* Left: Search or Title */}
+    <header className="h-14 md:h-16 border-b md:border border-white/[0.08] bg-slate-900/60 backdrop-blur-xl flex items-center justify-between px-3 md:px-6 z-30 shrink-0 rounded-none md:rounded-[2rem] shadow-xl">
+      {/* Left: Logo (mobile) or Search/Title */}
       <div className="relative flex-1 max-w-xl">
         {leftContent ? (
           leftContent
         ) : (
           <>
+            {/* Mobile: Logo + UniMind brand */}
+            <div className="flex sm:hidden items-center gap-2">
+              <img src="/logo.png" className="w-7 h-7 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]" alt="UniMind" />
+              <span className="text-[15px] font-bold text-white tracking-wide font-poppins">UniMind</span>
+            </div>
+            {/* Desktop: Search bar */}
+            <div className="hidden sm:block">
             <div
               className={`flex items-center gap-2.5 h-10 px-4 rounded-xl border transition-all duration-300 ${
                 searchFocused
@@ -223,12 +230,13 @@ export const TopBar = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </>
+          </div>
+        </>
         )}
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2 ml-4">
+      <div className="flex items-center gap-1.5 md:gap-2 ml-2 md:ml-4">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
