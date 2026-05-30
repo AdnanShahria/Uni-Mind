@@ -329,6 +329,16 @@ export const turso: any = {
               result.data = [];
             }
           }
+
+          if (builder._action === 'select' && Array.isArray(result.data)) {
+            if (builder._eq) {
+              result.data = result.data.filter((item: any) => item[builder._eq.column] === builder._eq.value);
+            }
+            if (builder._single) {
+              result.data = result.data.length > 0 ? result.data[0] : null;
+            }
+          }
+
           return onfulfilled(result);
         } catch (err: any) {
           return onfulfilled({ data: null, error: { message: err.message } });

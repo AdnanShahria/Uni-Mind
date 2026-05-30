@@ -100,6 +100,8 @@ interface NoteWorkspaceModalProps {
   onDeleted: (id: string | number) => void;
   onStarToggled: (id: string | number) => void;
   onUpdated: () => void;
+  initialEditMode?: boolean;
+  initialDeleteConfirm?: boolean;
 }
 
 export const NoteWorkspaceModal = ({
@@ -109,6 +111,8 @@ export const NoteWorkspaceModal = ({
   onDeleted,
   onStarToggled,
   onUpdated,
+  initialEditMode,
+  initialDeleteConfirm,
 }: NoteWorkspaceModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -144,8 +148,8 @@ export const NoteWorkspaceModal = ({
     if (note && isOpen) {
       setEditTitle(note.title);
       setAiSummary('');
-      setIsEditing(false);
-      setShowDeleteConfirm(false);
+      setIsEditing(initialEditMode || false);
+      setShowDeleteConfirm(initialDeleteConfirm || false);
       setVisibility(note.visibility || 'private');
       setShareLinkToken(note.sharedLinkToken);
       fetchContent(note.id);

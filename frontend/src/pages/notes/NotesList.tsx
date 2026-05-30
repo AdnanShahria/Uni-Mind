@@ -28,6 +28,7 @@ export const NotesList = ({
   onNoteUpdated,
 }: NotesListProps) => {
   const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
+  const [modalAction, setModalAction] = useState<'view' | 'edit' | 'delete'>('view');
   const [openMenuId, setOpenMenuId] = useState<string | number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +44,7 @@ export const NotesList = ({
   }, []);
 
   const handleNoteClick = (note: NoteType) => {
+    setModalAction('view');
     setSelectedNote(note);
   };
 
@@ -61,18 +63,14 @@ export const NotesList = ({
   const handleMenuDelete = (e: React.MouseEvent, note: NoteType) => {
     e.stopPropagation();
     setOpenMenuId(null);
-    setSelectedNote(note);
-    // Small delay to let modal open then trigger delete confirm
-    setTimeout(() => {
-      // The detail modal handles delete confirm
-    }, 100);
-    // Actually open note detail and let user delete from there
+    setModalAction('delete');
     setSelectedNote(note);
   };
 
   const handleMenuEdit = (e: React.MouseEvent, note: NoteType) => {
     e.stopPropagation();
     setOpenMenuId(null);
+    setModalAction('edit');
     setSelectedNote(note);
   };
 
@@ -255,10 +253,12 @@ export const NotesList = ({
       <NoteWorkspaceModal
         note={selectedNote}
         isOpen={!!selectedNote}
-        onClose={() => setSelectedNote(null)}
+        onClose={() => { setSelectedNote(null); setModalAction('view'); }}
         onDeleted={(id) => { onNoteDeleted(id); setSelectedNote(null); }}
         onStarToggled={handleStarFromDetail}
         onUpdated={onNoteUpdated}
+        initialEditMode={modalAction === 'edit'}
+        initialDeleteConfirm={modalAction === 'delete'}
       />
     </>
   );

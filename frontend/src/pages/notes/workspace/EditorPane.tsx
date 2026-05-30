@@ -224,6 +224,26 @@ export const EditorPane = ({
     ...(studioData?.audio ? [{ id: 'audio', label: 'Audio' }] : []),
   ];
 
+  const [isUrlAccessible, setIsUrlAccessible] = useState(true);
+
+  useEffect(() => {
+    if (note.fileUrl) {
+      if (note.fileUrl.startsWith('blob:')) {
+        fetch(note.fileUrl)
+          .then((res) => {
+            setIsUrlAccessible(res.ok);
+          })
+          .catch(() => {
+            setIsUrlAccessible(false);
+          });
+      } else {
+        setIsUrlAccessible(true);
+      }
+    } else {
+      setIsUrlAccessible(false);
+    }
+  }, [note.fileUrl]);
+
   const isViewableUrl = note.fileUrl && (note.fileUrl.startsWith('http') || note.fileUrl.startsWith('blob:') || note.fileUrl.startsWith('data:'));
 
   const renderers = {
@@ -248,16 +268,30 @@ export const EditorPane = ({
             className="border-b border-white/10 relative group shrink-0"
             style={{ height: `${pdfHeight}%` }}
           >
-            <iframe 
-              src={`${note.fileUrl}#toolbar=0`} 
-              className={`w-full h-full bg-white ${isDraggingState ? 'pointer-events-none' : ''}`} 
-              title="PDF Viewer"
-            />
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <a href={note.fileUrl || undefined} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg text-xs font-semibold text-white hover:bg-black/80 transition-colors border border-white/10">
-                Open Original
-              </a>
-            </div>
+            {isUrlAccessible ? (
+              <>
+                <iframe 
+                  src={`${note.fileUrl}#toolbar=0`} 
+                  className={`w-full h-full bg-white ${isDraggingState ? 'pointer-events-none' : ''}`} 
+                  title="PDF Viewer"
+                />
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <a href={note.fileUrl || undefined} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg text-xs font-semibold text-white hover:bg-black/80 transition-colors border border-white/10">
+                    Open Original
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="w-full h-full bg-[#0d0f14] flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3">
+                  <FileText className="w-6 h-6 text-amber-400" />
+                </div>
+                <h4 className="text-sm font-bold text-white mb-1.5">Source Document Unavailable</h4>
+                <p className="text-[11px] text-slate-400 max-w-sm leading-normal">
+                  This document was uploaded as a temporary file in a previous browser session. The original file is no longer in memory, but your extracted text, notes, and study tools are fully active below.
+                </p>
+              </div>
+            )}
           </div>
           {/* Draggable Resizer */}
           <div 
