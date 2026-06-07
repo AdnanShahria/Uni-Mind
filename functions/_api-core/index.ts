@@ -6,12 +6,14 @@ import { handleMetadataRoutes } from "./routes/metadata";
 import { handleCompressRoutes } from "./routes/compress";
 import { handleAllPagesRoutes } from "./pagesRouter";
 import { handleDynamicRoute } from "./api/dynamicHandler";
+import { handleLlamaParseRoutes } from "./routes/llamaparse";
 
 export interface Env {
   TURSO_DATABASE_URL: string;
   TURSO_AUTH_TOKEN: string;
   R2_BUCKET_NAME: string;
   OPENAI_API_KEY: string;
+  LLAMAPARSE_API_KEY: string;
 }
 
 export default {
@@ -56,6 +58,9 @@ export default {
     if (response) return response;
 
     response = await handleApiRoutes(url, request, db);
+    if (response) return response;
+
+    response = await handleLlamaParseRoutes(url, request, env);
     if (response) return response;
 
     response = await handleMetadataRoutes(url, request, db);

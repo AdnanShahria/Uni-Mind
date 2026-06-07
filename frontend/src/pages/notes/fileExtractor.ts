@@ -61,10 +61,55 @@ async function extractText(file: File): Promise<string> {
   return await file.text();
 }
 
+async function extractPdfWithLlamaParse(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const uploadRes = await fetch('/api/llamaparse/upload', {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!uploadRes.ok) throw new Error(`LlamaParse upload failed: ${uploadRes.statusText}`);
+
+  const uploadData = await uploadRes.json();
+  const jobId = uploadData.id;
+
+  let status = 'PENDING';
+  let attempts = 0;
+  
+  while (status === 'PENDING' && attempts < 30) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const statusRes = await fetch(`/api/llamaparse/job/${jobId}`);
+    if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.statusText}`);
+    const statusData = await statusRes.json();
+    status = statusData.status;
+    attempts++;
+  }
+
+  if (status !== 'SUCCESS') throw new Error('LlamaParse job failed or timed out');
+
+  const resultRes = await fetch(`/api/llamaparse/job/${jobId}/result/markdown`);
+
+  if (!resultRes.ok) throw new Error(`Result fetch failed: ${resultRes.statusText}`);
+  const resultData = await resultRes.json();
+  return resultData.markdown || '';
+}
+
 async function extractPdf(file: File): Promise<{ text: string; pageCount: number }> {
   try {
+    console.log('Attempting LlamaParse for PDF extraction via backend...');
+    try {
+      const text = await extractPdfWithLlamaParse(file);
+      return { text, pageCount: 0 };
+    } catch (err) {
+      console.error('LlamaParse backend failed, falling back to local basic PDF extractor:', err);
+    }
+
     const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    // Use Vite's worker URL import to bundle the worker properly
+    const workerSrc = await import('pdfjs-dist/build/pdf.worker.mjs?url');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc.default;
     
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
