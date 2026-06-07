@@ -1,8 +1,7 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { AuthPage } from '../components/AuthPage';
 
 export const AuthPageRoute = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tab = (searchParams.get('tab') as 'login' | 'register') || 'register';
 
@@ -10,7 +9,7 @@ export const AuthPageRoute = () => {
     <AuthPage
       initialTab={tab}
       onBackToHome={() => { window.location.href = '/'; }}
-      onEnterWorkspace={() => { window.location.href = '/app.html'; }}
+      onEnterWorkspace={() => { window.location.href = '/app'; }}
     />
   );
 };

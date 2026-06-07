@@ -64,7 +64,12 @@ export const TrophyRoom = ({ earnedBadgeIds }: { earnedBadgeIds: string[] }) => 
               <badge.icon className={`w-6 h-6 ${badge.unlocked ? badge.color : 'text-slate-500'}`} />
             </div>
             
-            <h3 className="text-sm font-bold text-white mb-1 relative z-10">{badge.name}</h3>
+            <h3 className="text-sm font-bold text-white mb-1 relative z-10 flex items-center gap-1.5">
+              {badge.name}
+              {badge.unlocked && (
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]" />
+              )}
+            </h3>
             <p className="text-[10px] text-slate-400 line-clamp-2 relative z-10">{badge.description}</p>
             
             {badge.unlocked && badge.date && (
@@ -73,11 +78,6 @@ export const TrophyRoom = ({ earnedBadgeIds }: { earnedBadgeIds: string[] }) => 
               </div>
             )}
             
-            {badge.unlocked && (
-              <div className="absolute bottom-3 right-3 text-emerald-400 bg-emerald-500/10 rounded-full p-1 border border-emerald-500/20">
-                <CheckCircle className="w-3 h-3" />
-              </div>
-            )}
           </motion.div>
         ))}
       </div>

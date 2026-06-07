@@ -37,6 +37,7 @@ export const turso: any = {
               name: user.name || 'Scholar',
               institution: user.institution || 'UniMind Cloud',
               major: user.major || 'Deep Work',
+              session: user.session || '',
               role: user.role || 'Researcher',
             }
           } 
@@ -68,6 +69,7 @@ export const turso: any = {
                 name: result.user.name,
                 institution: result.user.institution,
                 major: result.user.major,
+                session: result.user.session || '',
                 role: result.user.role
               }
             } 
@@ -91,6 +93,7 @@ export const turso: any = {
             district: options?.data?.district || '',
             country: options?.data?.country || '',
             major: options?.data?.major || '',
+            session: options?.data?.session || '',
             role: options?.data?.role || 'Undergraduate'
           })
         });
@@ -107,6 +110,7 @@ export const turso: any = {
                 name: result.user.name,
                 institution: result.user.institution,
                 major: result.user.major,
+                session: result.user.session || '',
                 role: result.user.role
               }
             } 
@@ -129,6 +133,7 @@ export const turso: any = {
           user.name = data.name || user.name;
           user.institution = data.institution || user.institution;
           user.major = data.major || user.major;
+          user.session = data.session !== undefined ? data.session : user.session;
           user.role = data.role || user.role;
         }
         localStorage.setItem('unimind_user', JSON.stringify(user));
@@ -176,13 +181,22 @@ export const turso: any = {
         return builder;
       },
       eq: (column: string, value: any) => {
-        builder._eq = { column, value };
+        if (!builder._eqs) builder._eqs = [];
+        builder._eqs.push({ column, value });
+        builder._eq = { column, value }; // backward compat
         return builder;
       },
-      order: (_column: string, _options?: any) => {
+      ilike: (column: string, value: string) => {
+        if (!builder._ilikes) builder._ilikes = [];
+        builder._ilikes.push({ column, value });
         return builder;
       },
-      limit: (_count: number) => {
+      order: (column: string, options?: any) => {
+        builder._order = { column, ascending: options?.ascending !== false };
+        return builder;
+      },
+      limit: (count: number) => {
+        builder._limit = count;
         return builder;
       },
       single: () => {
@@ -208,7 +222,14 @@ export const turso: any = {
             const res = await fetch(`${API_URL}/api/feed`);
             const json = await res.json();
             if (json.success) {
-              result.data = json.data;
+              result.data = json.data.map((p: any) => ({
+                ...p,
+                users: {
+                  name: p.author_name,
+                  role: p.author_role,
+                  avatar_url: p.author_avatar_url
+                }
+              }));
             } else {
               result.error = { message: json.error || 'Failed to fetch feed' };
             }
@@ -341,10 +362,7 @@ export const turso: any = {
               }
             }
           } else {
-            if (table === 'users' && builder._single) {
-              const u = getStoredUser();
-              result.data = u;
-          } else if (table === 'flashcards') {
+            if (table === 'flashcards') {
             if (builder._action === 'select') {
               const noteId = builder._eq?.value;
               const url = noteId ? `${API_URL}/api/flashcards?note_id=${noteId}` : `${API_URL}/api/flashcards`;
@@ -386,8 +404,31 @@ export const turso: any = {
                              builder._action === 'update' ? 'PUT' : 'POST';
                              
               let url = `${API_URL}/api/dynamic/${table}`;
-              if ((method === 'GET' || method === 'DELETE') && builder._eq) {
-                url += `?eqColumn=${builder._eq.column}&eqValue=${builder._eq.value}`;
+              const urlObj = new URL(url, window.location.origin);
+              
+              if (method === 'GET' || method === 'DELETE') {
+                 if (builder._eqs) {
+                     builder._eqs.forEach((eq: any) => urlObj.searchParams.append(`eq_${eq.column}`, eq.value));
+                 } else if (builder._eq) {
+                     urlObj.searchParams.append('eqColumn', builder._eq.column);
+                     urlObj.searchParams.append('eqValue', builder._eq.value);
+                 }
+                 if (builder._ilikes) {
+                     builder._ilikes.forEach((il: any) => urlObj.searchParams.append(`ilike_${il.column}`, il.value.replace(/%/g, '')));
+                 }
+                 if (builder._order) {
+                     urlObj.searchParams.append('order', builder._order.column);
+                     urlObj.searchParams.append('dir', builder._order.ascending ? 'asc' : 'desc');
+                 }
+                 if (builder._limit) {
+                     urlObj.searchParams.append('limit', builder._limit.toString());
+                 }
+              }
+              url = urlObj.pathname + urlObj.search;
+              // If API_URL is provided, we might need to prepend it back properly if it's external,
+              // but since API_URL is empty (''), pathname + search works fine.
+              if (API_URL) {
+                  url = API_URL + url;
               }
               
               const options: any = { method, headers };
@@ -410,7 +451,12 @@ export const turso: any = {
           }
 
           if (builder._action === 'select' && Array.isArray(result.data)) {
-            if (builder._eq) {
+            // Keep local filtering as a fallback for non-dynamic tables
+            if (builder._eqs) {
+              builder._eqs.forEach((eq: any) => {
+                 result.data = result.data.filter((item: any) => item[eq.column] === eq.value);
+              });
+            } else if (builder._eq) {
               result.data = result.data.filter((item: any) => item[builder._eq.column] === builder._eq.value);
             }
             if (builder._single) {

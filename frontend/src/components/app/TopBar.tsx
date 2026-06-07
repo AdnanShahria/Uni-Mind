@@ -39,6 +39,7 @@ export const TopBar = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [userName, setUserName] = useState('Scholar');
   const [userInitial, setUserInitial] = useState('S');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const { theme, toggleTheme } = useTheme();
   const { leftContent } = useTopBarContext();
   const location = useLocation();
@@ -63,14 +64,24 @@ export const TopBar = () => {
       const { data: { user } } = await turso.auth.getUser();
       if (user) {
         // Fetch User profile info
-        const { data: profile } = await turso
-          .from('users')
-          .select('name')
-          .eq('id', user.id)
-          .single();
-        const name = profile?.name || user.user_metadata?.name || 'Scholar';
-        setUserName(name);
-        setUserInitial(name[0].toUpperCase());
+        const fetchProfile = async () => {
+          const { data: profile } = await turso
+            .from('users')
+            .select('name, avatar_url')
+            .eq('id', user.id)
+            .single();
+          const name = profile?.name || user.user_metadata?.name || 'Scholar';
+          setUserName(name);
+          setUserInitial(name[0].toUpperCase());
+          setAvatarUrl(profile?.avatar_url || '');
+        };
+        await fetchProfile();
+        
+        // Listen for profile updates
+        const handleProfileUpdate = () => {
+          fetchProfile();
+        };
+        window.addEventListener('profile-updated', handleProfileUpdate);
 
         // Fetch initial Notifications
         const { data: notifs } = await turso
@@ -122,6 +133,7 @@ export const TopBar = () => {
 
     return () => {
       if (channel) turso.removeChannel(channel);
+      window.removeEventListener('profile-updated', () => {}); // A bit generic but works, or we can't easily remove without the ref
     };
   }, []);
 
@@ -357,8 +369,12 @@ export const TopBar = () => {
 
         {/* User Avatar */}
         <button className="flex items-center gap-2.5 h-10 pl-2 pr-3 rounded-xl transition-all duration-200 group border border-transparent hover:bg-primary/[0.06] hover:border-primary/[0.12] hover:shadow-[0_0_12px_rgba(var(--color-primary-rgb),0.06)]">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold font-poppins shadow-md">
-            {userInitial}
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold font-poppins shadow-md overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+            ) : (
+              userInitial
+            )}
           </div>
           <div className="hidden sm:block text-left">
             <p className="text-[12px] font-medium text-slate-200 font-poppins leading-none">{userName}</p>

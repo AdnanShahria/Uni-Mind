@@ -5,10 +5,14 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "wrangler pages dev -- npm run dev --workspace=frontend",
+    "dev": "concurrently --raw \"npm run dev --workspace=frontend\" \"wrangler pages dev frontend/public --port 8788\"",
+    "dev:full": "node dev-start.js",
+    "dev:all": "node dev-start.js",
     "build": "npm run build --workspace=frontend",
-    "deploy": "npm run build && wrangler pages deploy",
-    "lint": "npm run lint --workspaces --if-present"
+    "deploy": "npm run build && wrangler pages deploy frontend/dist",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:watch": "node watch-db.js",
+    "db:turso": "node watch-db.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240117.0",

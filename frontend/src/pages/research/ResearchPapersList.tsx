@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, TrendingUp, Sparkles, Loader2, Copy, ChevronDown } from 'lucide-react';
+import { FileText, TrendingUp, Sparkles, Loader2, Copy, ChevronDown, Activity, PenLine } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
@@ -189,6 +189,23 @@ export const ResearchPapersList = ({ displayPapers }: { displayPapers: any[] }) 
                 </div>
 
                 <div className="flex flex-col items-end gap-2 shrink-0">
+                  {/* Quick access: Audit + Write */}
+                  <div className="flex gap-1.5 mb-1">
+                    <Link
+                      to={`/app/research/${paper.id}/audit`}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold font-poppins transition-all"
+                      title="Open Audit File"
+                    >
+                      <Activity style={{ width: 11, height: 11 }} /> Audit
+                    </Link>
+                    <Link
+                      to={`/app/research/${paper.id}/write`}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 text-[10px] font-bold font-poppins transition-all"
+                      title="Open Writing Studio"
+                    >
+                      <PenLine style={{ width: 11, height: 11 }} /> Write
+                    </Link>
+                  </div>
                   <div className="relative">
                     <button 
                       onClick={() => setCitationOpenId(citationOpenId === paper.id ? null : paper.id)}

@@ -16,6 +16,10 @@ function IndexApp() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          {/* /index.html for direct file access in dev */}
+          <Route path="/index.html" element={<LandingPage />} />
+          {/* Catch-all fallback */}
+          <Route path="*" element={<LandingPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

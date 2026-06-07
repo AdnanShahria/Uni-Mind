@@ -5,7 +5,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any): Prom
     try {
       if (db) {
         const result = await db.execute(`
-          SELECT p.*, u.name as author_name 
+          SELECT p.*, u.name as author_name, u.role as author_role, u.avatar_url as author_avatar_url 
           FROM posts p
           JOIN users u ON p.author_id = u.id
           ORDER BY p.created_at DESC

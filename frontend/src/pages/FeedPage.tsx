@@ -24,6 +24,12 @@ export const FeedPage = () => {
     // Get current user session
     const getUser = async () => {
       const { data: { user } } = await turso.auth.getUser();
+      if (user) {
+        const { data: profile } = await turso.from('users').select('avatar_url').eq('id', user.id).maybeSingle();
+        if (profile && profile.avatar_url) {
+          user.user_metadata = { ...user.user_metadata, avatar_url: profile.avatar_url };
+        }
+      }
       setCurrentUser(user);
     };
     getUser();
@@ -58,16 +64,33 @@ export const FeedPage = () => {
 
   // Mock filtering and recommendation algorithm
   const getProcessedPosts = () => {
-    const result = [...posts];
+    // Parse tags safely before processing
+    const safeParseTags = (val: any) => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    const result = posts.map(post => ({
+      ...post,
+      parsedTags: safeParseTags(post.tags)
+    }));
 
     // 1. Tag Filtering
     if (activeTag) {
-      return result.filter(post => post.tags && post.tags.includes(activeTag));
+      return result.filter(post => post.parsedTags.includes(activeTag));
     }
 
     // 2. Tab Logic
     if (activeTab === 'Trending') {
-      return result.filter(post => post.tags && post.tags.length > 0).sort((a, b) => (b.tags?.length || 0) - (a.tags?.length || 0));
+      return result.filter(post => post.parsedTags.length > 0).sort((a, b) => b.parsedTags.length - a.parsedTags.length);
     }
     if (activeTab === 'Following') {
       // Mock empty state for following until connections are fully implemented
@@ -91,8 +114,8 @@ export const FeedPage = () => {
         scoreB += Math.min((b.content?.length || 0) / 10, 20);
 
         // Tags give points (categorization)
-        scoreA += (a.tags?.length || 0) * 5;
-        scoreB += (b.tags?.length || 0) * 5;
+        scoreA += a.parsedTags.length * 5;
+        scoreB += b.parsedTags.length * 5;
 
         // Recency decay (newer posts get higher base score)
         const ageA = Date.now() - new Date(a.created_at).getTime();
@@ -104,6 +127,7 @@ export const FeedPage = () => {
       });
     }
 
+    // Map back to original format, although post.parsedTags is just an extra prop now
     return result;
   };
 

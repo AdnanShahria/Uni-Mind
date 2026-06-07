@@ -62,8 +62,12 @@ export const PostInput = ({ currentUser, onPostCreated }: PostInputProps) => {
         />
 
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold font-poppins shrink-0 shadow-lg">
-            {currentUser?.email?.[0]?.toUpperCase() || 'U'}
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-sm font-bold font-poppins shrink-0 shadow-lg overflow-hidden">
+            {currentUser?.user_metadata?.avatar_url ? (
+              <img src={currentUser.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              currentUser?.user_metadata?.name?.[0] || currentUser?.email?.[0]?.toUpperCase() || 'U'
+            )}
           </div>
           <div className="flex-1">
             <div className="w-full h-10 bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 flex items-center text-sm text-slate-400 font-poppins hover:bg-white/[0.06] hover:border-white/[0.1] transition-colors duration-200 cursor-pointer">

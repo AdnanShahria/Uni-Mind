@@ -10,6 +10,29 @@ interface PagesContext {
 export const onRequest = async (context: PagesContext) => {
   const url = new URL(context.request.url);
 
+  // Static assets and HTML files — let Vite/Cloudflare Pages serve them directly.
+  // Do NOT forward these to the worker (avoids ECONNRESET in wrangler proxy dev mode).
+  if (
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.jsx') ||
+    url.pathname.endsWith('.ts') ||
+    url.pathname.endsWith('.tsx') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.ttf') ||
+    url.pathname.endsWith('.map') ||
+    url.pathname.startsWith('/@') ||           // Vite HMR and internal module paths
+    url.pathname.startsWith('/node_modules') ||
+    url.pathname.startsWith('/src/')
+  ) {
+    return context.next();
+  }
+
   if (
     url.pathname.startsWith('/api') ||
     url.pathname.startsWith('/auth/') ||

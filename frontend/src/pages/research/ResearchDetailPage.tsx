@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Calendar, Award, BookOpen, FlaskConical,
-  Sparkles, Loader2, Copy, Users, Plus, Trash2, Save 
+  Sparkles, Loader2, Copy, Users, Plus, Trash2, Save,
+  Activity, PenLine
 } from 'lucide-react';
 import { turso } from '../../utils/tursoClient';
 import toast from 'react-hot-toast';
@@ -227,8 +228,22 @@ export const ResearchDetailPage = () => {
           <ArrowLeft className="w-4 h-4" /> Back to Research Hub
         </button>
         <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-rose-400" />
-          <span className="text-xs text-rose-400/80 font-bold uppercase tracking-wider font-poppins">Premium Scholar Workspace</span>
+          <button
+            onClick={() => navigate(`/app/research/${id}/audit`)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/30 text-indigo-400 text-[11px] font-bold font-poppins transition-all"
+          >
+            <Activity className="w-3.5 h-3.5" /> Audit File
+          </button>
+          <button
+            onClick={() => navigate(`/app/research/${id}/write`)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 hover:border-purple-500/30 text-purple-400 text-[11px] font-bold font-poppins transition-all"
+          >
+            <PenLine className="w-3.5 h-3.5" /> Write Paper
+          </button>
+          <div className="flex items-center gap-2 ml-1">
+            <BookOpen className="w-5 h-5 text-rose-400" />
+            <span className="text-xs text-rose-400/80 font-bold uppercase tracking-wider font-poppins">Premium Scholar Workspace</span>
+          </div>
         </div>
       </div>
 

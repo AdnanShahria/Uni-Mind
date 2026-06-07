@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageSquare, Share2, BookmarkPlus, MoreHorizontal, Send, Camera, X, FileText } from 'lucide-react';
+import { Heart, MessageSquare, Share2, BookmarkPlus, MoreHorizontal, Send, Camera, X, FileText, Trash2, Link as LinkIcon, Flag, Edit2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { turso } from '../../utils/tursoClient';
@@ -33,6 +33,19 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
   const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
   const commentPhotoInputRef = useRef<HTMLInputElement>(null);
 
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
    
   useEffect(() => {
     fetchInteractions();
@@ -55,8 +68,17 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
     }
 
     // Fetch comments
-    const { data: commentsData } = await turso.from('post_comments').select('*, users(name, avatar_url)').eq('post_id', post.id).order('created_at', { ascending: true });
-    setComments(commentsData || []);
+    const { data: commentsData } = await turso.from('post_comments').select('*').eq('post_id', post.id).order('created_at', { ascending: true });
+    
+    if (commentsData && commentsData.length > 0) {
+      const commentsWithUsers = await Promise.all(commentsData.map(async (comment: any) => {
+        const { data: userData } = await turso.from('users').select('name, avatar_url').eq('id', comment.author_id).maybeSingle();
+        return { ...comment, users: userData || null };
+      }));
+      setComments(commentsWithUsers);
+    } else {
+      setComments([]);
+    }
 
     // Fetch shares
     const { count: shares } = await turso.from('post_shares').select('*', { count: 'exact', head: true }).eq('post_id', post.id);
@@ -115,10 +137,17 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
         content: newComment.trim() || null,
         image_url: imageUrl
       }
-    ]).select('*, users(name, avatar_url)').single();
+    ]).select('*').single();
     
     if (!error && data) {
-      setComments([...comments, data]);
+      const newCommentData = {
+        ...data,
+        users: {
+          name: currentUser.user_metadata?.name || currentUser.name || 'Scholar',
+          avatar_url: currentUserAvatar || currentUser.user_metadata?.avatar_url
+        }
+      };
+      setComments([...comments, newCommentData]);
       setNewComment('');
       setCommentPhoto(null);
       setCommentPhotoPreview(null);
@@ -164,13 +193,46 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
   };
 
   const timeAgo = (dateStr: string) => {
+    if (!dateStr) return 'just now';
     const diff = Date.now() - new Date(dateStr).getTime();
+    if (isNaN(diff)) return 'just now';
     const minutes = Math.floor(diff / 60000);
     if (minutes < 60) return `${minutes || 1}m ago`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours}h ago`;
     return `${Math.floor(hours / 24)}d ago`;
   };
+
+  const handleDeletePost = async () => {
+    if (!currentUser || currentUser.id !== post.author_id) return;
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      await turso.from('posts').delete().eq('id', post.id);
+      toast.success("Post deleted");
+      window.location.reload(); // Simple refresh for now
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/app/feed?post=${post.id}`);
+    toast.success("Link copied!");
+    setIsMenuOpen(false);
+  };
+
+  const safeParseArray = (val: any) => {
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const parsedMediaUrls = safeParseArray(post.media_urls);
+  const parsedTags = safeParseArray(post.tags);
 
   return (
     <motion.div
@@ -210,9 +272,55 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
               </div>
             </div>
           </div>
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 transition-all duration-200 border border-transparent hover:bg-white/[0.05] hover:border-white/[0.08]">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-300 transition-all duration-200 border border-transparent hover:bg-white/[0.05] hover:border-white/[0.08]"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+
+            <AnimatePresence>
+              {isMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute right-0 top-10 w-48 bg-slate-800 border border-white/[0.08] rounded-xl shadow-xl overflow-hidden z-20 py-1"
+                >
+                  <button 
+                    onClick={handleCopyLink}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors flex items-center gap-2 font-poppins"
+                  >
+                    <LinkIcon className="w-4 h-4" /> Copy Link
+                  </button>
+                  {currentUser && currentUser.id === post.author_id ? (
+                    <>
+                      <button 
+                        onClick={() => { setIsMenuOpen(false); toast('Edit feature coming soon!', { icon: '🛠️' }); }}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors flex items-center gap-2 font-poppins"
+                      >
+                        <Edit2 className="w-4 h-4" /> Edit Post
+                      </button>
+                      <button 
+                        onClick={handleDeletePost}
+                        className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2 font-poppins"
+                      >
+                        <Trash2 className="w-4 h-4" /> Delete Post
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={() => { setIsMenuOpen(false); toast.success('Post reported'); }}
+                      className="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2 font-poppins"
+                    >
+                      <Flag className="w-4 h-4" /> Report Post
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Post Content */}
@@ -226,15 +334,15 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
         </p>
 
         {/* Post Media Attachments */}
-        {post.media_urls && post.media_urls.length > 0 && (
+        {parsedMediaUrls.length > 0 && (
           <div className="mb-4">
             {post.type === 'image' && (
               <div className="rounded-xl overflow-hidden border border-white/[0.08] shadow-lg group max-h-[450px] bg-slate-950 flex items-center justify-center">
                 <img 
-                  src={post.media_urls[0]} 
+                  src={parsedMediaUrls[0]} 
                   alt="Academic attachment" 
                   className="max-w-full max-h-[450px] object-contain group-hover:scale-[1.01] transition-transform duration-300 cursor-zoom-in" 
-                  onClick={() => window.open(post.media_urls[0], '_blank')}
+                  onClick={() => window.open(parsedMediaUrls[0], '_blank')}
                 />
               </div>
             )}
@@ -250,7 +358,7 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
                   </div>
                 </div>
                 <a 
-                  href={post.media_urls[0]} 
+                  href={parsedMediaUrls[0]} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-colors font-poppins shrink-0"
@@ -263,9 +371,9 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
         )}
 
         {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
+        {parsedTags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags.map((tag: string) => (
+            {parsedTags.map((tag: string) => (
               <span
                 key={tag}
                 className="text-[10px] text-primary-glow bg-primary/10 px-2.5 py-1 rounded-lg font-medium font-poppins hover:bg-primary/20 cursor-pointer transition-colors"

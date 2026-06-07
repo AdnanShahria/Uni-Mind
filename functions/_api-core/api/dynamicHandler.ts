@@ -19,18 +19,50 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
 
     try {
       if (request.method === "GET") {
-        const eqColumn = url.searchParams.get("eqColumn");
-        const eqValue = url.searchParams.get("eqValue");
+        const urlObj = new URL(request.url);
         let sql = `SELECT * FROM ${table}`;
         let args: any[] = [];
+        let whereClauses: string[] = [];
         
-        if (eqColumn && eqValue) {
-          // Validate column name
-          if (!/^[a-zA-Z0-9_]+$/.test(eqColumn)) {
-            return new Response(JSON.stringify({ error: "Invalid column name" }), { status: 400, headers: corsHeaders });
-          }
-          sql += ` WHERE ${eqColumn} = ?`;
+        // Backward compatibility
+        const eqColumn = urlObj.searchParams.get("eqColumn");
+        const eqValue = urlObj.searchParams.get("eqValue");
+        if (eqColumn && eqValue && /^[a-zA-Z0-9_]+$/.test(eqColumn)) {
+          whereClauses.push(`${eqColumn} = ?`);
           args.push(eqValue);
+        }
+
+        // Dynamic filters
+        urlObj.searchParams.forEach((val, key) => {
+          if (key.startsWith('eq_')) {
+            const col = key.replace('eq_', '');
+            if (/^[a-zA-Z0-9_]+$/.test(col)) {
+              whereClauses.push(`${col} = ?`);
+              args.push(val);
+            }
+          } else if (key.startsWith('ilike_')) {
+            const col = key.replace('ilike_', '');
+            if (/^[a-zA-Z0-9_]+$/.test(col)) {
+              whereClauses.push(`${col} LIKE ?`);
+              args.push(`%${val}%`);
+            }
+          }
+        });
+
+        if (whereClauses.length > 0) {
+          sql += ` WHERE ` + whereClauses.join(' AND ');
+        }
+
+        const orderCol = urlObj.searchParams.get("order");
+        const orderDir = urlObj.searchParams.get("dir") === 'asc' ? 'ASC' : 'DESC';
+        if (orderCol && /^[a-zA-Z0-9_]+$/.test(orderCol)) {
+          sql += ` ORDER BY ${orderCol} ${orderDir}`;
+        }
+
+        const limitCount = urlObj.searchParams.get("limit");
+        if (limitCount && !isNaN(Number(limitCount))) {
+          sql += ` LIMIT ?`;
+          args.push(Number(limitCount));
         }
         
         if (db) {

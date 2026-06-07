@@ -65,6 +65,11 @@ export const Sidebar = () => {
       }
     };
     fetchUser();
+    
+    window.addEventListener('profile-updated', fetchUser);
+    return () => {
+      window.removeEventListener('profile-updated', fetchUser);
+    };
   }, []);
 
   const isActive = (path: string) => {

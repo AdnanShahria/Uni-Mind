@@ -3,6 +3,7 @@ import { Save, Plus, X, User as UserIcon, Link, Twitter, Github, Linkedin, BookO
 import { turso } from '../../utils/tursoClient';
 import { uploadImageToImgbb, fileToBase64 } from '../../utils/imgbbUpload';
 import { SettingsPageLayout } from '../../components/settings/SettingsPageLayout';
+import { CustomSelect } from '../../components/CustomSelect';
 
 const TagInput = ({
   label, tags, placeholder, color,
@@ -53,9 +54,63 @@ export const ProfileSettingsPage = () => {
   const [interests, setInterests] = useState<string[]>([]);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [socialLinks, setSocialLinks] = useState({ twitter: '', linkedin: '', github: '', researchgate: '' });
+  
+  // Registration / Academic Form State
+  const [isEditingAcademic, setIsEditingAcademic] = useState(false);
+  const [regForm, setRegForm] = useState({
+    institution: '',
+    major: '',
+    session: '',
+    role: 'Undergraduate',
+  });
+  
+  // Metadata options
+  const [customUniversities, setCustomUniversities] = useState<{ value: string; isCustom: boolean }[]>([]);
+  const [customMajors, setCustomMajors] = useState<{ value: string; isCustom: boolean }[]>([]);
+  const [customSessions, setCustomSessions] = useState<{ value: string; isCustom: boolean }[]>([]);
+  const [customRoles, setCustomRoles] = useState<{ value: string; isCustom: boolean }[]>([]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'basic' | 'academic' | 'social'>('basic');
+
+  // Computed Dropdown Options
+  const institutionOptions = customUniversities
+    .map(item => {
+      const uni = item.value;
+      const hasLocation = uni.includes(' | Location: ');
+      const labelName = hasLocation ? uni.split(' | Location: ')[0] : uni;
+      const subtitleVal = hasLocation ? uni.split(' | Location: ')[1] : undefined;
+      return { value: uni, label: labelName, subtitle: subtitleVal, isCustom: item.isCustom };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your institution? Add new", isAction: true } as any);
+
+  const majorOptions = customMajors
+    .map(item => ({ value: item.value, label: item.value, isCustom: item.isCustom }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your Field/Major? Add custom", isAction: true } as any);
+
+  const sessionOptions = customSessions
+    .map(item => ({ value: item.value, label: item.value, isCustom: item.isCustom }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your Session? Add custom", isAction: true } as any);
+
+  const roleOptions = customRoles
+    .map(item => {
+      const rl = item.value;
+      return { 
+        value: rl, 
+        label: rl === "Undergraduate" ? "Undergraduate Student" :
+               rl === "Graduate / PhD" ? "Graduate / PhD Candidate" :
+               rl === "Researcher" ? "Academic Researcher" :
+               rl === "Professor" ? "Professor / Mentor" :
+               rl === "Other" ? "Other Academic Expert" : rl, 
+        isCustom: item.isCustom 
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your Role? Add custom", isAction: true } as any);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -68,15 +123,46 @@ export const ProfileSettingsPage = () => {
           setAvatarUrl(data.avatar_url || '');
           setBio(data.bio || '');
           setRelationshipStatus(data.relationship_status || '');
-          setGraduations(data.graduations || []);
-          setSkills(data.skills || []);
-          setInterests(data.interests || []);
+          const parseJSON = (str: any, fallback: any) => {
+            if (!str) return fallback;
+            if (typeof str === 'string') {
+              try { return JSON.parse(str); } catch (e) { return fallback; }
+            }
+            return str;
+          };
+
+          setGraduations(parseJSON(data.graduations, []));
+          setSkills(parseJSON(data.skills, []));
+          setInterests(parseJSON(data.interests, []));
           setWebsiteUrl(data.website_url || '');
-          setSocialLinks({ twitter: '', linkedin: '', github: '', researchgate: '', ...(data.social_links || {}) });
+          setSocialLinks({ twitter: '', linkedin: '', github: '', researchgate: '', ...parseJSON(data.social_links, {}) });
+          
+          setRegForm({
+            institution: data.institution || user.user_metadata?.institution || '',
+            major: data.major || user.user_metadata?.major || '',
+            session: data.session || user.user_metadata?.session || '',
+            role: data.role || user.user_metadata?.role || 'Undergraduate',
+          });
         }
       }
     };
+    
+    const fetchApprovedMetadata = async () => {
+      try {
+        const { data, error } = await turso.from('metadata_approved').select();
+        if (!error && data) {
+          setCustomUniversities(data.institutions || []);
+          setCustomMajors(data.majors || []);
+          setCustomSessions(data.sessions || []);
+          setCustomRoles(data.roles || []);
+        }
+      } catch (err) {
+        console.error("Error loading approved metadata:", err);
+      }
+    };
+
     fetchProfile();
+    fetchApprovedMetadata();
   }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,17 +205,22 @@ export const ProfileSettingsPage = () => {
       avatar_url: avatarUrl,
       bio,
       relationship_status: relationshipStatus,
-      graduations,
-      skills,
-      interests,
+      institution: regForm.institution,
+      major: regForm.major,
+      session: regForm.session,
+      role: regForm.role,
+      graduations: JSON.stringify(graduations),
+      skills: JSON.stringify(skills),
+      interests: JSON.stringify(interests),
       website_url: websiteUrl,
-      social_links: socialLinks,
+      social_links: JSON.stringify(socialLinks),
     }).eq('id', currentUser.id);
 
     await turso.auth.updateUser({ data: { name } });
 
     setIsSaving(false);
     if (!error) {
+      window.dispatchEvent(new Event('profile-updated'));
       setStatus({ type: 'success', msg: 'Profile updated successfully!' });
       setTimeout(() => setStatus(null), 3000);
     } else {
@@ -236,6 +327,104 @@ export const ProfileSettingsPage = () => {
             {/* Academic Tab */}
             {activeTab === 'academic' && (
               <>
+                <div className="mb-8 p-5 bg-black/20 border border-white/5 rounded-2xl relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary-glow" />
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white font-poppins flex items-center gap-2">
+                        Core Academic Record
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-poppins mt-1">Your registered institutional details</p>
+                    </div>
+                    <button 
+                      onClick={() => setIsEditingAcademic(!isEditingAcademic)}
+                      className="text-[10px] px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-glow rounded-lg transition-colors border border-primary/20 font-poppins font-medium"
+                    >
+                      {isEditingAcademic ? 'Cancel Edit' : 'Edit Info'}
+                    </button>
+                  </div>
+                  
+                  {isEditingAcademic ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-poppins">Institution</label>
+                        <CustomSelect
+                          value={regForm.institution}
+                          onChange={(v) => setRegForm(p => ({ ...p, institution: v }))}
+                          options={institutionOptions as any}
+                          placeholder="Select Institution"
+                        />
+                        {regForm.institution === 'unlisted' && (
+                          <input type="text" placeholder="Enter custom institution" 
+                            onChange={(e) => setRegForm(p => ({ ...p, institution: e.target.value }))}
+                            className="w-full mt-2 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-white font-poppins outline-none focus:border-primary/50" />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-poppins">Major / Field</label>
+                        <CustomSelect
+                          value={regForm.major}
+                          onChange={(v) => setRegForm(p => ({ ...p, major: v }))}
+                          options={majorOptions as any}
+                          placeholder="Select Major"
+                        />
+                        {regForm.major === 'unlisted' && (
+                          <input type="text" placeholder="Enter custom major" 
+                            onChange={(e) => setRegForm(p => ({ ...p, major: e.target.value }))}
+                            className="w-full mt-2 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-white font-poppins outline-none focus:border-primary/50" />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-poppins">Session</label>
+                        <CustomSelect
+                          value={regForm.session}
+                          onChange={(v) => setRegForm(p => ({ ...p, session: v }))}
+                          options={sessionOptions as any}
+                          placeholder="Select Session"
+                        />
+                        {regForm.session === 'unlisted' && (
+                          <input type="text" placeholder="Enter custom session" 
+                            onChange={(e) => setRegForm(p => ({ ...p, session: e.target.value }))}
+                            className="w-full mt-2 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-white font-poppins outline-none focus:border-primary/50" />
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-poppins">Academic Role</label>
+                        <CustomSelect
+                          value={regForm.role}
+                          onChange={(v) => setRegForm(p => ({ ...p, role: v }))}
+                          options={roleOptions as any}
+                          placeholder="Select Role"
+                        />
+                        {regForm.role === 'unlisted' && (
+                          <input type="text" placeholder="Enter custom role" 
+                            onChange={(e) => setRegForm(p => ({ ...p, role: e.target.value }))}
+                            className="w-full mt-2 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs text-white font-poppins outline-none focus:border-primary/50" />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-poppins">Institution</span>
+                        <span className="text-xs text-white font-poppins">{regForm.institution || 'Not set'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-poppins">Major</span>
+                        <span className="text-xs text-white font-poppins">{regForm.major || 'Not set'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-poppins">Session</span>
+                        <span className="text-xs text-white font-poppins">{regForm.session || 'Not set'}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 font-poppins">Role</span>
+                        <span className="text-xs text-white font-poppins">{regForm.role || 'Not set'}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <TagInput
                   label="Education / Graduations"
                   tags={graduations}

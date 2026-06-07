@@ -15,7 +15,12 @@ function AuthApp() {
       }} />
       <BrowserRouter>
         <Routes>
+          {/* auth.html is served at /auth.html in dev, so BrowserRouter sees /auth.html */}
+          <Route path="/auth.html" element={<AuthPageRoute />} />
+          {/* /auth for production Cloudflare Pages routing */}
           <Route path="/auth" element={<AuthPageRoute />} />
+          {/* Catch-all fallback — renders on any path this entry point loads at */}
+          <Route path="*" element={<AuthPageRoute />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

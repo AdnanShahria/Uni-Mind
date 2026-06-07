@@ -33,7 +33,7 @@ export const CustomSelect = ({ value, onChange, options, placeholder, disabled =
 
   const actionOptions = options.filter(opt => opt.isAction);
 
-  const authContainer = document.getElementById('auth-container');
+  const portalContainer = document.getElementById('auth-container') || document.body;
 
   const toggleDropdown = () => {
     if (disabled) return;
@@ -161,11 +161,11 @@ export const CustomSelect = ({ value, onChange, options, placeholder, disabled =
       </button>
 
       {/* Floating Dropdown Modal via Portal */}
-      {authContainer && createPortal(
+      {portalContainer && createPortal(
         <AnimatePresence>
           {isOpen && modalContent}
         </AnimatePresence>,
-        authContainer
+        portalContainer
       )}
     </div>
   );

@@ -19,7 +19,7 @@ export const Podium = ({ topUsers }: { topUsers: PodiumUser[] }) => {
   ].filter(Boolean) as PodiumUser[];
 
   return (
-    <div className="flex items-end justify-center h-80 gap-4 md:gap-8 pb-8 relative">
+    <div className="flex items-end justify-center gap-4 md:gap-8 pb-8 pt-16 relative">
       {/* Ambient Glow */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-primary/20 blur-[100px] pointer-events-none" />
 
