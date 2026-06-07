@@ -9,7 +9,7 @@
     "dev:full": "node dev-start.js",
     "dev:all": "node dev-start.js",
     "build": "npm run build --workspace=frontend",
-    "deploy": "npm run build && wrangler pages deploy frontend/dist",
+    "deploy": "npm run build && wrangler pages deploy dist",
     "lint": "npm run lint --workspaces --if-present",
     "db:watch": "node watch-db.js",
     "db:turso": "node watch-db.js"
