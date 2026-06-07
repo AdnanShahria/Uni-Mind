@@ -3,6 +3,21 @@ import { generateUUID, mockMetadataRequests, corsHeaders } from '../utils';
 export async function handleMetadataRoutes(url: URL, request: Request, db: any): Promise<Response | null> {
   if (url.pathname === "/api/metadata/approved" && request.method === "GET") {
     try {
+      let cache: any = null;
+      let cacheKey: Request | null = null;
+      
+      if (typeof caches !== 'undefined') {
+        const cacheUrl = new URL(request.url);
+        cacheKey = new Request(cacheUrl.toString(), request);
+        cache = (caches as any).default;
+        if (cache) {
+          const cachedResponse = await cache.match(cacheKey);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+        }
+      }
+
       let rows: any[] = [];
       if (db) {
         const res = await db.execute("SELECT * FROM metadata_requests WHERE status IN ('approved', 'pending')");
@@ -42,7 +57,7 @@ export async function handleMetadataRoutes(url: URL, request: Request, db: any):
         }
       }
 
-      return new Response(
+      const response = new Response(
         JSON.stringify({
           success: true,
           institutions: Array.from(institutionsMap.values()),
@@ -55,9 +70,16 @@ export async function handleMetadataRoutes(url: URL, request: Request, db: any):
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
+            "Cache-Control": "public, s-maxage=60, max-age=30"
           }
         }
       );
+
+      if (cache && cacheKey) {
+        await cache.put(cacheKey, response.clone());
+      }
+
+      return response;
     } catch (err: any) {
       return new Response(JSON.stringify({ error: err.message || "Internal Server Error" }), {
         status: 500,
