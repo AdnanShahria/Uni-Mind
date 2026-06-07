@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { HeroSection } from '../components/HeroSection';
 import { ShowcaseBanner } from '../components/ShowcaseBanner';
@@ -15,7 +14,6 @@ import { FinalCTA } from '../components/FinalCTA';
 import { Footer } from '../components/Footer';
 
 export const LandingPage = () => {
-  const navigate = useNavigate();
 
   const openAuth = (tab: 'login' | 'register') => {
     window.location.href = `/auth.html?tab=${tab}`;
