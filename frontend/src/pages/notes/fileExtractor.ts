@@ -65,35 +65,20 @@ async function extractPdfWithLlamaParse(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
   
-  const uploadRes = await fetch('/api/llamaparse/upload', {
+  const res = await fetch('/api/llamaparse/extract-full', {
     method: 'POST',
     body: formData
   });
 
-  if (!uploadRes.ok) throw new Error(`LlamaParse upload failed: ${uploadRes.statusText}`);
-
-  const uploadData = await uploadRes.json();
-  const jobId = uploadData.id;
-
-  let status = 'PENDING';
-  let attempts = 0;
-  
-  while (status === 'PENDING' && attempts < 30) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    const statusRes = await fetch(`/api/llamaparse/job/${jobId}`);
-    if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.statusText}`);
-    const statusData = await statusRes.json();
-    status = statusData.status;
-    attempts++;
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `LlamaParse extract-full failed: ${res.status}`);
   }
 
-  if (status !== 'SUCCESS') throw new Error('LlamaParse job failed or timed out');
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'LlamaParse extraction unsuccessful');
 
-  const resultRes = await fetch(`/api/llamaparse/job/${jobId}/result/markdown`);
-
-  if (!resultRes.ok) throw new Error(`Result fetch failed: ${resultRes.statusText}`);
-  const resultData = await resultRes.json();
-  return resultData.markdown || '';
+  return data.markdown || '';
 }
 
 async function extractPdf(file: File): Promise<{ text: string; pageCount: number }> {
@@ -101,7 +86,9 @@ async function extractPdf(file: File): Promise<{ text: string; pageCount: number
     console.log('Attempting LlamaParse for PDF extraction via backend...');
     try {
       const text = await extractPdfWithLlamaParse(file);
-      return { text, pageCount: 0 };
+      if (text && text.trim().length > 0) {
+        return { text, pageCount: 0 };
+      }
     } catch (err) {
       console.error('LlamaParse backend failed, falling back to local basic PDF extractor:', err);
     }

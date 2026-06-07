@@ -14,6 +14,7 @@ export interface Env {
   R2_BUCKET_NAME: string;
   OPENAI_API_KEY: string;
   LLAMAPARSE_API_KEY: string;
+  VITE_IMGBB_API_KEY: string;
 }
 
 export default {
