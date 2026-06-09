@@ -8,6 +8,7 @@ import { handleAllPagesRoutes } from "./pagesRouter";
 import { handleDynamicRoute } from "./api/dynamicHandler";
 import { handleLlamaParseRoutes } from "./routes/llamaparse";
 import { handleAiProxyRoutes } from "./routes/aiProxy";
+import { handleWebSearchRoutes } from "./routes/webSearch";
 
 export interface Env {
   TURSO_DATABASE_URL: string;
@@ -58,6 +59,9 @@ export default {
       : null;
 
     let response = await handleAiProxyRoutes(url, request, env);
+    if (response) return response;
+
+    response = await handleWebSearchRoutes(url, request);
     if (response) return response;
 
     response = await handleAuthRoutes(url, request, db);

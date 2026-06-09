@@ -43,10 +43,10 @@ export const AITutorPage = () => {
   const [userName, setUserName] = useState('Scholar');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]);
+  const [activeTools, setActiveTools] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [userId, setUserId] = useState<string | null>(null);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
-  const [isFastResearch, setIsFastResearch] = useState(false);
   
   // File Context
   // File Context
@@ -248,7 +248,7 @@ export const AITutorPage = () => {
     handleFileRemove();
 
     let researchContext = '';
-    if (isFastResearch && userId) {
+    if (activeTools.includes('fast_research') && userId) {
       try {
         const { data: notes } = await turso
           .from('notes')
@@ -258,11 +258,44 @@ export const AITutorPage = () => {
           .limit(5);
 
         if (notes && notes.length > 0) {
-          researchContext = "\n\n[Fast Research Context - Recent Notes]\n" + notes.map((n: any) => `Title: ${n.title}\nContent: ${n.content?.substring(0, 500)}...`).join('\n\n');
+          researchContext += "\n\n[SYSTEM INSTRUCTION: FAST RESEARCH MODE ACTIVE]\n" +
+            "The user has activated Fast Research. Below is context from their personal local notes. " +
+            "Instead of just giving a standard answer, you MUST deeply analyze the provided notes and synthesize them to give a highly detailed, comprehensive, and insightful response specifically tailored to their materials. Do NOT just summarize the notes; connect the dots and provide expert-level insights.\n\n" +
+            "[Recent Notes Context]:\n" + 
+            notes.map((n: any) => `Title: ${n.title}\nContent: ${n.content?.substring(0, 500)}...`).join('\n\n');
         }
       } catch (e) {
         console.error("Fast research error", e);
       }
+    }
+
+    if (activeTools.includes('web_search')) {
+      console.log(`[Web Search] Active. Executing search for: "${messageText}"`);
+      try {
+        const searchRes = await fetch(`/api/web-search?q=${encodeURIComponent(messageText)}`);
+        if (searchRes.ok) {
+          const data = await searchRes.json();
+          if (data.results && data.results.length > 0) {
+            console.log(`[Web Search] Success! Fetched ${data.results.length} live snippets from the web.`, data.results);
+            researchContext += "\n\n[SYSTEM INSTRUCTION: WEB SEARCH MODE ACTIVE]\n" +
+              "The user has activated Web Search. Below are live search snippets from the internet regarding their query. " +
+              "Incorporate these facts into your answer seamlessly and accurately.\n\n" +
+              "[Live Web Search Results]:\n" + 
+              data.results.map((r: string, i: number) => `Result ${i + 1}: ${r}`).join('\n\n');
+          } else {
+            console.log(`[Web Search] Finished, but no snippets were found.`);
+          }
+        } else {
+          console.error(`[Web Search] Request failed with status: ${searchRes.status}`);
+        }
+      } catch (e) {
+        console.error("[Web Search] Fetch error:", e);
+      }
+    }
+
+    if (activeTools.includes('expanded_thinking')) {
+      researchContext += "\n\n[SYSTEM INSTRUCTION: EXPANDED THINKING MODE ACTIVE]\n" +
+        "You MUST think step-by-step. Break down the user's request into analytical components, deeply evaluate edge cases, and present a structured, multi-faceted conclusion.";
     }
 
     const displayMessage = fileNames 
@@ -428,8 +461,8 @@ export const AITutorPage = () => {
             attachedFiles={attachedFiles}
             onFileAttach={handleFileAttach}
             onFileRemove={handleFileRemove}
-            isFastResearch={isFastResearch}
-            setIsFastResearch={setIsFastResearch}
+            activeTools={activeTools}
+            setActiveTools={setActiveTools}
           />
       </div>
     </div>

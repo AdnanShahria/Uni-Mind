@@ -56,6 +56,34 @@ const DEFAULT_PROMPTS = [
     icon: 'Code',
     color: 'text-cyan-400',
   },
+  {
+    id: 'p7',
+    label: 'Brainstorm ideas',
+    prompt: 'Help me brainstorm 10 creative ideas for ...',
+    icon: 'Lightbulb',
+    color: 'text-yellow-400',
+  },
+  {
+    id: 'p8',
+    label: 'Review my writing',
+    prompt: 'Please review and improve this text for clarity and tone: ...',
+    icon: 'FileText',
+    color: 'text-indigo-400',
+  },
+  {
+    id: 'p9',
+    label: 'Simplify text',
+    prompt: 'Rewrite the following text so a 10-year-old could understand it: ...',
+    icon: 'BookOpen',
+    color: 'text-pink-400',
+  },
+  {
+    id: 'p10',
+    label: 'Debate a topic',
+    prompt: 'Act as a devil\'s advocate and debate me on the topic of ...',
+    icon: 'Brain',
+    color: 'text-red-400',
+  },
 ];
 
 export const SuggestedPrompts = ({
