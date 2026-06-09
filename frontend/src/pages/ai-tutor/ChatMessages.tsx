@@ -115,7 +115,7 @@ export const ChatMessages = ({
   };
 
   const actionButtons = [
-    { label: 'Quiz Me', icon: <Lightbulb className="w-3.5 h-3.5 mr-1" />, prompt: 'Can you give me a short quiz based on what you just explained?' },
+    { label: 'Quiz Me', icon: <Lightbulb className="w-3.5 h-3.5 mr-1" />, prompt: 'Can you give me a short quiz based on what you just explained about ... ?' },
     { label: 'Explain Simpler', icon: <BookOpen className="w-3.5 h-3.5 mr-1" />, prompt: 'Can you explain this again, but much simpler, like I am 5 years old?' },
     { label: 'Summarize', icon: <FileText className="w-3.5 h-3.5 mr-1" />, prompt: 'Can you provide a bulleted summary of this for my notes?' }
   ];
@@ -251,9 +251,9 @@ export const ChatMessages = ({
                         <button
                           key={i}
                           onClick={() => onAction(btn.prompt)}
-                          className="flex items-center px-2 md:px-2.5 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-[10px] md:text-[11px] text-primary-glow font-medium transition-colors shadow-sm whitespace-nowrap"
+                          className="flex items-center px-1.5 py-0.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded text-[9px] md:text-[10px] text-primary-glow transition-colors whitespace-nowrap"
                         >
-                          {React.cloneElement(btn.icon as React.ReactElement, { className: 'w-3 h-3 mr-1' })}
+                          {React.cloneElement(btn.icon as React.ReactElement, { className: 'w-2.5 h-2.5 mr-0.5' })}
                           {btn.label}
                         </button>
                       ))}

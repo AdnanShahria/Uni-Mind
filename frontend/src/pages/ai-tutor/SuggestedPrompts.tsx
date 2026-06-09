@@ -115,9 +115,7 @@ export const SuggestedPrompts = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 + i * 0.07 }}
               onClick={() => handlePromptClick(item.prompt)}
-              className={`items-center gap-2 md:gap-3 p-2.5 md:p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.06] transition-all text-left group hover:scale-[1.02] active:scale-[0.98] ${
-                i >= 4 ? 'hidden md:flex' : 'flex'
-              }`}
+              className="items-center gap-2 md:gap-3 p-2.5 md:p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.06] transition-all text-left group hover:scale-[1.02] active:scale-[0.98] flex"
             >
               <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.10] transition-colors">
                 <Icon className={`w-4 h-4 md:w-[18px] md:h-[18px] ${item.color}`} />

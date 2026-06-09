@@ -439,7 +439,7 @@ export const AITutorPage = () => {
             messages={messages}
             isTyping={isTyping} 
             userName={userName}
-            onAction={handleSend}
+            onAction={handlePromptClick}
           />
 
           {messages.length <= 1 && (
