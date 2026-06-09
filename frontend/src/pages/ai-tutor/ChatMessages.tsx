@@ -204,6 +204,37 @@ const ModernTable = ({ children, isTyping, ...props }: any) => {
   );
 };
 
+const UserMessageContent = ({ content }: { content: string }) => {
+  const attachmentMatch = content.match(/^\*\(\s*Attached:\s*(.*?)\s*\)\*\n\n?/);
+  
+  if (attachmentMatch) {
+    const fileNames = attachmentMatch[1].split(', ');
+    const remainingText = content.replace(/^\*\(\s*Attached:\s*(.*?)\s*\)\*\n\n?/, '');
+    
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2 mb-1">
+          {fileNames.map((name, i) => {
+            const isImage = name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+            const isPdf = name.match(/\.pdf$/i);
+            return (
+              <div key={i} className="flex items-center gap-1.5 bg-black/20 px-3 py-2 rounded-xl text-xs text-white/90 border border-white/10 shadow-sm backdrop-blur-sm">
+                <FileText className={`w-4 h-4 ${isImage ? 'text-blue-400' : isPdf ? 'text-rose-400' : 'text-primary-glow'}`} />
+                <span className="truncate max-w-[150px] md:max-w-[200px] font-medium">{name}</span>
+              </div>
+            );
+          })}
+        </div>
+        {remainingText && (
+          <p className="text-[13px] md:text-[14px] leading-snug whitespace-pre-wrap">{remainingText}</p>
+        )}
+      </div>
+    );
+  }
+
+  return <p className="text-[13px] md:text-[14px] leading-snug whitespace-pre-wrap">{content}</p>;
+};
+
 export const ChatMessages = ({
   messages,
   isTyping,
@@ -260,7 +291,7 @@ export const ChatMessages = ({
                 }`}
               >
                 {msg.role === 'user' ? (
-                  <p className="text-[13px] md:text-[14px] leading-snug whitespace-pre-wrap">{msg.content}</p>
+                  <UserMessageContent content={msg.content} />
                 ) : (
                   <div className="prose prose-invert prose-p:leading-snug prose-pre:p-0 prose-pre:bg-transparent prose-p:my-2 max-w-none text-[13px] md:text-[14px]">
                     {msg.content === '' && isTyping && isLastAiMessage ? (
