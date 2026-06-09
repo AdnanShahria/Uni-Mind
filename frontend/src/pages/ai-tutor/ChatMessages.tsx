@@ -1,25 +1,71 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Bot, Copy, ThumbsUp, ThumbsDown, Check, Lightbulb, BookOpen, FileText } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
+import mermaid from 'mermaid';
+import { useEffect, useRef } from 'react';
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  securityLevel: 'loose',
+  fontFamily: 'Poppins, sans-serif'
+});
+
+const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (!chart) return;
+    
+    let isCancelled = false;
+
+    const renderChart = async () => {
+      try {
+        await mermaid.parse(chart);
+        if (isCancelled) return;
+        const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, chart);
+        if (ref.current && !isCancelled) {
+          ref.current.innerHTML = svg;
+        }
+      } catch (e: any) {
+        if (isCancelled) return;
+        if (ref.current) {
+          if (isTyping) {
+            ref.current.innerHTML = `<div class="animate-pulse text-primary/70 text-sm p-4 flex items-center gap-2"><div class="w-4 h-4 rounded-full border-2 border-primary/50 border-t-primary animate-spin"></div> Drawing diagram...</div>`;
+          } else {
+            ref.current.innerHTML = `<pre class="text-rose-400 text-xs p-4 overflow-auto">Invalid Diagram Syntax:\n${e.message || String(e)}</pre>`;
+          }
+        }
+      }
+    };
+
+    renderChart();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [chart, isTyping]);
+  
+  return <div ref={ref} className="flex justify-center my-6 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl overflow-x-auto min-h-[80px]" />;
+};
 
 export const ChatMessages = ({
   messages,
   isTyping,
   userName,
-  messagesEndRef,
   onAction
 }: {
   messages: any[];
   isTyping: boolean;
   userName: string;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
   onAction?: (prompt: string) => void;
 }) => {
   const [copiedId, setCopiedId] = useState<any>(null);
@@ -70,50 +116,79 @@ export const ChatMessages = ({
                   <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 ) : (
                   <div className="prose prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent max-w-none text-[14px]">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                      components={{
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        code({ node: _node, inline, className, children, ...props }: any) {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return !inline && match ? (
-                            <div className="rounded-md overflow-hidden my-4 border border-white/[0.1]">
-                              <div className="flex items-center justify-between px-4 py-2 bg-white/[0.05] border-b border-white/[0.05] text-xs font-mono text-slate-400">
-                                <span>{match[1]}</span>
-                                <button
-                                  onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
-                                  className="hover:text-white transition-colors flex items-center gap-1"
-                                >
-                                  <Copy className="w-3 h-3" /> Copy
-                                </button>
+                    {msg.content === '' && isTyping && isLastAiMessage ? (
+                      <div className="flex items-center gap-1.5 py-1 min-h-[24px]">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          table({ children, ...props }: any) {
+                            return (
+                              <div className="overflow-x-auto my-6 rounded-xl border border-white/[0.08] bg-white/[0.02]">
+                                <table className="w-full text-left border-collapse text-sm" {...props}>
+                                  {children}
+                                </table>
                               </div>
-                              <SyntaxHighlighter
-                                {...props}
-                                children={String(children).replace(/\n$/, '')}
-                                style={vscDarkPlus}
-                                language={match[1]}
-                                PreTag="div"
-                                customStyle={{ margin: 0, padding: '1rem', background: 'rgba(0,0,0,0.3)' }}
-                              />
-                            </div>
-                          ) : (
-                            <code {...props} className="bg-black/30 text-emerald-300 px-1.5 py-0.5 rounded text-[12px] font-mono">
-                              {children}
-                            </code>
-                          );
-                        }
-                      }}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
+                            );
+                          },
+                          th({ children, ...props }: any) {
+                            return <th className="px-4 py-3 bg-white/[0.04] border-b border-white/[0.08] font-semibold text-slate-200" {...props}>{children}</th>;
+                          },
+                          td({ children, ...props }: any) {
+                            return <td className="px-4 py-3 border-b border-white/[0.04] text-slate-300" {...props}>{children}</td>;
+                          },
+                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                          code({ node: _node, inline, className, children, ...props }: any) {
+                            const match = /language-(\w+)/.exec(className || '');
+                            const language = match ? match[1] : '';
+                            
+                            if (!inline && language === 'mermaid') {
+                              return <MermaidDiagram chart={String(children)} isTyping={isTyping && isLastAiMessage} />;
+                            }
+
+                            return !inline && match ? (
+                              <div className="rounded-md overflow-hidden my-4 border border-white/[0.1]">
+                                <div className="flex items-center justify-between px-4 py-2 bg-white/[0.05] border-b border-white/[0.05] text-xs font-mono text-slate-400">
+                                  <span>{match[1]}</span>
+                                  <button
+                                    onClick={() => navigator.clipboard.writeText(String(children).replace(/\n$/, ''))}
+                                    className="hover:text-white transition-colors flex items-center gap-1"
+                                  >
+                                    <Copy className="w-3 h-3" /> Copy
+                                  </button>
+                                </div>
+                                <SyntaxHighlighter
+                                  {...props}
+                                  children={String(children).replace(/\n$/, '')}
+                                  style={vscDarkPlus}
+                                  language={match[1]}
+                                  PreTag="div"
+                                  customStyle={{ margin: 0, padding: '1rem', background: 'rgba(0,0,0,0.3)' }}
+                                />
+                              </div>
+                            ) : (
+                              <code {...props} className="bg-black/30 text-emerald-300 px-1.5 py-0.5 rounded text-[12px] font-mono">
+                                {children}
+                              </code>
+                            );
+                          }
+                        }}
+                      >
+                        {msg.content + (isTyping && isLastAiMessage ? ' ▍' : '')}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 )}
               </div>
 
               {(msg.role === 'ai' || msg.role === 'assistant') && (
-                <div className="mt-3 flex flex-col gap-3">
-                  <div className="flex items-center gap-1 ml-1">
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 ml-1">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleCopy(msg.id, msg.content)}
                       title="Copy response"
@@ -140,12 +215,12 @@ export const ChatMessages = ({
 
                   {/* Interactive Learning Buttons for the latest message */}
                   {isLastAiMessage && !isTyping && onAction && (
-                    <div className="flex flex-wrap gap-2 ml-1 mt-1">
+                    <div className="flex flex-wrap gap-2">
                       {actionButtons.map((btn, i) => (
                         <button
                           key={i}
                           onClick={() => onAction(btn.prompt)}
-                          className="flex items-center px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-xs text-primary-glow font-medium transition-colors shadow-sm"
+                          className="flex items-center px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-xs text-primary-glow font-medium transition-colors shadow-sm whitespace-nowrap"
                         >
                           {btn.icon}
                           {btn.label}
@@ -166,30 +241,7 @@ export const ChatMessages = ({
         );
       })}
 
-      {/* Typing indicator */}
-      <AnimatePresence>
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex gap-3"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-primary/20 border border-purple-500/20 flex items-center justify-center shrink-0 mt-1">
-              <Bot className="w-4 h-4 text-purple-400 animate-pulse" />
-            </div>
-            <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl rounded-bl-md px-5 py-4">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div ref={messagesEndRef} className="h-4" />
+      {/* Typing indicator removed as it's now handled inline inside the empty message bubble */}
     </>
   );
 };

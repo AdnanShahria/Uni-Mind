@@ -53,11 +53,13 @@ export const SettingsPage = () => {
 
   useEffect(() => {
     setLeftContent(
-      <div className="flex items-center gap-2">
-        <Settings className="w-6 h-6 text-slate-400" />
-        <h1 className="text-xl font-bold font-outfit text-white">
-          Settings
-        </h1>
+      <div className="flex items-center justify-between gap-3 w-full pr-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Settings className="w-5 h-5 text-slate-400 shrink-0" />
+          <h1 className="text-lg sm:text-xl font-bold font-outfit text-white truncate">
+            Settings
+          </h1>
+        </div>
       </div>
     );
     return () => setLeftContent(null);

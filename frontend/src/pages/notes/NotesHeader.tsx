@@ -1,7 +1,5 @@
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { StickyNote, Plus } from 'lucide-react';
-import { fadeIn } from './data';
 import { CreateNoteModal } from './CreateNoteModal';
 import { CreateFolderModal } from './CreateFolderModal';
 import { FolderPlus } from 'lucide-react';
@@ -21,6 +19,9 @@ interface NotesHeaderProps {
   setViewMode: (val: 'list' | 'grid') => void;
 }
 
+import { useEffect } from 'react';
+import { useTopBarContext } from '../../contexts/TopBarContext';
+
 export const NotesHeader = ({ 
   onNoteCreated, 
   currentFolderId, 
@@ -35,33 +36,34 @@ export const NotesHeader = ({
 }: NotesHeaderProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const { setLeftContent } = useTopBarContext();
 
   const handleOpen = () => {
     setIsModalOpen(true);
   };
 
-  return (
-    <>
-      <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+  useEffect(() => {
+    setLeftContent(
+      <div className="flex items-center justify-between gap-3 w-full pr-2">
+        <div className="flex items-center gap-3 md:gap-6 min-w-0">
           {!currentFolderId && (
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white flex items-center gap-2">
-                <StickyNote className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+            <div className="hidden sm:flex flex-col shrink-0">
+              <h1 className="text-lg sm:text-xl font-bold font-outfit text-white flex items-center gap-2">
+                <StickyNote className="w-5 h-5 text-amber-400" />
                 UniNote
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1">
+              <p className="text-[10px] text-slate-400 font-poppins mt-0.5 hidden lg:block">
                 Organize, share, and enhance your notes with AI
               </p>
             </div>
           )}
 
           {/* Breadcrumbs here */}
-          <div className={`hidden md:flex items-center h-10 ${!currentFolderId ? 'pl-6 border-l border-white/10' : ''}`}>
+          <div className={`hidden sm:flex items-center h-10 ${!currentFolderId ? 'pl-4 border-l border-white/10' : ''} min-w-0 overflow-x-auto custom-scrollbar`}>
              <FolderBreadcrumbs items={breadcrumbs} onNavigate={onNavigate} />
           </div>
 
-          <div className="hidden md:block pl-6">
+          <div className="hidden xl:block pl-4 shrink-0">
             <NotesFilter 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -73,25 +75,34 @@ export const NotesHeader = ({
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsFolderModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-xs font-semibold text-slate-300 font-poppins transition-colors hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] text-[10px] sm:text-xs font-semibold text-slate-300 font-poppins transition-colors hover:scale-105 active:scale-95"
           >
-            <FolderPlus className="w-4 h-4 text-emerald-400" />
-            New Folder
+            <FolderPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+            <span className="hidden sm:inline">New Folder</span>
           </button>
           <button
             onClick={handleOpen}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-glow text-white text-xs font-semibold font-poppins transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-primary hover:bg-primary-glow text-white text-[10px] sm:text-xs font-semibold font-poppins transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
-            New Note
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">New Note</span>
+            <span className="inline sm:hidden">Note</span>
           </button>
         </div>
-      </motion.div>
+      </div>
+    );
+    return () => setLeftContent(null);
+  }, [
+    currentFolderId, breadcrumbs, onNavigate, searchQuery, filterActive, viewMode, 
+    setLeftContent, setSearchQuery, setFilterActive, setViewMode
+  ]);
 
-      <div className="md:hidden mb-6">
+  return (
+    <>
+      <div className="xl:hidden mb-6">
         <NotesFilter 
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}

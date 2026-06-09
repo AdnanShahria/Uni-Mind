@@ -1,39 +1,24 @@
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../../utils/aiClient';
 
 const callGroq = async (prompt: string, model: string = 'llama-3.1-8b-instant', responseFormat?: any) => {
-  if (!GROQ_API_KEY) {
+  if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) {
     // Return mock responses to allow users to see the Studio features without an API key.
-    console.warn("Groq API Key is missing. Returning a mock response for demonstration.");
+    console.warn("API Keys are missing. Returning a mock response for demonstration.");
     return generateMockResponse(prompt);
   }
 
-  const payload: any = {
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.5,
-  };
-
-  if (responseFormat) {
-    payload.response_format = responseFormat;
+  try {
+    return await callAI(
+      [{ role: 'user', content: prompt }],
+      {
+        groqModel: model,
+        responseFormat
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    throw error;
   }
-
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData?.error?.message || 'Failed to generate from Groq');
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
 };
 
 // Helper to generate mock responses

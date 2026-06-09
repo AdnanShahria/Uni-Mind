@@ -4,8 +4,7 @@ import { generateStudyGuide, generateMindMap, generateSlideDeck, generateReport,
 import { NoteType } from '../types';
 import { toast } from 'react-hot-toast';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../../utils/aiClient';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -150,32 +149,21 @@ Answer the user's questions based on this note content. Be concise, helpful, and
         ...updatedMessages.map(m => ({ role: m.role, content: m.content }))
       ];
 
-      if (GROQ_API_KEY) {
-        const res = await fetch(GROQ_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
-            messages: apiMessages,
+      if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
+        try {
+          const assistantContent = await callAI(apiMessages, {
+            groqModel: 'llama-3.1-8b-instant',
             temperature: 0.6,
             max_tokens: 1024
-          })
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const assistantContent = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+          });
           setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
-        } else {
+        } catch (error) {
           setMessages(prev => [...prev, { role: 'assistant', content: 'Failed to get a response. Please try again.' }]);
         }
       } else {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `I'd love to help with "${trimmed}", but the Groq API key is not configured. Add \`VITE_GROQ_API_KEY\` to your \`.env\` file to enable AI chat.`
+          content: `I'd love to help with "${trimmed}", but the API keys are not configured. Add \`VITE_AGENT_ROUTER_API_KEY\` to your \`.env\` file to enable AI chat.`
         }]);
       }
     } catch (err) {

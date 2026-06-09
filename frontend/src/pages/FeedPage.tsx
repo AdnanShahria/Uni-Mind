@@ -9,16 +9,27 @@ import { PostCard } from '../components/feed/PostCard';
 import { TrendingTopics } from '../components/feed/TrendingTopics';
 import { SuggestedGroups } from '../components/feed/SuggestedGroups';
 
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-};
+
+import { useTopBarContext } from '../contexts/TopBarContext';
 
 export const FeedPage = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('For You');
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const { setLeftContent } = useTopBarContext();
+
+  useEffect(() => {
+    setLeftContent(
+      <div className="flex flex-col">
+        <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white">Academic Feed</h1>
+        <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1 hidden sm:block">
+          Stay updated with your academic network
+        </p>
+      </div>
+    );
+    return () => setLeftContent(null);
+  }, []);
 
   useEffect(() => {
     // Get current user session
@@ -139,14 +150,6 @@ export const FeedPage = () => {
       animate="animate"
       className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8"
     >
-      {/* Page Header */}
-      <motion.div variants={fadeIn} className="mb-3 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold font-outfit text-white">Academic Feed</h1>
-        <p className="text-xs sm:text-sm text-slate-400 font-poppins mt-0.5 sm:mt-1">
-          Stay updated with your academic network
-        </p>
-      </motion.div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Feed */}
         <div className="lg:col-span-8 space-y-4">

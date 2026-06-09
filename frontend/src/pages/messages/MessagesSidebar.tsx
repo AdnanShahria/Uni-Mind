@@ -1,40 +1,19 @@
 import { motion } from 'framer-motion';
-import { MessageCircle, Search, MoreHorizontal, Edit } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export const MessagesSidebar = ({
   isLoading,
   conversations,
   activeConv,
-  setActiveConv,
-  onNewChat
+  setActiveConv
 }: {
   isLoading: boolean;
   conversations: any[];
   activeConv: any;
   setActiveConv: (conv: any) => void;
-  onNewChat: () => void;
 }) => {
   return (
     <div className="w-full border-r-0 md:border-r border-white/[0.06] flex flex-col bg-[#050810]/50 shrink-0">
-      {/* Header */}
-      <div className="h-16 px-4 flex items-center justify-between border-b border-white/[0.06] shrink-0">
-        <h2 className="text-lg font-bold font-outfit text-white flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-cyan-400" />
-          UniChat
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={onNewChat}
-            className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-            title="New Message"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
 
       {/* Search */}
       <div className="px-3 py-3">

@@ -3,8 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, Sparkles, Loader2, X, AlertTriangle, ShieldCheck, PlusCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
 export interface ProposedTask {
   title: string;
@@ -60,28 +59,17 @@ export const AIOptimizerModal = ({ isOpen, onClose, tasks, goals, longTermGoals,
       }
       Do not return any other conversational text. Return ONLY valid, stringified JSON. Ensure suggested_tasks is an array.`;
 
-      if (GROQ_API_KEY) {
-        const res = await fetch(GROQ_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: prompt }],
+      if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
+        const responseContent = await callAI(
+          [{ role: 'user', content: prompt }],
+          {
+            groqModel: 'llama-3.3-70b-versatile',
             temperature: 0.3,
-            response_format: { type: "json_object" }
-          })
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const jsonResponse = JSON.parse(data.choices?.[0]?.message?.content || '{}');
-          setReport(jsonResponse);
-        } else {
-          throw new Error('Failed API response');
-        }
+            responseFormat: { type: "json_object" }
+          }
+        );
+        const jsonResponse = JSON.parse(responseContent || '{}');
+        setReport(jsonResponse);
       } else {
         // Fallback demo mock report if key is not configured
         const tomorrow = new Date();

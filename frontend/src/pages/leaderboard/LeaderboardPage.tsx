@@ -5,6 +5,7 @@ import { Podium } from './Podium';
 import { RankList } from './RankList';
 import { TrophyRoom } from './TrophyRoom';
 import { Trophy, Users, Globe, Info, Search, Filter, X } from 'lucide-react';
+import { useTopBarContext } from '../../contexts/TopBarContext';
 
 const stagger = {
   animate: { transition: { staggerChildren: 0.1 } },
@@ -18,6 +19,30 @@ export const LeaderboardPage = () => {
   const [filters, setFilters] = useState({ institution: '', major: '', session: '', search: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const { setLeftContent } = useTopBarContext();
+
+  useEffect(() => {
+    setLeftContent(
+      <div className="flex flex-col pr-2">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-yellow-400" />
+          <h1 className="text-lg sm:text-xl font-bold font-garamond text-white tracking-tight truncate">
+            Academic Leaderboard
+          </h1>
+          <button 
+            onClick={() => setShowInfo(true)} 
+            className="p-1 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-400 font-poppins hidden md:block mt-0.5">
+          Climb the ranks by contributing to communities and maintaining streaks.
+        </p>
+      </div>
+    );
+    return () => setLeftContent(null);
+  }, [setShowInfo, setLeftContent]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -101,22 +126,7 @@ export const LeaderboardPage = () => {
       variants={stagger}
       className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto min-h-screen"
     >
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold font-garamond text-white tracking-tight flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-yellow-400" />
-              Academic Leaderboard
-            </h1>
-            <button 
-              onClick={() => setShowInfo(true)} 
-              className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-            >
-              <Info className="w-5 h-5" />
-            </button>
-          </div>
-          <p className="text-slate-400 mt-1">Climb the ranks by contributing to communities, generating notes, and maintaining streaks.</p>
-        </div>
+      <div className="flex flex-col md:flex-row items-end justify-end mb-6 gap-4">
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <div className="flex items-center bg-slate-900/50 p-1.5 rounded-xl border border-white/5">

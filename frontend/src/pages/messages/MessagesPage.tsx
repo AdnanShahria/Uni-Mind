@@ -4,11 +4,11 @@ import { MessagesSidebar } from './MessagesSidebar';
 import { ChatArea } from './ChatArea';
 import { NewChatModal } from './NewChatModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X } from 'lucide-react';
+import { Sparkles, X, MessageCircle, Edit, MoreHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTopBarContext } from '../../contexts/TopBarContext';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
 export const MessagesPage = () => {
   const [dbConversations, setDbConversations] = useState<any[]>([]);
@@ -21,12 +21,37 @@ export const MessagesPage = () => {
   const [smartReplies, setSmartReplies] = useState<string[]>([]);
   const [lastAiReplyId, setLastAiReplyId] = useState<string | null>(null);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const { setLeftContent } = useTopBarContext();
 
   const activeConvRef = useRef(activeConv);
   const currentUserRef = useRef(currentUser);
 
   useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
   useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+
+  useEffect(() => {
+    setLeftContent(
+      <div className="flex items-center justify-between w-full pr-2">
+        <h2 className="text-lg font-bold font-outfit text-white flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-cyan-400" />
+          UniChat
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setIsNewChatOpen(true)}
+            className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            title="New Message"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+    return () => setLeftContent(null);
+  }, [setIsNewChatOpen]);
 
   const fetchConversations = async (userId: string) => {
     const { data: userConvs } = await turso
@@ -73,7 +98,7 @@ export const MessagesPage = () => {
   }, []);
 
   const generateSmartReplies = async (lastMsgContent: string) => {
-    if (!GROQ_API_KEY) {
+    if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) {
       setSmartReplies(["Yes, definitely!", "I'll check and let you know.", "Could you clarify?"]);
       return;
     }
@@ -81,26 +106,18 @@ export const MessagesPage = () => {
     const prompt = `Generate 3 short, conversational reply suggestions (max 5 words each) to the following message. Return ONLY a JSON array of strings, nothing else. Message: "${lastMsgContent}"`;
     
     try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          messages: [{ role: 'user', content: prompt }],
+      const content = await callAI(
+        [{ role: 'user', content: prompt }],
+        {
+          groqModel: 'llama-3.1-8b-instant',
           temperature: 0.7
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content || '[]';
-        const match = content.match(/\[.*\]/s);
-        if (match) {
-          const parsed = JSON.parse(match[0]);
-          if (Array.isArray(parsed)) setSmartReplies(parsed.slice(0, 3));
         }
+      );
+      
+      const match = content.match(/\[.*\]/s);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (Array.isArray(parsed)) setSmartReplies(parsed.slice(0, 3));
       }
     } catch (e) {
       console.error('Failed to generate smart replies', e);
@@ -226,7 +243,7 @@ export const MessagesPage = () => {
       toast.error('No messages to summarize.');
       return;
     }
-    if (!GROQ_API_KEY) {
+    if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) {
       // Mock summary if no API key
       setIsSummarizing(true);
       setTimeout(() => {
@@ -247,25 +264,14 @@ ${convoText}
 Format your output as a markdown list of key points. Keep it brief.`;
 
     try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          messages: [{ role: 'user', content: prompt }],
+      const summaryContent = await callAI(
+        [{ role: 'user', content: prompt }],
+        {
+          groqModel: 'llama-3.1-8b-instant',
           temperature: 0.3
-        })
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setSummary(data.choices?.[0]?.message?.content || 'Could not generate summary.');
-      } else {
-        toast.error('Failed to summarize thread.');
-      }
+        }
+      );
+      setSummary(summaryContent || 'Could not generate summary.');
     } catch (e) {
       toast.error('Network error. Failed to summarize thread.');
     } finally {
@@ -283,7 +289,6 @@ Format your output as a markdown list of key points. Keep it brief.`;
             conversations={dbConversations}
             activeConv={activeConv}
             setActiveConv={setActiveConv}
-            onNewChat={() => setIsNewChatOpen(true)}
           />
         </div>
         {/* On mobile: show chat area only when a conv is selected */}

@@ -1,105 +1,28 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { turso } from '../../utils/tursoClient';
 import { AITutorHeader } from './AITutorHeader';
+import { AITutorSidebar } from './AITutorSidebar';
 import { ChatMessages } from './ChatMessages';
 import { SuggestedPrompts } from './SuggestedPrompts';
 import { MessageInput } from './MessageInput';
 import toast from 'react-hot-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import { useTopBarContext } from '../../contexts/TopBarContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
-// ─── Groq API ──────────────────────────────────────────────────────────────
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAIStream, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
+// ─── Constants ──────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are UniMind AI Tutor — a super advanced academic assistant for university students. 
 You are an expert in explaining complex topics clearly, step-by-step problem solving, and generating quizzes or summaries.
 Format your responses beautifully using Markdown. 
 Use LaTeX for math equations (e.g. $E=mc^2$ or $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$). 
+For tables, always use standard Markdown tables. Never use ASCII tables inside code blocks.
+For diagrams, flowcharts, or visual representations, ALWAYS use \`\`\`mermaid code blocks. Never use ASCII art.
 Use formatted code blocks for code snippets.
 Be concise, accurate, and highly educational.`;
-
-async function callGroqStream(
-  history: { role: string; content: string }[],
-  userMessage: string,
-  attachedFileType: 'text' | 'image' | null,
-  attachedFileContent: string | null,
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  const model = attachedFileType === 'image' ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile';
-  
-  let formattedUserMessage: any = userMessage;
-
-  if (attachedFileType === 'text' && attachedFileContent) {
-    formattedUserMessage = `[Attached Context]\n${attachedFileContent}\n\nUser Message: ${userMessage}`;
-  } else if (attachedFileType === 'image' && attachedFileContent) {
-    formattedUserMessage = [
-      { type: "text", text: userMessage || "Please describe this image." },
-      { type: "image_url", image_url: { url: attachedFileContent } }
-    ];
-  }
-
-  const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
-    ...history.slice(-15).map(m => ({
-      role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content
-    })),
-    { role: 'user', content: formattedUserMessage }
-  ];
-
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.7,
-      max_tokens: 2048,
-      stream: true
-    })
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Groq API error: ${res.status} - ${err}`);
-  }
-  if (!res.body) throw new Error('No response body');
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let fullContent = '';
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-    for (const line of lines) {
-      if (line === 'data: [DONE]') return fullContent;
-      if (line.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(line.slice(6));
-          const text = data.choices[0]?.delta?.content || '';
-          fullContent += text;
-          onChunk(text);
-        } catch (e) {
-          // ignore parse errors for partial chunks
-        }
-      }
-    }
-  }
-
-  return fullContent;
-}
 
 // ─── Smart Contextual Simulation (Fallback) ───────────────────────────────
 async function simulateStream(question: string, onChunk: (c: string) => void): Promise<string> {
@@ -119,6 +42,8 @@ export const AITutorPage = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [userName, setUserName] = useState('Scholar');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [isFastResearch, setIsFastResearch] = useState(false);
@@ -128,17 +53,26 @@ export const AITutorPage = () => {
   const [attachedFileContent, setAttachedFileContent] = useState<string | null>(null);
   const [attachedFileType, setAttachedFileType] = useState<'text' | 'image' | null>(null);
   const [isParsing, setIsParsing] = useState(false);
+  const { setLeftContent } = useTopBarContext();
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLengthRef = useRef(0);
 
   const GREETING = "Hello! I'm your **Super Advanced AI Tutor** 🎓\n\nI can help you with:\n- **Understanding** complex topics\n- **Solving** math and coding problems\n- **Analyzing** documents and images you attach (.txt, .pdf, .docx, .jpg, .png)\n\nWhat would you like to learn today?";
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const isNewMessage = messages.length > prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+
+    // Only scroll when a completely new message is added to the chat
+    if (isNewMessage) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+    
+    // Auto-scroll during typing has been completely disabled per request.
   }, [messages, isTyping]);
 
   const initConversation = useCallback(async (uid: string) => {
@@ -149,6 +83,7 @@ export const AITutorPage = () => {
       .single();
     if (newConv) {
       setActiveConvId(newConv.id);
+      setConversations(prev => [newConv, ...prev]);
     }
     return newConv?.id || null;
   }, []);
@@ -167,17 +102,18 @@ export const AITutorPage = () => {
 
         const { data: convs } = await turso
           .from('ai_conversations')
-          .select('id')
+          .select('id, title, updated_at')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+          .order('updated_at', { ascending: false })
+          .limit(20);
 
         let convId: string | null = null;
         if (convs && convs.length > 0) {
+          setConversations(convs);
           convId = convs[0].id;
           setActiveConvId(convId);
         } else {
-          convId = await initConversation(user.id);
+          setActiveConvId(null);
         }
 
         if (convId) {
@@ -204,9 +140,46 @@ export const AITutorPage = () => {
     setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
     setInput('');
     handleFileRemove();
-    if (userId) {
-      const newId = await initConversation(userId);
-      setActiveConvId(newId);
+    setActiveConvId(null);
+  };
+
+  const handleSelectConversation = async (id: string) => {
+    setActiveConvId(id);
+    setMessages([]); // Clear immediately for smooth transition
+    const { data: msgs } = await turso
+      .from('ai_messages')
+      .select('*')
+      .eq('conversation_id', id)
+      .order('created_at', { ascending: true });
+    
+    if (msgs && msgs.length > 0) {
+      setMessages(msgs);
+    } else {
+      setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+    }
+    // Auto-close sidebar on mobile after selection
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    // Optimistic UI updates
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (activeConvId === id) {
+      const remaining = conversations.filter(c => c.id !== id);
+      if (remaining.length > 0) {
+        handleSelectConversation(remaining[0].id);
+      } else {
+        handleNewChat();
+      }
+    }
+
+    // Background deletion
+    try {
+      await turso.from('ai_conversations').delete().eq('id', id);
+    } catch (e) {
+      console.error("Failed to delete conversation", e);
     }
   };
 
@@ -300,35 +273,70 @@ export const AITutorPage = () => {
       
     const backendMessageText = messageText + researchContext;
 
+    // Immediately show user message and AI placeholder
     const tempUserMsg = { id: Date.now(), role: 'user', content: displayMessage, timestamp: 'Just now' };
-    setMessages(prev => [...prev, tempUserMsg]);
+    const aiMsgId = Date.now() + 1;
+    setMessages(prev => [
+      ...prev, 
+      tempUserMsg,
+      { id: aiMsgId, role: 'assistant', content: '', timestamp: 'Just now' }
+    ]);
 
-    if (activeConvId) {
+    let currentConvId = activeConvId;
+    if (!currentConvId && userId) {
+      currentConvId = await initConversation(userId);
+    }
+
+    if (currentConvId) {
       await turso.from('ai_messages').insert([{
-        conversation_id: activeConvId,
+        conversation_id: currentConvId,
         role: 'user',
         content: displayMessage
       }]);
-    }
 
-    // Prepare a placeholder for the AI message that will stream
-    const aiMsgId = Date.now() + 1;
-    setMessages(prev => [...prev, { id: aiMsgId, role: 'assistant', content: '', timestamp: 'Just now' }]);
+      // Update conversation title if it's the first message
+      if (messages.length === 0) { // Since messages in closure is before the setState
+        const title = messageText.substring(0, 30) + (messageText.length > 30 ? '...' : '');
+        await turso.from('ai_conversations').update({ title }).eq('id', currentConvId);
+        setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title } : c));
+      }
+    }
 
     try {
       let finalContent = '';
 
-      if (GROQ_API_KEY) {
+      if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
         const history = messages.filter(m => m.role === 'user' || m.role === 'assistant');
-        finalContent = await callGroqStream(
-          history, 
-          backendMessageText, 
-          currentFileType, 
-          currentFileContent, 
+        
+        let formattedUserMessage: any = backendMessageText;
+        if (currentFileType === 'text' && currentFileContent) {
+          formattedUserMessage = `[Attached Context]\n${currentFileContent}\n\nUser Message: ${backendMessageText}`;
+        } else if (currentFileType === 'image' && currentFileContent) {
+          formattedUserMessage = [
+            { type: "text", text: backendMessageText || "Please describe this image." },
+            { type: "image_url", image_url: { url: currentFileContent } }
+          ];
+        }
+
+        const formattedMessages = [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...history.slice(-15).map(m => ({
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content
+          })),
+          { role: 'user', content: formattedUserMessage }
+        ];
+
+        finalContent = await callAIStream(
+          formattedMessages,
           (chunk) => {
             setMessages(prev => prev.map(msg => 
               msg.id === aiMsgId ? { ...msg, content: msg.content + chunk } : msg
             ));
+          },
+          {
+            agentRouterModel: currentFileType === 'image' ? 'gpt-4o' : undefined,
+            groqModel: currentFileType === 'image' ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
           }
         );
       } else {
@@ -339,9 +347,9 @@ export const AITutorPage = () => {
         });
       }
 
-      if (activeConvId) {
+      if (currentConvId) {
         await turso.from('ai_messages').insert([{
-          conversation_id: activeConvId,
+          conversation_id: currentConvId,
           role: 'assistant',
           content: finalContent
         }]);
@@ -357,21 +365,47 @@ export const AITutorPage = () => {
     }
   };
 
+  useEffect(() => {
+    setLeftContent(
+      <AITutorHeader 
+        onNewChat={handleNewChat} 
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
+    );
+    return () => setLeftContent(null);
+  }, [isSidebarOpen, messages, userId]); // Dependencies needed for handleNewChat to have latest state
+
   const handlePromptClick = (prompt: string) => {
     handleSend(prompt);
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] md:h-[calc(100vh-64px)]">
-      <AITutorHeader onNewChat={handleNewChat} />
+    <div className="flex h-full relative overflow-hidden">
+      <AITutorSidebar
+        conversations={conversations}
+        activeConvId={activeConvId}
+        onSelect={handleSelectConversation}
+        onNewChat={handleNewChat}
+        onDelete={handleDeleteConversation}
+        isOpen={isSidebarOpen}
+      />
+      
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="absolute inset-0 bg-black/50 z-10 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
-      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6">
+      <div className="flex-1 flex flex-col min-w-0 z-0">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-6">
           <ChatMessages
             messages={messages}
-            isTyping={isTyping && messages.length > 0 && messages[messages.length - 1].role !== 'assistant'} 
+            isTyping={isTyping} 
             userName={userName}
-            messagesEndRef={messagesEndRef}
             onAction={handleSend}
           />
 
@@ -381,20 +415,23 @@ export const AITutorPage = () => {
               handlePromptClick={handlePromptClick}
             />
           )}
+          
+          <div className="h-4 shrink-0" />
         </div>
       </div>
 
-      <MessageInput
-        input={input}
-        setInput={setInput}
-        handleSend={() => handleSend()}
-        isTyping={isTyping || isParsing}
-        attachedFileName={attachedFileName}
-        onFileAttach={handleFileAttach}
-        onFileRemove={handleFileRemove}
-        isFastResearch={isFastResearch}
-        setIsFastResearch={setIsFastResearch}
-      />
+        <MessageInput
+          input={input}
+          setInput={setInput}
+          handleSend={() => handleSend()}
+          isTyping={isTyping || isParsing}
+          attachedFileName={attachedFileName}
+          onFileAttach={handleFileAttach}
+          onFileRemove={handleFileRemove}
+          isFastResearch={isFastResearch}
+          setIsFastResearch={setIsFastResearch}
+        />
+      </div>
     </div>
   );
 };

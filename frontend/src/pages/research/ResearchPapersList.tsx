@@ -4,8 +4,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
 export const ResearchPapersList = ({ displayPapers }: { displayPapers: any[] }) => {
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
@@ -34,28 +33,20 @@ export const ResearchPapersList = ({ displayPapers }: { displayPapers: any[] }) 
 
     setSummarizingId(paper.id);
     try {
-      if (!GROQ_API_KEY) throw new Error('No Groq API Key');
+      if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) throw new Error('No API Key');
 
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: 'You are an expert research assistant. Read the following paper abstract and provide a concise, 3-bullet-point summary of the core findings or contributions. Keep it very short and easy to read.' },
-            { role: 'user', content: `Title: ${paper.title}\n\nAbstract: ${paper.abstract}` }
-          ],
+      const summary = await callAI(
+        [
+          { role: 'system', content: 'You are an expert research assistant. Read the following paper abstract and provide a concise, 3-bullet-point summary of the core findings or contributions. Keep it very short and easy to read.' },
+          { role: 'user', content: `Title: ${paper.title}\n\nAbstract: ${paper.abstract}` }
+        ],
+        {
+          groqModel: 'llama-3.3-70b-versatile',
           temperature: 0.3,
           max_tokens: 300
-        })
-      });
+        }
+      );
 
-      if (!res.ok) throw new Error('API Error');
-      const data = await res.json();
-      const summary = data.choices[0].message.content;
       setSummaries(prev => ({ ...prev, [paper.id]: summary }));
     } catch (error) {
       console.error(error);

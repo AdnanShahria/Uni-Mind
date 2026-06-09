@@ -1,5 +1,5 @@
 import { Sparkles, Send, Loader2, Paperclip, X, FileText } from 'lucide-react';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 export const MessageInput = ({
   input,
@@ -24,6 +24,7 @@ export const MessageInput = ({
 }) => {
   const canSend = (input.trim() || attachedFileName) && !isTyping;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0 && onFileAttach) {
@@ -31,11 +32,19 @@ export const MessageInput = ({
     }
   };
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [input]);
+
   return (
-    <div className="shrink-0 px-6 py-4 border-t border-white/[0.06] bg-[#050810]/90 backdrop-blur-xl">
-      <div className="max-w-4xl mx-auto">
+    <div className="shrink-0 px-4 pb-4 md:px-6 md:pb-6 relative z-10">
+      <div className="max-w-4xl mx-auto relative">
+        {/* Attached file indicator */}
         {attachedFileName && (
-          <div className="flex items-center gap-2 mb-3 bg-white/[0.04] border border-white/[0.08] w-fit px-3 py-1.5 rounded-lg">
+          <div className="absolute -top-10 left-4 flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl border border-white/[0.08] px-3 py-1.5 rounded-lg shadow-lg">
             <FileText className="w-4 h-4 text-emerald-400" />
             <span className="text-xs text-slate-200 font-medium truncate max-w-[200px]">{attachedFileName}</span>
             <button
@@ -47,66 +56,66 @@ export const MessageInput = ({
             </button>
           </div>
         )}
-        <div className="flex items-end gap-3">
-          <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 focus-within:border-primary/30 focus-within:shadow-[0_0_20px_rgba(59,130,246,0.08)] transition-all">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-primary-glow" />
-                <span className="text-[9px] text-slate-500 font-poppins uppercase tracking-wider font-semibold">
-                  {isTyping ? 'AI is thinking...' : 'AI-Powered Response'}
-                </span>
-              </div>
-              
-              {setIsFastResearch && (
-                <button 
-                  onClick={() => setIsFastResearch(!isFastResearch)}
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border ${
-                    isFastResearch 
-                      ? 'bg-purple-500/20 text-purple-400 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]' 
-                      : 'bg-white/5 text-slate-500 border-white/10 hover:text-slate-300'
-                  }`}
-                  title="Toggle Fast Research mode to search all your notes"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  Fast Research
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && canSend && handleSend()}
-                placeholder={isTyping ? 'Waiting for response...' : 'Ask anything about your studies...'}
-                disabled={isTyping}
-                className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none font-poppins disabled:opacity-50"
-              />
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".txt,.md,.csv,.json,.pdf,.docx,image/*"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isTyping}
-                title="Attach Context File (Text, PDF, Word, Image)"
-                className="text-slate-500 hover:text-primary-glow transition-colors disabled:opacity-50"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-            </div>
+
+        {/* Floating Action Bar (Fast Research) */}
+        {setIsFastResearch && (
+          <div className="absolute -top-10 right-4 flex items-center">
+            <button 
+              onClick={() => setIsFastResearch(!isFastResearch)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors border shadow-lg ${
+                isFastResearch 
+                  ? 'bg-purple-500/20 text-purple-400 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.25)]' 
+                  : 'bg-slate-800/90 text-slate-400 border-white/10 hover:text-slate-200 backdrop-blur-xl'
+              }`}
+              title="Toggle Fast Research mode to search all your notes"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isFastResearch ? 'text-purple-400' : 'text-slate-500'}`} />
+              Fast Research
+            </button>
           </div>
+        )}
+
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/[0.1] rounded-2xl p-1 shadow-2xl flex items-end gap-1.5 transition-all focus-within:border-primary/40 focus-within:shadow-[0_0_30px_rgba(59,130,246,0.15)] relative">
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".txt,.md,.csv,.json,.pdf,.docx,image/*"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isTyping}
+            title="Attach Context File (Text, PDF, Word, Image)"
+            className="p-2.5 text-slate-400 hover:text-primary-glow transition-colors rounded-full hover:bg-white/5 shrink-0 disabled:opacity-50"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
+          
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (canSend) handleSend();
+              }
+            }}
+            placeholder={isTyping ? 'AI is thinking...' : 'Ask anything about your studies...'}
+            disabled={isTyping}
+            className="flex-1 bg-transparent text-sm md:text-base text-slate-100 placeholder-slate-500 outline-none font-poppins py-2.5 max-h-[200px] resize-none overflow-y-auto custom-scrollbar leading-relaxed"
+            rows={1}
+          />
+          
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${
+            className={`p-2.5 rounded-full flex items-center justify-center transition-all shrink-0 ${
               canSend
-                ? 'bg-primary hover:bg-primary-glow text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_25px_rgba(96,165,250,0.5)] hover:scale-105 active:scale-95'
-                : 'bg-white/[0.04] text-slate-600 cursor-not-allowed'
+                ? 'bg-primary text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:bg-primary-glow hover:scale-105 active:scale-95'
+                : 'bg-white/5 text-slate-500 cursor-not-allowed'
             }`}
           >
             {isTyping ? (
@@ -116,7 +125,7 @@ export const MessageInput = ({
             )}
           </button>
         </div>
-        <p className="text-[10px] text-slate-600 font-poppins mt-2 text-center">
+        <p className="text-[10px] text-slate-500 font-poppins mt-3 text-center px-4">
           UniMind AI can make mistakes. Verify important academic information.
         </p>
       </div>

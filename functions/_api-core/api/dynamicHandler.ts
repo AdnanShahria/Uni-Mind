@@ -140,20 +140,34 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
       }
 
       if (request.method === "DELETE") {
+        let whereClauses: string[] = [];
+        let args: any[] = [];
+        
         const eqColumn = url.searchParams.get("eqColumn");
         const eqValue = url.searchParams.get("eqValue");
-        
-        if (!eqColumn || !eqValue) {
-            return new Response(JSON.stringify({ error: "Missing delete conditions" }), { status: 400, headers: corsHeaders });
+        if (eqColumn && eqValue && /^[a-zA-Z0-9_]+$/.test(eqColumn)) {
+            whereClauses.push(`${eqColumn} = ?`);
+            args.push(eqValue);
         }
-        if (!/^[a-zA-Z0-9_]+$/.test(eqColumn)) {
-            return new Response(JSON.stringify({ error: "Invalid column name" }), { status: 400, headers: corsHeaders });
+
+        url.searchParams.forEach((val, key) => {
+          if (key.startsWith('eq_')) {
+            const col = key.replace('eq_', '');
+            if (/^[a-zA-Z0-9_]+$/.test(col)) {
+              whereClauses.push(`${col} = ?`);
+              args.push(val);
+            }
+          }
+        });
+
+        if (whereClauses.length === 0) {
+            return new Response(JSON.stringify({ error: "Missing delete conditions" }), { status: 400, headers: corsHeaders });
         }
 
         if (db) {
             await db.execute({
-                sql: `DELETE FROM ${table} WHERE ${eqColumn} = ?`,
-                args: [eqValue]
+                sql: `DELETE FROM ${table} WHERE ` + whereClauses.join(' AND '),
+                args: args
             });
         }
         return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });

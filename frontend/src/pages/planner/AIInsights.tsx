@@ -1,8 +1,7 @@
 import { Brain, ChevronRight, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
 export const AIInsights = ({ tasks, goals }: { tasks: any[], goals: any[] }) => {
   const [insight, setInsight] = useState<string>('');
@@ -20,29 +19,18 @@ export const AIInsights = ({ tasks, goals }: { tasks: any[], goals: any[] }) => 
         Tasks: ${JSON.stringify(tasks.map(t => ({ title: t.title, status: t.status, priority: t.priority })))}
         Goals: ${JSON.stringify(goals.map(g => ({ goal: g.goal, progress: g.progress })))}`;
 
-        if (GROQ_API_KEY) {
-          const res = await fetch(GROQ_URL, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'llama-3.1-8b-instant',
-              messages: [{ role: 'user', content: prompt }],
+        if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
+          const insightContent = await callAI(
+            [{ role: 'user', content: prompt }],
+            {
+              groqModel: 'llama-3.1-8b-instant',
               temperature: 0.7,
               max_tokens: 150
-            })
-          });
-          
-          if (res.ok) {
-            const data = await res.json();
-            setInsight(data.choices?.[0]?.message?.content || "Keep up the good work!");
-          } else {
-            setInsight("Keep up the good work and stay focused on your goals!");
-          }
+            }
+          );
+          setInsight(insightContent || "Keep up the good work!");
         } else {
-           setInsight("Keep up the good work! Add your Groq API key to get personalized insights.");
+           setInsight("Keep up the good work! Add your API keys to get personalized insights.");
         }
       } catch (e) {
         setInsight("Keep up the good work and stay focused on your goals!");

@@ -11,37 +11,31 @@ import { SourcesPane } from './SourcesPane';
 import { EditorPane } from './EditorPane';
 import { ChatPane } from './ChatPane';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../../utils/aiClient';
 
 async function generateSummary(title: string, content: string): Promise<string> {
   const prompt = `You are an academic note summarizer. Summarize the following note concisely for a university student. Use bullet points for key facts, bold important terms, and keep it under 150 words.\n\nTitle: ${title}\nContent: ${content || 'No content provided — base summary on the title.'}`;
 
-  if (!GROQ_API_KEY) {
-    console.warn("Groq API Key is missing. Returning a mock summary.");
-    return `**Key Points from "${title}" (Mock Summary):**\n\n- ${title} covers foundational concepts.\n- This is a mock AI summary because the Groq API key is missing.\n- Add \`VITE_GROQ_API_KEY\` to your \`.env\` file to enable real AI summarization.\n- Connect this topic to adjacent subjects for deeper understanding.`;
+  if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) {
+    console.warn("API Keys are missing. Returning a mock summary.");
+    return `**Key Points from "${title}" (Mock Summary):**\n\n- ${title} covers foundational concepts.\n- This is a mock AI summary because the API keys are missing.\n- Add \`VITE_AGENT_ROUTER_API_KEY\` to your \`.env\` file to enable real AI summarization.\n- Connect this topic to adjacent subjects for deeper understanding.`;
   }
 
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.5,
-      max_tokens: 300
-    })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
+  try {
+    const summaryContent = await callAI(
+      [{ role: 'user', content: prompt }],
+      {
+        groqModel: 'llama-3.1-8b-instant',
+        temperature: 0.5,
+        max_tokens: 300
+      }
+    );
+    return summaryContent;
+  } catch (error) {
+    console.error("AI Summary generation failed", error);
+    const words = content.split(' ').slice(0, 40).join(' ');
+    return `**Key Points from "${title}":**\n\n- ${title} covers foundational concepts relevant to your course\n- ${words ? `Content begins: "${words}..."` : 'Add content to get a detailed AI summary'}\n- Review the main definitions, formulas, and applications\n- Connect this topic to adjacent subjects for deeper understanding\n\n💡 *AI generation failed. Please try again.*`;
   }
-
-  const words = content.split(' ').slice(0, 40).join(' ');
-  return `**Key Points from "${title}":**\n\n- ${title} covers foundational concepts relevant to your course\n- ${words ? `Content begins: "${words}..."` : 'Add content to get a detailed AI summary'}\n- Review the main definitions, formulas, and applications\n- Connect this topic to adjacent subjects for deeper understanding\n\n💡 *Add a Groq API key to get full AI-powered summaries.*`;
 }
 
 async function generateFlashcardsWithGroq(title: string, content: string): Promise<{question: string, answer: string}[]> {
@@ -52,36 +46,28 @@ Do not include any other text.
 Title: ${title}
 Content: ${content || 'Basic general knowledge about ' + title}`;
 
-  if (!GROQ_API_KEY) {
-    console.warn("Groq API Key is missing. Returning mock flashcards.");
+  if (!AGENT_ROUTER_API_KEY && !GROQ_API_KEY) {
+    console.warn("API Keys are missing. Returning mock flashcards.");
     return [
       { question: `What is the main topic of "${title}"?`, answer: "This is a mock flashcard because the API key is missing." },
-      { question: "How do you enable real AI flashcards?", answer: "Add VITE_GROQ_API_KEY to the .env file." },
+      { question: "How do you enable real AI flashcards?", answer: "Add VITE_AGENT_ROUTER_API_KEY to the .env file." },
       { question: "Can you list 3 key points?", answer: "Review the bullet points or main headings." }
     ];
   }
 
   try {
-    const res = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
+    const contentStr = await callAI(
+      [{ role: 'user', content: prompt }],
+      {
+        groqModel: 'llama-3.3-70b-versatile',
         temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const contentStr = data.choices?.[0]?.message?.content || '{}';
-      const parsed = JSON.parse(contentStr);
-      if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
-        return parsed.flashcards;
+        responseFormat: { type: "json_object" }
       }
+    );
+    
+    const parsed = JSON.parse(contentStr);
+    if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+      return parsed.flashcards;
     }
   } catch (e) {
     console.error(e);
