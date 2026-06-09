@@ -49,9 +49,8 @@ export const AITutorPage = () => {
   const [isFastResearch, setIsFastResearch] = useState(false);
   
   // File Context
-  const [attachedFileName, setAttachedFileName] = useState<string | null>(null);
-  const [attachedFileContent, setAttachedFileContent] = useState<string | null>(null);
-  const [attachedFileType, setAttachedFileType] = useState<'text' | 'image' | null>(null);
+  // File Context
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const { setLeftContent } = useTopBarContext();
 
@@ -139,7 +138,7 @@ export const AITutorPage = () => {
   const handleNewChat = async () => {
     setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
     setInput('');
-    handleFileRemove();
+    setAttachedFiles([]);
     setActiveConvId(null);
   };
 
@@ -183,70 +182,69 @@ export const AITutorPage = () => {
     }
   };
 
-  const handleFileAttach = async (file: File) => {
-    setIsParsing(true);
-    setAttachedFileName(file.name);
-
-    try {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setAttachedFileContent(e.target?.result as string);
-          setAttachedFileType('image');
-          setIsParsing(false);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf') {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map((item: any) => item.str).join(' ') + '\n';
-        }
-        setAttachedFileContent(text);
-        setAttachedFileType('text');
-        setIsParsing(false);
-      } else if (file.name.endsWith('.docx')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        setAttachedFileContent(result.value);
-        setAttachedFileType('text');
-        setIsParsing(false);
-      } else {
-        // Assume text file
-        const text = await file.text();
-        setAttachedFileContent(text);
-        setAttachedFileType('text');
-        setIsParsing(false);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to parse file');
-      handleFileRemove();
-      setIsParsing(false);
-    }
+  const handleFileAttach = async (files: FileList) => {
+    const newFiles = Array.from(files);
+    setAttachedFiles(prev => [...prev, ...newFiles]);
   };
 
-  const handleFileRemove = () => {
-    setAttachedFileName(null);
-    setAttachedFileContent(null);
-    setAttachedFileType(null);
+  const handleFileRemove = (index?: number) => {
+    if (index !== undefined) {
+      setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setAttachedFiles([]);
+    }
   };
 
   const handleSend = async (overrideInput?: string) => {
     const messageText = (overrideInput ?? input).trim();
-    if (!messageText && !attachedFileContent) return;
+    if (!messageText && attachedFiles.length === 0) return;
 
     setInput('');
     setIsTyping(true);
 
-    // Keep references to current state before clearing
-    const currentFileType = attachedFileType;
-    const currentFileContent = attachedFileContent;
+    // Parse files NOW before sending
+    let allFileContent = '';
+    let hasImage = false;
+    let imageUrl = '';
+    const fileNames = attachedFiles.map(f => f.name).join(', ');
 
-    // Clear attachment after sending
+    if (attachedFiles.length > 0) {
+      setIsParsing(true);
+      for (const file of attachedFiles) {
+        try {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            const promise = new Promise<string>((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+            });
+            reader.readAsDataURL(file);
+            imageUrl = await promise;
+            hasImage = true;
+          } else if (file.type === 'application/pdf') {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              allFileContent += content.items.map((item: any) => item.str).join(' ') + '\n';
+            }
+          } else if (file.name.endsWith('.docx')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            allFileContent += result.value + '\n';
+          } else {
+            const text = await file.text();
+            allFileContent += text + '\n';
+          }
+        } catch (err) {
+          console.error("Failed to parse", file.name, err);
+          toast.error(`Failed to read file: ${file.name}`);
+        }
+      }
+      setIsParsing(false);
+    }
+
+    // Clear attachments
     handleFileRemove();
 
     let researchContext = '';
@@ -267,8 +265,8 @@ export const AITutorPage = () => {
       }
     }
 
-    const displayMessage = currentFileContent 
-      ? `*(Attached ${attachedFileName})*\n\n${messageText}` 
+    const displayMessage = fileNames 
+      ? `*(Attached: ${fileNames})*\n\n${messageText}` 
       : messageText;
       
     const backendMessageText = messageText + researchContext;
@@ -283,8 +281,11 @@ export const AITutorPage = () => {
     ]);
 
     let currentConvId = activeConvId;
+    let isFirstMessage = false;
+    
     if (!currentConvId && userId) {
       currentConvId = await initConversation(userId);
+      isFirstMessage = true;
     }
 
     if (currentConvId) {
@@ -295,7 +296,7 @@ export const AITutorPage = () => {
       }]);
 
       // Update conversation title if it's the first message
-      if (messages.length === 0) { // Since messages in closure is before the setState
+      if (isFirstMessage || messages.filter(m => !m.id.toString().startsWith('welcome')).length === 0) { 
         const title = messageText.substring(0, 30) + (messageText.length > 30 ? '...' : '');
         await turso.from('ai_conversations').update({ title }).eq('id', currentConvId);
         setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title } : c));
@@ -306,16 +307,16 @@ export const AITutorPage = () => {
       let finalContent = '';
 
       if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
-        const history = messages.filter(m => m.role === 'user' || m.role === 'assistant');
+        const history = messages.filter(m => m.role === 'user' || m.role === 'assistant' && !m.id.toString().startsWith('welcome'));
         
         let formattedUserMessage: any = backendMessageText;
-        if (currentFileType === 'text' && currentFileContent) {
-          formattedUserMessage = `[Attached Context]\n${currentFileContent}\n\nUser Message: ${backendMessageText}`;
-        } else if (currentFileType === 'image' && currentFileContent) {
+        if (hasImage && imageUrl) {
           formattedUserMessage = [
             { type: "text", text: backendMessageText || "Please describe this image." },
-            { type: "image_url", image_url: { url: currentFileContent } }
+            { type: "image_url", image_url: { url: imageUrl } }
           ];
+        } else if (allFileContent) {
+          formattedUserMessage = `[Attached Context]\n${allFileContent}\n\nUser Message: ${backendMessageText}`;
         }
 
         const formattedMessages = [
@@ -335,8 +336,8 @@ export const AITutorPage = () => {
             ));
           },
           {
-            agentRouterModel: currentFileType === 'image' ? 'gpt-4o' : undefined,
-            groqModel: currentFileType === 'image' ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
+            agentRouterModel: hasImage ? 'gpt-4o' : undefined,
+            groqModel: hasImage ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
           }
         );
       } else {
@@ -373,10 +374,10 @@ export const AITutorPage = () => {
       />
     );
     return () => setLeftContent(null);
-  }, [isSidebarOpen, messages, userId]); // Dependencies needed for handleNewChat to have latest state
+  }, [isSidebarOpen, messages, userId]); 
 
   const handlePromptClick = (prompt: string) => {
-    handleSend(prompt);
+    setInput(prompt);
   };
 
   return (
@@ -419,17 +420,17 @@ export const AITutorPage = () => {
         </div>
       </div>
 
-        <MessageInput
-          input={input}
-          setInput={setInput}
-          handleSend={() => handleSend()}
-          isTyping={isTyping || isParsing}
-          attachedFileName={attachedFileName}
-          onFileAttach={handleFileAttach}
-          onFileRemove={handleFileRemove}
-          isFastResearch={isFastResearch}
-          setIsFastResearch={setIsFastResearch}
-        />
+          <MessageInput 
+            input={input}
+            setInput={setInput}
+            handleSend={() => handleSend()}
+            isTyping={isTyping || isParsing}
+            attachedFiles={attachedFiles}
+            onFileAttach={handleFileAttach}
+            onFileRemove={handleFileRemove}
+            isFastResearch={isFastResearch}
+            setIsFastResearch={setIsFastResearch}
+          />
       </div>
     </div>
   );

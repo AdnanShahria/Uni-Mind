@@ -17,8 +17,34 @@ mermaid.initialize({
   fontFamily: 'Poppins, sans-serif'
 });
 
+const ThinkingIndicator = () => {
+  const [stepIndex, setStepIndex] = useState(0);
+  const steps = ['Gathering information...', 'Analyzing query...', 'Checking knowledgebase...', 'Synthesizing response...'];
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStepIndex(prev => Math.min(prev + 1, steps.length - 1));
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [steps.length]);
+
+  return (
+    <div className="flex flex-col gap-2 py-1 min-h-[40px] justify-center">
+      <div className="flex items-center gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+      </div>
+      <div className="text-[11px] text-primary/70 font-medium italic animate-pulse">
+        {steps[stepIndex]}
+      </div>
+    </div>
+  );
+};
+
 const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
   
   useEffect(() => {
     if (!chart) return;
@@ -52,7 +78,18 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
     };
   }, [chart, isTyping]);
   
-  return <div ref={ref} className="flex justify-center my-6 bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl overflow-x-auto min-h-[80px]" />;
+  return (
+    <div className="relative group my-6">
+       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden shadow-xl z-10">
+         <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold">+</button>
+         <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">100%</button>
+         <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold">-</button>
+       </div>
+       <div className="flex justify-center bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl overflow-x-auto overflow-y-hidden min-h-[80px]">
+         <div ref={ref} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }} />
+       </div>
+    </div>
+  );
 };
 
 export const ChatMessages = ({
@@ -115,21 +152,7 @@ export const ChatMessages = ({
                 ) : (
                   <div className="prose prose-invert prose-p:leading-snug prose-pre:p-0 prose-pre:bg-transparent prose-p:my-2 max-w-none text-[13px] md:text-[14px]">
                     {msg.content === '' && isTyping && isLastAiMessage ? (
-                      <div className="flex flex-col gap-2 py-1 min-h-[40px] justify-center">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                        <div className="text-[11px] text-primary/70 font-medium italic animate-pulse">
-                          {(() => {
-                            const steps = ['Gathering information...', 'Analyzing query...', 'Checking knowledgebase...', 'Synthesizing response...'];
-                            // Simple hack to cycle through steps without adding new state just for this
-                            const stepIndex = Math.floor(Date.now() / 2000) % steps.length;
-                            return steps[stepIndex];
-                          })()}
-                        </div>
-                      </div>
+                      <ThinkingIndicator />
                     ) : (
                       <ReactMarkdown
                         remarkPlugins={[remarkMath, remarkGfm]}
