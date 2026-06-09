@@ -7,8 +7,12 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
     const table = pathParts[3];
     const payload = verifyToken(request);
     
-    // Only logged in users can access dynamic routes (except maybe some public GETs, but let's secure it for now)
-    if (!payload) {
+    // These tables allow public read (GET) without authentication
+    const publicReadTables = ['post_likes', 'post_comments', 'post_shares', 'ai_prompts', 'ai_suggestions'];
+    const isPublicRead = request.method === 'GET' && publicReadTables.includes(table);
+
+    // Only logged in users can access dynamic routes, except public GETs
+    if (!payload && !isPublicRead) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 

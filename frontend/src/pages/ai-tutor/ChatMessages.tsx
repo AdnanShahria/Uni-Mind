@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Bot, Copy, ThumbsUp, ThumbsDown, Check, Lightbulb, BookOpen, FileText } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -10,8 +10,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
-import { useEffect, useRef } from 'react';
-
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
@@ -99,28 +97,38 @@ export const ChatMessages = ({
             className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}
           >
             {(msg.role === 'ai' || msg.role === 'assistant') ? (
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-primary/20 border border-purple-500/20 flex items-center justify-center shrink-0 mt-1">
+              <div className="hidden md:flex w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-primary/20 border border-purple-500/20 items-center justify-center shrink-0 mt-1">
                 <Bot className="w-4 h-4 text-purple-400" />
               </div>
             ) : null}
 
-            <div className={`max-w-[85%] ${msg.role === 'user' ? 'order-first' : ''}`}>
+            <div className={`max-w-[95%] md:max-w-[85%] ${msg.role === 'user' ? 'order-first' : ''}`}>
               <div
-                className={`rounded-2xl px-5 py-4 font-poppins ${
+                className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 font-poppins ${
                   msg.role === 'user'
-                    ? 'bg-primary/20 border border-primary/20 text-slate-100 rounded-br-md'
-                    : 'bg-white/[0.04] border border-white/[0.06] text-slate-200 rounded-bl-md'
+                    ? 'bg-primary/20 border border-primary/20 text-slate-100 rounded-br-md md:rounded-br-md rounded-tr-2xl rounded-tl-2xl rounded-bl-2xl md:rounded-bl-md'
+                    : 'bg-white/[0.04] border border-white/[0.06] text-slate-200 rounded-bl-md md:rounded-bl-md rounded-tr-2xl rounded-tl-2xl rounded-br-2xl md:rounded-br-md'
                 }`}
               >
                 {msg.role === 'user' ? (
-                  <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-[13px] md:text-[14px] leading-snug whitespace-pre-wrap">{msg.content}</p>
                 ) : (
-                  <div className="prose prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent max-w-none text-[14px]">
+                  <div className="prose prose-invert prose-p:leading-snug prose-pre:p-0 prose-pre:bg-transparent prose-p:my-2 max-w-none text-[13px] md:text-[14px]">
                     {msg.content === '' && isTyping && isLastAiMessage ? (
-                      <div className="flex items-center gap-1.5 py-1 min-h-[24px]">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="flex flex-col gap-2 py-1 min-h-[40px] justify-center">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-primary-glow animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <div className="text-[11px] text-primary/70 font-medium italic animate-pulse">
+                          {(() => {
+                            const steps = ['Gathering information...', 'Analyzing query...', 'Checking knowledgebase...', 'Synthesizing response...'];
+                            // Simple hack to cycle through steps without adding new state just for this
+                            const stepIndex = Math.floor(Date.now() / 2000) % steps.length;
+                            return steps[stepIndex];
+                          })()}
+                        </div>
                       </div>
                     ) : (
                       <ReactMarkdown
@@ -187,42 +195,42 @@ export const ChatMessages = ({
               </div>
 
               {(msg.role === 'ai' || msg.role === 'assistant') && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 ml-1">
-                  <div className="flex items-center gap-1">
+                <div className="mt-1 md:mt-1.5 flex items-center gap-1.5 md:gap-3 ml-1 overflow-x-auto scrollbar-none pb-0.5 w-full">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       onClick={() => handleCopy(msg.id, msg.content)}
                       title="Copy response"
-                      className={`w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center transition-colors ${
+                      className={`w-6 h-6 rounded-md hover:bg-white/[0.06] flex items-center justify-center transition-colors ${
                         copiedId === msg.id ? 'text-emerald-400' : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
-                      {copiedId === msg.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedId === msg.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     </button>
                     <button
                       onClick={() => { setLikedId(msg.id); toast.success('Feedback noted!'); }}
-                      className={`w-7 h-7 rounded-lg hover:bg-emerald-500/10 flex items-center justify-center transition-colors ${
+                      className={`w-6 h-6 rounded-md hover:bg-emerald-500/10 flex items-center justify-center transition-colors ${
                         likedId === msg.id ? 'text-emerald-400' : 'text-slate-500 hover:text-emerald-400'
                       }`}
                     >
-                      <ThumbsUp className="w-3.5 h-3.5" />
+                      <ThumbsUp className="w-3 h-3" />
                     </button>
                     <button
-                      className="w-7 h-7 rounded-lg hover:bg-rose-500/10 flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors"
+                      className="w-6 h-6 rounded-md hover:bg-rose-500/10 flex items-center justify-center text-slate-500 hover:text-rose-400 transition-colors"
                     >
-                      <ThumbsDown className="w-3.5 h-3.5" />
+                      <ThumbsDown className="w-3 h-3" />
                     </button>
                   </div>
 
                   {/* Interactive Learning Buttons for the latest message */}
                   {isLastAiMessage && !isTyping && onAction && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       {actionButtons.map((btn, i) => (
                         <button
                           key={i}
                           onClick={() => onAction(btn.prompt)}
-                          className="flex items-center px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-xs text-primary-glow font-medium transition-colors shadow-sm whitespace-nowrap"
+                          className="flex items-center px-2 md:px-2.5 py-1 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-full text-[10px] md:text-[11px] text-primary-glow font-medium transition-colors shadow-sm whitespace-nowrap"
                         >
-                          {btn.icon}
+                          {React.cloneElement(btn.icon as React.ReactElement, { className: 'w-3 h-3 mr-1' })}
                           {btn.label}
                         </button>
                       ))}
@@ -233,7 +241,7 @@ export const ChatMessages = ({
             </div>
 
             {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold font-poppins shrink-0 mt-1">
+              <div className="hidden md:flex w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary items-center justify-center text-white text-xs font-bold font-poppins shrink-0 mt-1">
                 {userName.charAt(0).toUpperCase()}
               </div>
             )}

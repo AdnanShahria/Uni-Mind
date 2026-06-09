@@ -77,7 +77,7 @@ export const SuggestedPrompts = ({
       <p className="text-[11px] text-slate-500 font-poppins uppercase tracking-wider font-semibold mb-3 text-center">
         Try asking...
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
         {displayPrompts.map((item, i) => {
           const Icon = iconMap[item.icon] || BookOpen;
           return (
@@ -87,14 +87,16 @@ export const SuggestedPrompts = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 + i * 0.07 }}
               onClick={() => handlePromptClick(item.prompt)}
-              className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.06] transition-all text-left group hover:scale-[1.02] active:scale-[0.98]"
+              className={`items-center gap-2 md:gap-3 p-2.5 md:p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-primary/20 hover:bg-white/[0.06] transition-all text-left group hover:scale-[1.02] active:scale-[0.98] ${
+                i >= 4 ? 'hidden md:flex' : 'flex'
+              }`}
             >
-              <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.10] transition-colors">
-                <Icon className={`w-4.5 h-4.5 ${item.color}`} style={{ width: 18, height: 18 }} />
+              <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0 group-hover:bg-white/[0.10] transition-colors">
+                <Icon className={`w-4 h-4 md:w-[18px] md:h-[18px] ${item.color}`} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-200 font-poppins group-hover:text-white transition-colors">{item.label}</p>
-                <p className="text-[10px] text-slate-500 font-poppins mt-0.5 truncate">{item.prompt}</p>
+                <p className="text-[11px] md:text-xs font-semibold text-slate-200 font-poppins group-hover:text-white transition-colors truncate">{item.label}</p>
+                <p className="hidden md:block text-[10px] text-slate-500 font-poppins mt-0.5 truncate">{item.prompt}</p>
               </div>
             </motion.button>
           );

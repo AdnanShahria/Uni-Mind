@@ -25,9 +25,10 @@ export const AITutorSidebar = ({
 }: SidebarProps) => {
   return (
     <div 
-      className={`shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0A0A0A] transition-all duration-300 ${
-        isOpen ? 'w-64' : 'w-0 overflow-hidden border-none'
-      }`}
+      className={`shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0A0A0A] transition-all duration-300
+        ${isOpen ? 'w-64' : 'w-0 overflow-hidden border-none'}
+        absolute md:relative inset-y-0 left-0 z-20
+      `}
     >
       <div className="p-4 flex items-center justify-between border-b border-white/[0.06]">
         <button

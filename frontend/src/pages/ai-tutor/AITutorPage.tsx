@@ -10,7 +10,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { useTopBarContext } from '../../contexts/TopBarContext';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
 
 import { callAIStream, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
@@ -43,7 +43,7 @@ export const AITutorPage = () => {
   const [userName, setUserName] = useState('Scholar');
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [userId, setUserId] = useState<string | null>(null);
   const [dbPrompts, setDbPrompts] = useState<any[]>([]);
   const [isFastResearch, setIsFastResearch] = useState(false);
@@ -368,7 +368,6 @@ export const AITutorPage = () => {
   useEffect(() => {
     setLeftContent(
       <AITutorHeader 
-        onNewChat={handleNewChat} 
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
@@ -394,7 +393,7 @@ export const AITutorPage = () => {
       {/* Mobile overlay */}
       {isSidebarOpen && (
         <div 
-          className="absolute inset-0 bg-black/50 z-10 md:hidden"
+          className="absolute inset-0 bg-black/50 z-[15] md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
