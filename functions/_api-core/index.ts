@@ -7,6 +7,7 @@ import { handleCompressRoutes } from "./routes/compress";
 import { handleAllPagesRoutes } from "./pagesRouter";
 import { handleDynamicRoute } from "./api/dynamicHandler";
 import { handleLlamaParseRoutes } from "./routes/llamaparse";
+import { handleAiProxyRoutes } from "./routes/aiProxy";
 
 export interface Env {
   TURSO_DATABASE_URL: string;
@@ -15,6 +16,7 @@ export interface Env {
   OPENAI_API_KEY: string;
   LLAMAPARSE_API_KEY: string;
   VITE_IMGBB_API_KEY: string;
+  VITE_AGENT_ROUTER_API_KEY?: string;
 }
 
 export default {
@@ -50,12 +52,15 @@ export default {
 
     const db = (env.TURSO_DATABASE_URL && env.TURSO_AUTH_TOKEN)
       ? createClient({
-          url: env.TURSO_DATABASE_URL,
-          authToken: env.TURSO_AUTH_TOKEN,
-        })
+        url: env.TURSO_DATABASE_URL,
+        authToken: env.TURSO_AUTH_TOKEN,
+      })
       : null;
 
-    let response = await handleAuthRoutes(url, request, db);
+    let response = await handleAiProxyRoutes(url, request, env);
+    if (response) return response;
+
+    response = await handleAuthRoutes(url, request, db);
     if (response) return response;
 
     response = await handleApiRoutes(url, request, db);

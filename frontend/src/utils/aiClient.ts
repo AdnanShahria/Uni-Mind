@@ -2,7 +2,8 @@ export const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export const AGENT_ROUTER_API_KEY = import.meta.env.VITE_AGENT_ROUTER_API_KEY || '';
-const AGENT_ROUTER_URL = import.meta.env.VITE_AGENT_ROUTER_URL || 'https://agentrouter.org/v1/chat/completions';
+// Route through backend proxy to bypass browser User-Agent restrictions
+const AI_PROXY_URL = '/api/ai-proxy';
 const DEFAULT_AGENT_ROUTER_MODEL = 'glm-5.1';
 const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
 
@@ -56,15 +57,14 @@ export async function callAIStream(
   const temperature = options?.temperature ?? 0.7;
   const max_tokens = options?.max_tokens ?? 2048;
 
-  // Try Agent Router first
+  // Try Agent Router via backend proxy first
   if (AGENT_ROUTER_API_KEY) {
     try {
       const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
-      const res = await fetch(AGENT_ROUTER_URL, {
+      const res = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AGENT_ROUTER_API_KEY}`
         },
         body: JSON.stringify({
           model,
@@ -76,7 +76,7 @@ export async function callAIStream(
       });
 
       if (res.ok && res.body) {
-        console.log('[AI Client] Streaming response from Agent Router');
+        console.log('[AI Client] Streaming response from Agent Router (via proxy)');
         return await handleStreamResponse(res.body, onChunk);
       } else {
         console.warn('Agent Router failed, falling back to Groq...', await res.text());
@@ -123,7 +123,7 @@ export async function callAI(
   const temperature = options?.temperature ?? 0.5;
   const max_tokens = options?.max_tokens;
 
-  // Try Agent Router first
+  // Try Agent Router via backend proxy first
   if (AGENT_ROUTER_API_KEY) {
     try {
       const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
@@ -131,18 +131,17 @@ export async function callAI(
       if (max_tokens) payload.max_tokens = max_tokens;
       if (options?.responseFormat) payload.response_format = options.responseFormat;
 
-      const res = await fetch(AGENT_ROUTER_URL, {
+      const res = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AGENT_ROUTER_API_KEY}`
         },
         body: JSON.stringify(payload)
       });
 
       if (res.ok) {
         const data = await res.json();
-        console.log('[AI Client] Received response from Agent Router');
+        console.log('[AI Client] Received response from Agent Router (via proxy)');
         return data.choices?.[0]?.message?.content || '';
       } else {
         console.warn('Agent Router failed, falling back to Groq...', await res.text());

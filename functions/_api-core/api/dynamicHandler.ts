@@ -108,10 +108,13 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
         } else {
             // It's an INSERT
             // Inject author_id or user_id for security
+            // Tables that use author_id
             if (table === 'posts' || table === 'notes' || table === 'comments') {
                  if (!body.author_id) body.author_id = payload.userId;
             } else if (table === 'communities') {
                  if (!body.created_by) body.created_by = payload.userId;
+            } else if (table === 'ai_messages' || table === 'ai_prompts') {
+                 // These tables don't have a user_id column — skip injection
             } else {
                  if (!body.user_id) body.user_id = payload.userId;
             }
