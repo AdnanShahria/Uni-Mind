@@ -22,7 +22,8 @@ Use LaTeX for math equations (e.g. $E=mc^2$ or $$x = \\frac{-b \\pm \\sqrt{b^2 -
 For tables, always use standard Markdown tables. Never use ASCII tables inside code blocks.
 For diagrams, flowcharts, or visual representations, ALWAYS use \`\`\`mermaid code blocks. Never use ASCII art.
 Use formatted code blocks for code snippets.
-Be concise, accurate, and highly educational.`;
+Be concise, accurate, and highly educational.
+IMPORTANT: You MUST respond in the same language as the user's message (e.g., if the user asks in Bengali/Bangla, you must reply entirely in fluent Bengali). If the user explicitly asks you to reply in a specific language, you must reply entirely in that requested language.`;
 
 // ─── Smart Contextual Simulation (Fallback) ───────────────────────────────
 async function simulateStream(question: string, onChunk: (c: string) => void): Promise<string> {
@@ -75,11 +76,18 @@ export const AITutorPage = () => {
   }, [messages, isTyping]);
 
   const initConversation = useCallback(async (uid: string) => {
-    const { data: newConv } = await turso
+    const { data: newConv, error } = await turso
       .from('ai_conversations')
       .insert([{ user_id: uid }])
       .select()
       .single();
+    
+    if (error) {
+      console.error("Failed to start conversation:", error);
+      // Optional: you could add a toast.error here if toast is available
+      return null;
+    }
+
     if (newConv) {
       setActiveConvId(newConv.id);
       setConversations(prev => [newConv, ...prev]);
