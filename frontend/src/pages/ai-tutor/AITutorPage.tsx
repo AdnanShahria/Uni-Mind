@@ -57,7 +57,7 @@ export const AITutorPage = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
 
-  const GREETING = "Hello! I'm your **Super Advanced AI Tutor** 🎓\n\nI can help you with:\n- **Understanding** complex topics\n- **Solving** math and coding problems\n- **Analyzing** documents and images you attach (.txt, .pdf, .docx, .jpg, .png)\n\nWhat would you like to learn today?";
+  const GREETING = "✨ **Welcome to UniTutor!**\nI'm ready to help you analyze files, solve problems, or master complex topics. What are we learning today?";
 
   useEffect(() => {
     const el = scrollContainerRef.current;

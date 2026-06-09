@@ -245,8 +245,8 @@ export const ChatMessages = ({
                   </div>
 
                   {/* Interactive Learning Buttons for the latest message */}
-                  {isLastAiMessage && !isTyping && onAction && (
-                    <div className="flex items-center gap-1 shrink-0">
+                  {isLastAiMessage && !isTyping && onAction && !msg.id?.toString().startsWith('welcome') && (
+                    <div className="flex items-center gap-1 shrink-0 mt-1">
                       {actionButtons.map((btn, i) => (
                         <button
                           key={i}
