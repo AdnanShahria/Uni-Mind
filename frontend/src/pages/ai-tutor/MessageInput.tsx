@@ -7,6 +7,7 @@ export const MessageInput = ({
   setInput,
   handleSend,
   isTyping = false,
+  researchStatus = '',
   attachedFiles = [],
   onFileAttach,
   onFileRemove,
@@ -17,6 +18,7 @@ export const MessageInput = ({
   setInput: (val: string) => void;
   handleSend: () => void;
   isTyping?: boolean;
+  researchStatus?: string;
   attachedFiles?: File[];
   onFileAttach?: (files: FileList) => void;
   onFileRemove?: (index: number) => void;
@@ -276,7 +278,7 @@ export const MessageInput = ({
                   if (canSend) handleSend();
                 }
               }}
-              placeholder={isTyping ? 'Processing...' : activeTools.length > 0 ? `Tools active: Ask anything...` : 'Ask anything...'}
+              placeholder={researchStatus || (isTyping ? 'Processing...' : activeTools.length > 0 ? `Tools active: Ask anything...` : 'Ask anything...')}
               disabled={isTyping}
               className={`flex-1 bg-transparent text-[13px] md:text-base outline-none font-poppins py-2 md:py-2.5 px-3 max-h-[120px] md:max-h-[200px] resize-none overflow-y-auto custom-scrollbar leading-relaxed min-w-0 ${
                 activeTools.includes('fast_research') ? 'text-purple-100 placeholder-purple-400/50' : 'text-slate-100 placeholder-slate-500'

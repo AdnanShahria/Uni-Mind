@@ -20,34 +20,53 @@ export interface CallAIOptions {
   groqModel?: string;
 }
 
-async function handleStreamResponse(body: ReadableStream<Uint8Array>, onChunk: (chunk: string) => void): Promise<string> {
+export interface StreamResult {
+  fullContent: string;
+  finishReason: string | null;
+}
+
+async function handleStreamResponse(body: ReadableStream<Uint8Array>, onChunk: (chunk: string) => void): Promise<StreamResult> {
   const reader = body.getReader();
   const decoder = new TextDecoder('utf-8');
   let fullContent = '';
+  let buffer = '';
+  let finishReason: string | null = null;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    
+    // The last element is either an empty string (if buffer ended in \n) 
+    // or an incomplete line. We keep it in the buffer for the next chunk.
+    buffer = lines.pop() || '';
 
     for (const line of lines) {
-      if (line === 'data: [DONE]') return fullContent;
-      if (line.startsWith('data: ')) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      if (trimmedLine === 'data: [DONE]') return { fullContent, finishReason };
+      if (trimmedLine.startsWith('data: ')) {
         try {
-          const data = JSON.parse(line.slice(6));
+          const data = JSON.parse(trimmedLine.slice(6));
           const text = data.choices[0]?.delta?.content || '';
+          
+          if (data.choices[0]?.finish_reason) {
+            finishReason = data.choices[0].finish_reason;
+          }
+          
           fullContent += text;
           onChunk(text);
         } catch (e) {
-          // ignore parse errors for partial chunks
+          console.warn('Failed to parse SSE data chunk:', e);
         }
       }
     }
   }
-  return fullContent;
+  return { fullContent, finishReason };
 }
 
 export async function callAIStream(
@@ -57,64 +76,103 @@ export async function callAIStream(
 ): Promise<string> {
   const temperature = options?.temperature ?? 0.7;
   const max_tokens = options?.max_tokens ?? 2048;
+  const maxContinuations = 3; // Prevent infinite loops
+  let continuations = 0;
+  
+  let currentMessages = [...messages];
+  let accumulatedContent = '';
 
-  // Try Agent Router via backend proxy first
-  if (AGENT_ROUTER_API_KEY) {
-    try {
-      const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
-      const res = await fetch(AI_PROXY_URL, {
+  while (continuations <= maxContinuations) {
+    let result: StreamResult | null = null;
+
+    // Try Agent Router via backend proxy first
+    if (AGENT_ROUTER_API_KEY) {
+      try {
+        const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
+        const res = await fetch(AI_PROXY_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: currentMessages,
+            temperature,
+            max_tokens,
+            stream: true
+          })
+        });
+
+        if (res.ok && res.body) {
+          if (continuations === 0) console.log('[AI Client] Streaming response from Agent Router (via proxy)');
+          result = await handleStreamResponse(res.body, onChunk);
+        } else {
+          console.warn('Agent Router failed, falling back to Groq...', await res.text());
+        }
+      } catch (e) {
+        console.warn('Agent Router threw an error, falling back to Groq...', e);
+      }
+    }
+
+    // Fallback to Groq
+    if (!result && GROQ_API_KEY) {
+      const model = options?.groqModel || DEFAULT_GROQ_MODEL;
+      const res = await fetch(GROQ_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
         },
         body: JSON.stringify({
           model,
-          messages,
+          messages: currentMessages,
           temperature,
           max_tokens,
           stream: true
         })
       });
 
-      if (res.ok && res.body) {
-        console.log('[AI Client] Streaming response from Agent Router (via proxy)');
-        return await handleStreamResponse(res.body, onChunk);
-      } else {
-        console.warn('Agent Router failed, falling back to Groq...', await res.text());
+      if (!res.ok) {
+        if (continuations === 0) throw new Error(`Groq API error: ${res.status} - ${await res.text()}`);
+        else break; // If continuation fails, just stop
       }
-    } catch (e) {
-      console.warn('Agent Router threw an error, falling back to Groq...', e);
+      
+      if (res.body) {
+        if (continuations === 0) console.log('[AI Client] Streaming response from Groq');
+        result = await handleStreamResponse(res.body, onChunk);
+      }
+    }
+
+    if (!result) {
+      if (continuations === 0) throw new Error("No API keys configured or providers failed.");
+      break;
+    }
+
+    accumulatedContent += result.fullContent;
+
+    // Check if the AI was cut off due to max_tokens limit
+    if (result.finishReason === 'length') {
+      continuations++;
+      if (continuations > maxContinuations) {
+        console.warn('[AI Client] Reached max continuations, stopping stream.');
+        break;
+      }
+      
+      console.log(`[AI Client] Hit token limit, auto-continuing (attempt ${continuations}/${maxContinuations})...`);
+      
+      // Append the AI's partial response and ask it to continue
+      currentMessages.push({ role: 'assistant', content: result.fullContent });
+      currentMessages.push({ 
+        role: 'user', 
+        content: 'Your previous response was cut off due to a length limit. Please continue exactly from where you left off. Do NOT start a new sentence, do NOT say "Here is the continuation", just output the very next word as if you were never interrupted.' 
+      });
+    } else {
+      // Finished normally (stop, stop_sequence, etc.)
+      break;
     }
   }
 
-  // Fallback to Groq
-  if (GROQ_API_KEY) {
-    const model = options?.groqModel || DEFAULT_GROQ_MODEL;
-    const res = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        max_tokens,
-        stream: true
-      })
-    });
-
-    if (!res.ok) {
-      throw new Error(`Groq API error: ${res.status} - ${await res.text()}`);
-    }
-    if (!res.body) throw new Error('No response body from Groq');
-
-    console.log('[AI Client] Streaming response from Groq');
-    return await handleStreamResponse(res.body, onChunk);
-  }
-
-  throw new Error("No API keys configured for AI providers. Please configure VITE_AGENT_ROUTER_API_KEY or VITE_GROQ_API_KEY in your .env file.");
+  return accumulatedContent;
 }
 
 export async function callAI(

@@ -12,7 +12,7 @@ import { useTopBarContext } from '../../contexts/TopBarContext';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
 
-import { callAIStream, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
+import { callAI, callAIStream, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are UniMind AI Tutor — a super advanced academic assistant for university students. 
@@ -24,6 +24,92 @@ For diagrams, flowcharts, or visual representations, ALWAYS use \`\`\`mermaid co
 Use formatted code blocks for code snippets.
 Be concise, accurate, and highly educational.
 IMPORTANT: You MUST respond in the same language as the user's message (e.g., if the user asks in Bengali/Bangla, you must reply entirely in fluent Bengali). If the user explicitly asks you to reply in a specific language, you must reply entirely in that requested language.`;
+
+// ─── Smart Search Query Generator ─────────────────────────────────────────
+const SEARCH_QUERY_PROMPT = `You are a search query optimizer. Given a user's question and optional document context, generate 2-3 highly targeted web search queries that would find the most relevant information.
+
+Rules:
+- Each query should be a concise, keyword-rich search string (not a question)
+- If the document is about a specific topic, include key technical terms from it
+- If the user requests a specific language, include one query in that language
+- Return ONLY a JSON array of strings, nothing else
+- Example: ["DC Generator armature field winding commutator", "DC Generator working principle explained", "ডিসি জেনারেটর যন্ত্রাংশ"]`;
+
+async function generateSmartSearchQueries(
+  userMessage: string,
+  fileContent: string
+): Promise<string[]> {
+  try {
+    // Send only first ~2000 chars of file content to keep it fast
+    const contentPreview = fileContent.substring(0, 2000);
+    const prompt = fileContent
+      ? `[Document excerpt]:\n${contentPreview}\n\n[User's question]: ${userMessage}`
+      : `[User's question]: ${userMessage}`;
+
+    const response = await callAI(
+      [
+        { role: 'system', content: SEARCH_QUERY_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      { temperature: 0.3, max_tokens: 200 }
+    );
+
+    // Parse JSON array from response
+    const jsonMatch = response.match(/\[.*\]/s);
+    if (jsonMatch) {
+      const queries = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(queries) && queries.length > 0) {
+        console.log('[Smart Search] Generated queries:', queries);
+        return queries.slice(0, 3); // max 3 queries
+      }
+    }
+    // Fallback: use the user message
+    console.warn('[Smart Search] Failed to parse AI response, falling back to user message');
+    return [userMessage];
+  } catch (e) {
+    console.error('[Smart Search] Query generation failed:', e);
+    return [userMessage];
+  }
+}
+
+async function executeParallelWebSearches(queries: string[]): Promise<string[]> {
+  const allResults: string[] = [];
+  const seen = new Set<string>();
+
+  try {
+    const searchPromises = queries.map(async (query) => {
+      try {
+        const res = await fetch(`/api/web-search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          return { query, results: data.results || [] };
+        }
+      } catch (e) {
+        console.error(`[Web Search] Failed for query "${query}":`, e);
+      }
+      return { query, results: [] };
+    });
+
+    const searchResults = await Promise.all(searchPromises);
+
+    for (const { query, results } of searchResults) {
+      for (const snippet of results) {
+        // Deduplicate snippets
+        const key = snippet.substring(0, 80).toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          allResults.push(`[Query: "${query}"] ${snippet}`);
+        }
+      }
+    }
+
+    console.log(`[Web Search] Aggregated ${allResults.length} unique results from ${queries.length} queries`);
+  } catch (e) {
+    console.error('[Web Search] Parallel execution failed:', e);
+  }
+
+  return allResults;
+}
 
 // ─── Smart Contextual Simulation (Fallback) ───────────────────────────────
 async function simulateStream(question: string, onChunk: (c: string) => void): Promise<string> {
@@ -53,6 +139,7 @@ export const AITutorPage = () => {
   // File Context
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isParsing, setIsParsing] = useState(false);
+  const [researchStatus, setResearchStatus] = useState<string>('');
   const { setLeftContent } = useTopBarContext();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -232,6 +319,8 @@ export const AITutorPage = () => {
 
     if (attachedFiles.length > 0) {
       setIsParsing(true);
+      // Suppress PDF.js font warnings (harmless TrueType instruction warnings)
+      const originalWarn = console.warn;
       for (const file of attachedFiles) {
         try {
           if (file.type.startsWith('image/')) {
@@ -243,6 +332,13 @@ export const AITutorPage = () => {
             imageUrl = await promise;
             hasImage = true;
           } else if (file.type === 'application/pdf') {
+            // Temporarily suppress PDF.js font warnings
+            console.warn = (...args: any[]) => {
+              const msg = typeof args[0] === 'string' ? args[0] : '';
+              if (!msg.includes('TT:') && !msg.includes('undefined function')) {
+                originalWarn.apply(console, args);
+              }
+            };
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -250,6 +346,7 @@ export const AITutorPage = () => {
               const content = await page.getTextContent();
               allFileContent += content.items.map((item: any) => item.str).join(' ') + '\n';
             }
+            console.warn = originalWarn;
           } else if (file.name.endsWith('.docx')) {
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.extractRawText({ arrayBuffer });
@@ -259,6 +356,7 @@ export const AITutorPage = () => {
             allFileContent += text + '\n';
           }
         } catch (err) {
+          console.warn = originalWarn; // Restore on error
           console.error("Failed to parse", file.name, err);
           toast.error(`Failed to read file: ${file.name}`);
         }
@@ -292,27 +390,33 @@ export const AITutorPage = () => {
     }
 
     if (activeTools.includes('web_search')) {
-      console.log(`[Web Search] Active. Executing search for: "${messageText}"`);
-      try {
-        const searchRes = await fetch(`/api/web-search?q=${encodeURIComponent(messageText)}`);
-        if (searchRes.ok) {
-          const data = await searchRes.json();
-          if (data.results && data.results.length > 0) {
-            console.log(`[Web Search] Success! Fetched ${data.results.length} live snippets from the web.`, data.results);
-            researchContext += "\n\n[SYSTEM INSTRUCTION: WEB SEARCH MODE ACTIVE]\n" +
-              "The user has activated Web Search. Below are live search snippets from the internet regarding their query. " +
-              "Incorporate these facts into your answer seamlessly and accurately.\n\n" +
-              "[Live Web Search Results]:\n" + 
-              data.results.map((r: string, i: number) => `Result ${i + 1}: ${r}`).join('\n\n');
-          } else {
-            console.log(`[Web Search] Finished, but no snippets were found.`);
-          }
-        } else {
-          console.error(`[Web Search] Request failed with status: ${searchRes.status}`);
-        }
-      } catch (e) {
-        console.error("[Web Search] Fetch error:", e);
+      // ─── Multi-Step Smart Web Search Pipeline ───────────────────────
+      // Step 1: Generate smart search queries using AI (considers PDF content)
+      let searchQueries: string[] = [messageText];
+      
+      if (allFileContent || messageText) {
+        setResearchStatus('🔍 Analyzing your question...');
+        console.log('[Smart Search] Generating targeted queries from content + user intent...');
+        searchQueries = await generateSmartSearchQueries(messageText, allFileContent);
       }
+
+      // Step 2: Execute all search queries in parallel
+      setResearchStatus(`🌐 Searching the web (${searchQueries.length} queries)...`);
+      console.log(`[Web Search] Executing ${searchQueries.length} parallel searches:`, searchQueries);
+      
+      const webResults = await executeParallelWebSearches(searchQueries);
+      
+      if (webResults.length > 0) {
+        console.log(`[Web Search] Success! Aggregated ${webResults.length} unique snippets from ${searchQueries.length} queries.`);
+        researchContext += "\n\n[SYSTEM INSTRUCTION: WEB SEARCH MODE ACTIVE]\n" +
+          "The user has activated Web Search. Below are live search results from multiple targeted queries. " +
+          "Incorporate these facts into your answer seamlessly and accurately. Prioritize the most relevant results.\n\n" +
+          "[Live Web Search Results]:\n" + 
+          webResults.map((r: string, i: number) => `Result ${i + 1}: ${r}`).join('\n\n');
+      } else {
+        console.log(`[Web Search] Finished, but no snippets were found across all queries.`);
+      }
+      setResearchStatus('');
     }
 
     if (activeTools.includes('expanded_thinking')) {
@@ -393,6 +497,7 @@ export const AITutorPage = () => {
           {
             agentRouterModel: hasImage ? 'gpt-4o' : undefined,
             groqModel: hasImage ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
+            max_tokens: 8192,
           }
         );
       } else {
@@ -483,6 +588,7 @@ export const AITutorPage = () => {
             setInput={setInput}
             handleSend={() => handleSend()}
             isTyping={isTyping || isParsing}
+            researchStatus={researchStatus}
             attachedFiles={attachedFiles}
             onFileAttach={handleFileAttach}
             onFileRemove={handleFileRemove}
