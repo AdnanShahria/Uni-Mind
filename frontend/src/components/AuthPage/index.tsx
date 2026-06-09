@@ -664,10 +664,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
   return (
     <div className="h-[100dvh] bg-[#030712] relative overflow-hidden font-poppins selection:bg-primary/30 selection:text-white flex items-center justify-center p-4 pt-24 sm:p-6 lg:p-8">
-      {/* Background radial glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] rounded-full bg-secondary/10 blur-[150px] mix-blend-screen pointer-events-none" />
-      <div className="absolute top-[30%] left-[40%] w-[35%] h-[35%] rounded-full bg-accent/5 blur-[120px] mix-blend-screen pointer-events-none" />
+      {/* Background radial glows - Optimized for Performance */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] rounded-full bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.08)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-[30%] left-[40%] w-[35%] h-[35%] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05)_0%,transparent_70%)] pointer-events-none" />
       <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none z-0" />
 
       {/* Sleek Floating Navigation Bar */}

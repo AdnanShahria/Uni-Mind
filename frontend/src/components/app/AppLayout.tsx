@@ -8,11 +8,11 @@ const AppLayoutInner = () => {
   const { isAppFullScreen } = useTopBarContext();
   return (
     <div className={`flex h-screen bg-background overflow-hidden font-poppins selection:bg-primary/30 selection:text-white transition-all duration-300 ${isAppFullScreen ? 'p-0 gap-0' : 'p-0 gap-0 md:p-4 md:gap-4'}`}>
-      {/* Global Background Effects */}
+      {/* Global Background Effects - Optimized for Performance */}
       <div className="fixed inset-0 bg-grid-pattern z-0 opacity-20 pointer-events-none" />
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob" />
-      <div className="fixed top-[40%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob animation-delay-2000" />
-      <div className="fixed bottom-[-10%] left-[20%] w-[40%] h-[40%] rounded-full bg-accent/10 blur-[150px] mix-blend-screen pointer-events-none animate-blob animation-delay-4000" />
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none animate-blob" />
+      <div className="fixed top-[40%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.08)_0%,transparent_70%)] pointer-events-none animate-blob animation-delay-2000" />
+      <div className="fixed bottom-[-10%] left-[20%] w-[40%] h-[40%] rounded-full bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_70%)] pointer-events-none animate-blob animation-delay-4000" />
 
       {/* Sidebar — Desktop Only */}
       {!isAppFullScreen && (
