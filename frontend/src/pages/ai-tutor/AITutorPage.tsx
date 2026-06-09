@@ -124,17 +124,25 @@ export const AITutorPage = () => {
         }
 
         if (convId) {
-          const { data: msgs } = await turso
-            .from('ai_messages')
-            .select('*')
-            .eq('conversation_id', convId)
-            .order('created_at', { ascending: true });
+          try {
+            const { data: msgs } = await turso
+              .from('ai_messages')
+              .select('*')
+              .eq('conversation_id', convId)
+              .order('created_at', { ascending: true });
 
-          if (msgs && msgs.length > 0) {
-            setMessages(msgs);
-          } else {
+            if (msgs && msgs.length > 0) {
+              setMessages(msgs);
+            } else {
+              setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+            }
+          } catch (err) {
+            console.error('Failed to fetch messages for conversation:', err);
             setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
           }
+        } else {
+          // Logged-in user with no conversations — show welcome message
+          setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
         }
       } else {
         setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
@@ -153,15 +161,20 @@ export const AITutorPage = () => {
   const handleSelectConversation = async (id: string) => {
     setActiveConvId(id);
     setMessages([]); // Clear immediately for smooth transition
-    const { data: msgs } = await turso
-      .from('ai_messages')
-      .select('*')
-      .eq('conversation_id', id)
-      .order('created_at', { ascending: true });
-    
-    if (msgs && msgs.length > 0) {
-      setMessages(msgs);
-    } else {
+    try {
+      const { data: msgs } = await turso
+        .from('ai_messages')
+        .select('*')
+        .eq('conversation_id', id)
+        .order('created_at', { ascending: true });
+      
+      if (msgs && msgs.length > 0) {
+        setMessages(msgs);
+      } else {
+        setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+      }
+    } catch (err) {
+      console.error('Failed to load conversation messages:', err);
       setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
     }
     // Auto-close sidebar on mobile after selection
@@ -349,7 +362,7 @@ export const AITutorPage = () => {
       let finalContent = '';
 
       if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
-        const history = messages.filter(m => m.role === 'user' || m.role === 'assistant' && !m.id.toString().startsWith('welcome'));
+        const history = messages.filter(m => (m.role === 'user' || m.role === 'assistant') && !m.id.toString().startsWith('welcome'));
         
         let formattedUserMessage: any = backendMessageText;
         if (hasImage && imageUrl) {
@@ -396,6 +409,9 @@ export const AITutorPage = () => {
           role: 'assistant',
           content: finalContent
         }]);
+
+        // Update conversation's updated_at so sidebar ordering stays correct
+        await turso.from('ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', currentConvId);
       }
     } catch (err) {
       console.error(err);
