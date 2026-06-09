@@ -107,6 +107,7 @@ export const CommunityDetailPage = () => {
 
   useEffect(() => {
     fetchCommunityData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
   // Join Community

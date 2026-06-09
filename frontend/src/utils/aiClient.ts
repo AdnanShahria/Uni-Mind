@@ -25,6 +25,7 @@ async function handleStreamResponse(body: ReadableStream<Uint8Array>, onChunk: (
   const decoder = new TextDecoder('utf-8');
   let fullContent = '';
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;

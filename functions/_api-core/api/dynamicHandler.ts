@@ -8,7 +8,7 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
     const payload = verifyToken(request);
     
     // These tables allow public read (GET) without authentication
-    const publicReadTables = ['post_likes', 'post_comments', 'post_shares', 'ai_prompts', 'ai_suggestions'];
+    const publicReadTables = ['post_likes', 'post_comments', 'post_shares', 'ai_prompts', 'ai_suggestions', 'users'];
     const isPublicRead = request.method === 'GET' && publicReadTables.includes(table);
 
     // Only logged in users can access dynamic routes, except public GETs
@@ -25,6 +25,9 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
       if (request.method === "GET") {
         const urlObj = new URL(request.url);
         let sql = `SELECT * FROM ${table}`;
+        if (table === 'users') {
+          sql = `SELECT id, name, institution, major, role, session, district, country, avatar_url, knowledge_score, study_streak, badges, created_at FROM ${table}`;
+        }
         let args: any[] = [];
         let whereClauses: string[] = [];
         

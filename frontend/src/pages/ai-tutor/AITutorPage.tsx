@@ -201,6 +201,7 @@ export const AITutorPage = () => {
 
     setInput('');
     setIsTyping(true);
+    setActiveTools([]); // Reset tools when message is sent
 
     // Parse files NOW before sending
     let allFileContent = '';
@@ -407,7 +408,7 @@ export const AITutorPage = () => {
       />
     );
     return () => setLeftContent(null);
-  }, [isSidebarOpen, messages, userId]); 
+  }, [isSidebarOpen, messages, userId, setLeftContent]); 
 
   const handlePromptClick = (prompt: string) => {
     setInput(prompt);

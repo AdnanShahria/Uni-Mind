@@ -109,8 +109,7 @@ export const LeaderboardPage = () => {
     };
     
     fetchLeaderboard();
-    fetchLeaderboard();
-  }, [activeTab, filters]);
+  }, [activeTab, filters, currentUser]);
 
   const top3 = users.slice(0, 3);
   const others = users.slice(3);

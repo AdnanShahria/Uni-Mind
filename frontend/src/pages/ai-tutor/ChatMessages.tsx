@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
-import { Bot, Copy, ThumbsUp, ThumbsDown, Check, Lightbulb, BookOpen, FileText } from 'lucide-react';
-import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, Copy, ThumbsUp, ThumbsDown, Check, Lightbulb, BookOpen, FileText, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -43,52 +43,153 @@ const ThinkingIndicator = () => {
 };
 
 const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const [svgContent, setSvgContent] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
-  
+
   useEffect(() => {
     if (!chart) return;
-    
     let isCancelled = false;
-
     const renderChart = async () => {
       try {
         await mermaid.parse(chart);
         if (isCancelled) return;
         const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, chart);
-        if (ref.current && !isCancelled) {
-          ref.current.innerHTML = svg;
+        if (!isCancelled) {
+          setSvgContent(svg);
+          setError('');
         }
       } catch (e: any) {
-        if (isCancelled) return;
-        if (ref.current) {
-          if (isTyping) {
-            ref.current.innerHTML = `<div class="animate-pulse text-primary/70 text-sm p-4 flex items-center gap-2"><div class="w-4 h-4 rounded-full border-2 border-primary/50 border-t-primary animate-spin"></div> Drawing diagram...</div>`;
-          } else {
-            ref.current.innerHTML = `<pre class="text-rose-400 text-xs p-4 overflow-auto">Invalid Diagram Syntax:\n${e.message || String(e)}</pre>`;
-          }
+        if (!isCancelled) {
+          setError(e.message || String(e));
+          setSvgContent('');
         }
       }
     };
-
     renderChart();
+    return () => { isCancelled = true; };
+  }, [chart]);
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [chart, isTyping]);
-  
   return (
-    <div className="relative group my-6">
-       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden shadow-xl z-10">
-         <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold">+</button>
-         <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">100%</button>
-         <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold">-</button>
-       </div>
-       <div className="flex justify-center bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl overflow-x-auto overflow-y-hidden min-h-[80px]">
-         <div ref={ref} style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }} />
-       </div>
-    </div>
+    <>
+      <div className="relative group my-6">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex z-10">
+          <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-white/10 hover:bg-slate-700 rounded-lg shadow-xl text-xs font-medium text-slate-300 transition-colors">
+            <Maximize2 className="w-3.5 h-3.5" />
+            Zoom
+          </button>
+        </div>
+        <div className="flex justify-center bg-white/[0.02] border border-white/[0.08] p-4 rounded-xl overflow-x-auto overflow-y-hidden min-h-[80px]">
+          {error ? (
+            isTyping ? (
+               <div className="animate-pulse text-primary/70 text-sm p-4 flex items-center gap-2"><div className="w-4 h-4 rounded-full border-2 border-primary/50 border-t-primary animate-spin"></div> Drawing diagram...</div>
+            ) : (
+               <pre className="text-rose-400 text-xs p-4 overflow-auto">Invalid Diagram Syntax:{"\n"}{error}</pre>
+            )
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: svgContent }} className="mermaid-wrapper" />
+          )}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8" 
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="relative w-full max-w-6xl max-h-full bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0">
+                <h3 className="text-sm font-medium text-slate-200">Visual Diagram</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
+                    <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
+                    <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">{Math.round(zoom * 100)}%</button>
+                    <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto p-8 bg-[#0a0a0a] flex items-center justify-center min-h-[50vh] cursor-grab active:cursor-grabbing custom-scrollbar">
+                 <div style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', transition: 'transform 0.2s ease-out' }}>
+                    <div dangerouslySetInnerHTML={{ __html: svgContent }} className="mermaid-wrapper-large" />
+                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+const ModernTable = ({ children, ...props }: any) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const TableContent = () => (
+    <table className="w-full text-left border-collapse text-sm whitespace-nowrap md:whitespace-normal" {...props}>
+      {children}
+    </table>
+  );
+
+  return (
+    <>
+      <div className="relative group my-6">
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex z-10">
+          <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-white/10 hover:bg-slate-700 rounded-lg shadow-xl text-xs font-medium text-slate-300 transition-colors">
+            <Maximize2 className="w-3.5 h-3.5" />
+            Zoom
+          </button>
+        </div>
+        <div className="overflow-x-auto rounded-xl border border-white/[0.08] bg-white/[0.02] shadow-sm">
+          <TableContent />
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8" 
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="relative w-full max-w-6xl max-h-full bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0">
+                <h3 className="text-sm font-medium text-slate-200">Data Table</h3>
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
+                    <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
+                    <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">{Math.round(zoom * 100)}%</button>
+                    <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-auto p-8 bg-[#0a0a0a] flex items-start justify-center min-h-[50vh] custom-scrollbar">
+                 <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }} className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 shadow-lg min-w-max">
+                    <TableContent />
+                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
@@ -159,19 +260,13 @@ export const ChatMessages = ({
                         rehypePlugins={[rehypeKatex]}
                         components={{
                           table({ children, ...props }: any) {
-                            return (
-                              <div className="overflow-x-auto my-6 rounded-xl border border-white/[0.08] bg-white/[0.02]">
-                                <table className="w-full text-left border-collapse text-sm" {...props}>
-                                  {children}
-                                </table>
-                              </div>
-                            );
+                            return <ModernTable {...props}>{children}</ModernTable>;
                           },
                           th({ children, ...props }: any) {
-                            return <th className="px-4 py-3 bg-white/[0.04] border-b border-white/[0.08] font-semibold text-slate-200" {...props}>{children}</th>;
+                            return <th className="px-4 py-3 bg-white/[0.04] border-b border-white/[0.08] font-semibold text-slate-200 uppercase text-[11px] tracking-wider" {...props}>{children}</th>;
                           },
                           td({ children, ...props }: any) {
-                            return <td className="px-4 py-3 border-b border-white/[0.04] text-slate-300" {...props}>{children}</td>;
+                            return <td className="px-4 py-3 border-b border-white/[0.04] text-slate-300 text-[13px]" {...props}>{children}</td>;
                           },
                           // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           code({ node: _node, inline, className, children, ...props }: any) {

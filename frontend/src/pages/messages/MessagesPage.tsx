@@ -51,7 +51,7 @@ export const MessagesPage = () => {
       </div>
     );
     return () => setLeftContent(null);
-  }, [setIsNewChatOpen]);
+  }, [setIsNewChatOpen, setLeftContent]);
 
   const fetchConversations = async (userId: string) => {
     const { data: userConvs } = await turso

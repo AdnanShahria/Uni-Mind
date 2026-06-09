@@ -29,7 +29,7 @@ export const FeedPage = () => {
       </div>
     );
     return () => setLeftContent(null);
-  }, []);
+  }, [setLeftContent]);
 
   useEffect(() => {
     // Get current user session

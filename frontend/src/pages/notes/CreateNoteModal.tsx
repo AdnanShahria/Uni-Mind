@@ -117,7 +117,7 @@ export const CreateNoteModal = ({
       const { data: { user } } = await turso.auth.getUser();
       if (!user) { toast.error('Please sign in first'); return; }
 
-      let folderId: string | null = selectedFolder || currentFolderId;
+      const folderId: string | null = selectedFolder || currentFolderId;
 
       const { error } = await turso.from('notes').insert([{
         author_id: user.id,
