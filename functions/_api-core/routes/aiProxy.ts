@@ -36,8 +36,10 @@ export async function handleAiProxyRoutes(
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-  const apiKey = rawKey.replace(/^["']|["']$/g, '');
-  console.log(`[AI Proxy] Key length=${apiKey.length}, starts="${apiKey.substring(0, 6)}..."`);
+  const apiKey = rawKey.replace(/^["']|["']$/g, '').trim();
+  console.log(`[AI Proxy] Raw key length=${rawKey.length}, cleaned length=${apiKey.length}`);
+  console.log(`[AI Proxy] Raw first/last char codes: ${rawKey.charCodeAt(0)}, ${rawKey.charCodeAt(rawKey.length - 1)}`);
+  console.log(`[AI Proxy] Key starts="${apiKey.substring(0, 10)}..." ends="...${apiKey.substring(apiKey.length - 6)}"`);
 
   try {
     const body = await request.text();
