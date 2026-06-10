@@ -163,7 +163,7 @@ export const TopBar = () => {
   };
 
   return (
-    <header className="h-14 md:h-16 border-b md:border border-white/[0.08] bg-slate-900/60 backdrop-blur-xl flex items-center justify-between px-3 md:px-6 z-30 shrink-0 rounded-none md:rounded-[2rem] shadow-xl">
+    <header className="h-14 md:h-16 border-b md:border border-white/[0.08] bg-slate-900/60 backdrop-blur-xl flex items-center justify-between px-3 md:px-6 z-30 shrink-0 rounded-none md:rounded-[2rem] shadow-xl overflow-hidden">
       {/* Left: Logo (mobile) or Search/Title */}
       <div className="relative flex-1 max-w-xl">
         {leftContent ? (
@@ -180,7 +180,7 @@ export const TopBar = () => {
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-1.5 md:gap-2 ml-2 md:ml-4">
+      <div className="flex items-center gap-1.5 md:gap-2 ml-2 md:ml-4 shrink-0">
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}

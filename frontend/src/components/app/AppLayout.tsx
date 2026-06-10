@@ -7,7 +7,9 @@ import { TopBarProvider, useTopBarContext } from '../../contexts/TopBarContext';
 const AppLayoutInner = () => {
   const { isAppFullScreen } = useTopBarContext();
   return (
-    <div className={`flex h-screen bg-background overflow-hidden font-poppins selection:bg-primary/30 selection:text-white transition-all duration-300 ${isAppFullScreen ? 'p-0 gap-0' : 'p-0 gap-0 md:p-4 md:gap-4'}`}>
+    <div
+      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className={`flex h-[100dvh] bg-background overflow-hidden font-poppins selection:bg-primary/30 selection:text-white transition-all duration-300 ${isAppFullScreen ? 'p-0 gap-0' : 'p-0 gap-0 md:p-4 md:gap-4'}`}>
       {/* Global Background Effects - Optimized for Performance */}
       <div className="fixed inset-0 bg-grid-pattern z-0 opacity-20 pointer-events-none" />
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)] pointer-events-none animate-blob" />
@@ -26,7 +28,7 @@ const AppLayoutInner = () => {
         {!isAppFullScreen && <TopBar />}
 
         {/* Page Content */}
-        <main className={`flex-1 overflow-y-scroll overflow-x-hidden bg-slate-900/40 backdrop-blur-md relative transition-all duration-300 pb-16 md:pb-0 ${isAppFullScreen ? 'rounded-none border-0 shadow-none' : 'rounded-none md:rounded-3xl border-0 md:border md:border-white/[0.05] shadow-none md:shadow-2xl'}`}>
+        <main className={`flex-1 overflow-y-scroll overflow-x-hidden bg-slate-900/40 backdrop-blur-md relative transition-all duration-300 pb-24 md:pb-0 ${isAppFullScreen ? 'rounded-none border-0 shadow-none' : 'rounded-none md:rounded-3xl border-0 md:border md:border-white/[0.05] shadow-none md:shadow-2xl'}`}>
           <Outlet />
         </main>
       </div>

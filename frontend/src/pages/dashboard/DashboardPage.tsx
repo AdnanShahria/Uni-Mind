@@ -30,89 +30,54 @@ export const DashboardPage = () => {
       }
       setUserName(user.user_metadata?.name?.split(' ')[0] || 'Scholar');
 
-      // 1. Fetch recent activity (from posts)
-      let posts = null;
       try {
-        const response = await fetch('/api/feed');
+        const token = localStorage.getItem('unimind_token');
+        const headers: any = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch('/api/dashboard/data', { headers });
         const json = await response.json();
         if (json.success && json.data) {
-          posts = json.data;
+          const { stats: rawStats, upcomingTasks: rawTasks, recentActivity: rawActivity, aiSuggestions: rawSuggestions } = json.data;
+
+          const iconMap: Record<string, any> = {
+            StickyNote,
+            Brain,
+            Flame,
+            Users,
+            FileText,
+            MessageCircle
+          };
+
+          if (rawStats) {
+            setStats(rawStats.map((s: any) => ({
+              ...s,
+              icon: iconMap[s.icon] || StickyNote
+            })));
+          }
+
+          if (rawTasks) {
+            setUpcomingTasks(rawTasks);
+          }
+
+          if (rawActivity) {
+            setRecentActivity(rawActivity.map((act: any) => ({
+              ...act,
+              icon: iconMap[act.icon] || FileText
+            })));
+          }
+
+          if (rawSuggestions) {
+            setAiSuggestions(rawSuggestions);
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch dashboard feed:', err);
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setIsLoading(false);
       }
-
-      if (posts) {
-        setRecentActivity(posts.map((post: any) => {
-          const diff = Date.now() - new Date(post.created_at).getTime();
-          const mins = Math.floor(diff / 60000);
-          const timeStr = mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ago`;
-          return {
-            icon: post.type === 'document' ? FileText : MessageCircle,
-            title: post.content.substring(0, 40) + (post.content.length > 40 ? '...' : ''),
-            subtitle: 'Academic Feed Post',
-            time: timeStr,
-            color: 'text-cyan-400',
-            bgColor: 'bg-cyan-500/10',
-            path: post.type === 'document' ? '/app/notes' : '/app/feed',
-          };
-        }));
-      }
-
-      // 2. Fetch AI Suggestions
-      const { data: suggestions } = await turso
-        .from('ai_suggestions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (suggestions) setAiSuggestions(suggestions);
-
-      // 3. Fetch Upcoming Tasks
-      const { data: tasks } = await turso
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .order('due_date', { ascending: true })
-        .limit(4);
-      if (tasks) {
-        setUpcomingTasks(tasks.map((t: any) => {
-           const d = new Date(t.due_date);
-           return {
-             id: t.id,
-             title: t.title,
-             date: `${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`,
-             color: t.priority === 'high' ? 'bg-red-500' : t.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-           };
-        }));
-      }
-
-      // 4. Calculate Stats (Mocked or simple aggregations for now)
-      setStats([
-        {
-          label: 'Notes Uploaded', value: '47', change: '+12 this week',
-          icon: StickyNote, color: 'from-amber-500/20 to-orange-500/20', borderColor: 'border-amber-500/20',
-          iconColor: 'text-amber-400', changeColor: 'text-emerald-400', path: '/app/notes'
-        },
-        {
-          label: 'AI Queries', value: '156', change: '+34 today',
-          icon: Brain, color: 'from-purple-500/20 to-violet-500/20', borderColor: 'border-purple-500/20',
-          iconColor: 'text-purple-400', changeColor: 'text-emerald-400', path: '/app/ai'
-        },
-        {
-          label: 'Study Streak', value: '14', change: 'days straight 🔥',
-          icon: Flame, color: 'from-rose-500/20 to-pink-500/20', borderColor: 'border-rose-500/20',
-          iconColor: 'text-rose-400', changeColor: 'text-orange-400', path: '/app/planner'
-        },
-        {
-          label: 'Connections', value: '89', change: '+5 new peers',
-          icon: Users, color: 'from-cyan-500/20 to-teal-500/20', borderColor: 'border-cyan-500/20',
-          iconColor: 'text-cyan-400', changeColor: 'text-emerald-400', path: '/app/communities'
-        }
-      ]);
-
-      setIsLoading(false);
     };
 
     fetchDashboardData();
@@ -123,7 +88,7 @@ export const DashboardPage = () => {
       initial="initial"
       animate="animate"
       variants={stagger}
-      className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto"
+      className="px-3 pt-3 pb-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto"
     >
       <WelcomeHeader userName={userName} />
       <StatsGrid stats={stats} />

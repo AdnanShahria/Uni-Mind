@@ -37,7 +37,7 @@ export const TodaySchedule = ({
           <Clock className="w-4 h-4 text-orange-400" />
           {dateLabel}
         </h3>
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+        <div className="flex items-center gap-2 pb-1 sm:pb-0 flex-wrap sm:flex-nowrap">
           <CustomDatePicker 
             selectedDate={selectedDate}
             onDateChange={onDateChange}

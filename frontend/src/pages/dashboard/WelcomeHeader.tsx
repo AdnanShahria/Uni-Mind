@@ -8,7 +8,7 @@ export const WelcomeHeader = ({ userName }: { userName: string }) => {
 
   useEffect(() => {
     setLeftContent(
-      <div className="flex items-center justify-between gap-3 w-full pr-2">
+      <div className="flex items-center justify-between gap-3 w-full min-w-0 overflow-hidden pr-2">
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold font-outfit text-white tracking-tight truncate">
             Welcome back, <span className="text-gradient">{userName}</span> 👋

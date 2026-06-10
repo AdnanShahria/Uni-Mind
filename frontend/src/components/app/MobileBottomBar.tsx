@@ -202,7 +202,7 @@ export const MobileBottomBar = () => {
 
       {/* Bottom Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-[80] md:hidden">
-        <div className="bg-slate-900/80 backdrop-blur-2xl border-t border-white/[0.06] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-[env(safe-area-inset-bottom)]">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border-t border-white/[0.06] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-[max(env(safe-area-inset-bottom),12px)]">
           <div className="flex items-center justify-around h-16 px-1">
             {primaryNav.map((item) => {
               const active = isActive(item.path);
