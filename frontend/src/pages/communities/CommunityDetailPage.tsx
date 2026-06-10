@@ -47,12 +47,13 @@ export const CommunityDetailPage = () => {
       }
       setUserId(user.id);
 
-      const API_URL = 'http://localhost:8787';
       const token = localStorage.getItem('unimind_token');
-      const headers = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
       // 1. Fetch community details
       const { data: comms, error } = await turso
@@ -84,18 +85,62 @@ export const CommunityDetailPage = () => {
         setUserRole(null);
       }
 
-      // 3. Fetch community posts using backend endpoint
-      const postsRes = await fetch(`${API_URL}/api/communities/posts?communityId=${id}`, { headers });
+      // 3. Fetch community posts via dynamic API
+      const postsRes = await fetch(`/api/dynamic/posts?eq_community_id=${id}&order=created_at&dir=desc`, { headers });
       const postsJson = await postsRes.json();
       if (postsJson.success) {
-        setPosts(postsJson.data || []);
+        // Enrich posts with author info
+        const rawPosts = postsJson.data || [];
+        const authorIds = [...new Set(rawPosts.map((p: any) => p.author_id))];
+        let usersMap: Record<string, any> = {};
+        if (authorIds.length > 0) {
+          try {
+            const usersRes = await fetch(`/api/dynamic/users`, { headers });
+            const usersJson = await usersRes.json();
+            if (usersJson.success && usersJson.data) {
+              usersJson.data.forEach((u: any) => { usersMap[u.id] = u; });
+            }
+          } catch { /* ignore user fetch errors */ }
+        }
+        const enrichedPosts = rawPosts.map((p: any) => {
+          const author = usersMap[p.author_id];
+          return {
+            ...p,
+            author_name: author?.name || 'Scholar',
+            author_avatar: author?.avatar_url || null,
+          };
+        });
+        setPosts(enrichedPosts);
       }
 
-      // 4. Fetch community members roster
-      const membersRes = await fetch(`${API_URL}/api/communities/members?communityId=${id}`, { headers });
+      // 4. Fetch community members roster via dynamic API
+      const membersRes = await fetch(`/api/dynamic/community_members?eq_community_id=${id}`, { headers });
       const membersJson = await membersRes.json();
       if (membersJson.success) {
-        setMembers(membersJson.data || []);
+        const rawMembers = membersJson.data || [];
+        // Enrich members with user profile data
+        const memberUserIds = rawMembers.map((m: any) => m.user_id);
+        let memberUsersMap: Record<string, any> = {};
+        if (memberUserIds.length > 0) {
+          try {
+            const usersRes = await fetch(`/api/dynamic/users`, { headers });
+            const usersJson = await usersRes.json();
+            if (usersJson.success && usersJson.data) {
+              usersJson.data.forEach((u: any) => { memberUsersMap[u.id] = u; });
+            }
+          } catch { /* ignore */ }
+        }
+        const enrichedMembers = rawMembers.map((m: any) => {
+          const u = memberUsersMap[m.user_id];
+          return {
+            ...m,
+            name: u?.name || 'Scholar',
+            avatar_url: u?.avatar_url || null,
+            major: u?.major || '',
+            institution: u?.institution || '',
+          };
+        });
+        setMembers(enrichedMembers);
       }
     } catch (err: any) {
       console.error(err);
@@ -185,11 +230,35 @@ export const CommunityDetailPage = () => {
     }
 
     try {
-      const API_URL = 'http://localhost:8787';
-      const res = await fetch(`${API_URL}/api/dynamic/post_comments?eqColumn=post_id&eqValue=${postId}`);
+      const token = localStorage.getItem('unimind_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/dynamic/post_comments?eq_post_id=${postId}&order=created_at&dir=asc`, { headers });
       const json = await res.json();
       if (json.success) {
-        setPostComments(prev => ({ ...prev, [postId]: json.data || [] }));
+        // Enrich comments with author info
+        const rawComments = json.data || [];
+        let usersMap: Record<string, any> = {};
+        const authorIds = [...new Set(rawComments.map((c: any) => c.author_id))];
+        if (authorIds.length > 0) {
+          try {
+            const usersRes = await fetch(`/api/dynamic/users`, { headers });
+            const usersJson = await usersRes.json();
+            if (usersJson.success && usersJson.data) {
+              usersJson.data.forEach((u: any) => { usersMap[u.id] = u; });
+            }
+          } catch { /* ignore */ }
+        }
+        const enrichedComments = rawComments.map((c: any) => {
+          const author = usersMap[c.author_id];
+          return {
+            ...c,
+            author_name: author?.name || 'Scholar',
+            author_avatar: author?.avatar_url || null,
+          };
+        });
+        setPostComments(prev => ({ ...prev, [postId]: enrichedComments }));
       }
       setActiveCommentsPostId(postId);
     } catch (err) {
@@ -219,11 +288,27 @@ export const CommunityDetailPage = () => {
       toast.success('Comment added!');
 
       // Refresh comments
-      const API_URL = 'http://localhost:8787';
-      const res = await fetch(`${API_URL}/api/dynamic/post_comments?eqColumn=post_id&eqValue=${postId}`);
+      const token2 = localStorage.getItem('unimind_token');
+      const hdr: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token2) hdr['Authorization'] = `Bearer ${token2}`;
+
+      const res = await fetch(`/api/dynamic/post_comments?eq_post_id=${postId}&order=created_at&dir=asc`, { headers: hdr });
       const json = await res.json();
       if (json.success) {
-        setPostComments(prev => ({ ...prev, [postId]: json.data || [] }));
+        const rawComments = json.data || [];
+        let usersMap: Record<string, any> = {};
+        try {
+          const usersRes = await fetch(`/api/dynamic/users`, { headers: hdr });
+          const usersJson = await usersRes.json();
+          if (usersJson.success && usersJson.data) {
+            usersJson.data.forEach((u: any) => { usersMap[u.id] = u; });
+          }
+        } catch { /* ignore */ }
+        const enrichedComments = rawComments.map((c: any) => {
+          const author = usersMap[c.author_id];
+          return { ...c, author_name: author?.name || 'Scholar', author_avatar: author?.avatar_url || null };
+        });
+        setPostComments(prev => ({ ...prev, [postId]: enrichedComments }));
       }
     } catch (err) {
       console.error(err);
@@ -558,16 +643,16 @@ export const CommunityDetailPage = () => {
                                 ) : (
                                   postComments[post.id].map((comment) => (
                                     <div key={comment.id} className="flex gap-2.5 py-1">
-                                      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-[10px] text-white uppercase shrink-0">
+                                      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-[10px] text-white uppercase shrink-0 overflow-hidden">
                                         {comment.author_avatar ? (
-                                          <img src={comment.author_avatar} alt="avatar" className="w-full h-full object-cover" />
+                                          <img src={comment.author_avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                         ) : (
-                                          'SC'
+                                          (comment.author_name || 'Scholar').substring(0, 2)
                                         )}
                                       </div>
                                       <div className="flex-1 bg-white/[0.02] border border-white/[0.04] rounded-xl px-3 py-2">
                                         <div className="flex items-center justify-between">
-                                          <span className="text-[11.5px] font-semibold text-slate-300 font-poppins">Scholar</span>
+                                          <span className="text-[11.5px] font-semibold text-slate-300 font-poppins">{comment.author_name || 'Scholar'}</span>
                                           <span className="text-[9px] text-slate-500 font-poppins">{new Date(comment.created_at).toLocaleDateString()}</span>
                                         </div>
                                         <p className="text-[12px] text-slate-300 font-poppins mt-0.5 leading-relaxed">{comment.content}</p>

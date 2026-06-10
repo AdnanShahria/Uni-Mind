@@ -23,10 +23,27 @@ export const CommunityViewModal = ({ isOpen, onClose, community }: CommunityView
     if (!community?.id) return;
     setLoadingPosts(true);
     try {
-      const res = await fetch(`/api/communities/posts?communityId=${community.id}`);
+      const token = localStorage.getItem('unimind_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/dynamic/posts?eq_community_id=${community.id}&order=created_at&dir=desc`, { headers });
       const json = await res.json();
       if (json.success) {
-        setPosts(json.data || []);
+        const rawPosts = json.data || [];
+        // Enrich with author info
+        let usersMap: Record<string, any> = {};
+        try {
+          const usersRes = await fetch(`/api/dynamic/users`, { headers });
+          const usersJson = await usersRes.json();
+          if (usersJson.success && usersJson.data) {
+            usersJson.data.forEach((u: any) => { usersMap[u.id] = u; });
+          }
+        } catch { /* ignore */ }
+        setPosts(rawPosts.map((p: any) => {
+          const author = usersMap[p.author_id];
+          return { ...p, author_name: author?.name || 'Scholar', author_avatar: author?.avatar_url || null };
+        }));
       }
     } catch (err) {
       console.error('Failed to fetch community posts:', err);
@@ -39,10 +56,27 @@ export const CommunityViewModal = ({ isOpen, onClose, community }: CommunityView
     if (!community?.id) return;
     setLoadingMembers(true);
     try {
-      const res = await fetch(`/api/communities/members?communityId=${community.id}`);
+      const token = localStorage.getItem('unimind_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/dynamic/community_members?eq_community_id=${community.id}`, { headers });
       const json = await res.json();
       if (json.success) {
-        setMembers(json.data || []);
+        const rawMembers = json.data || [];
+        // Enrich with user info
+        let usersMap: Record<string, any> = {};
+        try {
+          const usersRes = await fetch(`/api/dynamic/users`, { headers });
+          const usersJson = await usersRes.json();
+          if (usersJson.success && usersJson.data) {
+            usersJson.data.forEach((u: any) => { usersMap[u.id] = u; });
+          }
+        } catch { /* ignore */ }
+        setMembers(rawMembers.map((m: any) => {
+          const u = usersMap[m.user_id];
+          return { ...m, name: u?.name || 'Scholar', avatar_url: u?.avatar_url || null, major: u?.major || '', institution: u?.institution || '' };
+        }));
       }
     } catch (err) {
       console.error('Failed to fetch community members:', err);
