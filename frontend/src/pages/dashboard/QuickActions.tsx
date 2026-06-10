@@ -26,7 +26,7 @@ export const QuickActions = () => {
       ].map((action, i) => (
         <button
           key={i}
-          onClick={() => navigate(action.path)}
+          onClick={() => navigate(action.path, action.path === '/app/ai' ? { state: { newChat: Date.now() } } : undefined)}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-medium font-poppins transition-all ${action.color}`}
         >
           <action.icon className="w-3.5 h-3.5" />

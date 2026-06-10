@@ -82,14 +82,17 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
       if (request.method === "POST" || request.method === "PUT") {
         const body: any = await request.json();
         
-        // For updates, we expect an ID
-        if (request.method === "PUT" || (body && body.id && Object.keys(body).length < 4)) {
+        // For updates, we expect an ID or user_id for user_preferences
+        const isUserPrefs = table === 'user_preferences';
+        const primaryKeyCol = isUserPrefs ? 'user_id' : 'id';
+        const primaryKeyValue = body[primaryKeyCol];
+
+        if (request.method === "PUT" || (body && primaryKeyValue && Object.keys(body).length < 4)) {
             // It's a partial update
-            const id = body.id;
-            if (!id) {
-                return new Response(JSON.stringify({ error: "Missing ID for update" }), { status: 400, headers: corsHeaders });
+            if (!primaryKeyValue) {
+                return new Response(JSON.stringify({ error: `Missing ${primaryKeyCol} for update` }), { status: 400, headers: corsHeaders });
             }
-            const updateKeys = Object.keys(body).filter(k => k !== 'id');
+            const updateKeys = Object.keys(body).filter(k => k !== primaryKeyCol);
             if (updateKeys.length === 0) {
                  return new Response(JSON.stringify({ success: true, data: body }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
@@ -103,11 +106,11 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
             
             const setClause = updateKeys.map(k => `${k} = ?`).join(', ');
             const args = updateKeys.map(k => body[k]);
-            args.push(id);
+            args.push(primaryKeyValue);
             
             if (db) {
                 await db.execute({
-                    sql: `UPDATE ${table} SET ${setClause} WHERE id = ?`,
+                    sql: `UPDATE ${table} SET ${setClause} WHERE ${primaryKeyCol} = ?`,
                     args: args
                 });
             }
@@ -125,7 +128,30 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
             } else {
                  if (!body.user_id) body.user_id = payload.userId;
             }
-            if (!body.id && table !== 'community_members' && table !== 'post_likes' && table !== 'post_shares') {
+
+            if (isUserPrefs) {
+                // Check if user preferences exist to handle upsert (insert or update)
+                if (db) {
+                    const exists = await db.execute({
+                        sql: `SELECT 1 FROM user_preferences WHERE user_id = ?`,
+                        args: [body.user_id]
+                    });
+                    if (exists.rows.length > 0) {
+                        const updateKeys = Object.keys(body).filter(k => k !== 'user_id');
+                        const setClause = updateKeys.map(k => `${k} = ?`).join(', ');
+                        const args = updateKeys.map(k => body[k]);
+                        args.push(body.user_id);
+                        await db.execute({
+                            sql: `UPDATE user_preferences SET ${setClause} WHERE user_id = ?`,
+                            args: args
+                        });
+                        return new Response(JSON.stringify({ success: true, data: body }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                    }
+                }
+            }
+
+            const tablesWithoutId = ['community_members', 'post_likes', 'conversation_members', 'user_preferences'];
+            if (!body.id && !tablesWithoutId.includes(table)) {
                  body.id = crypto.randomUUID();
             }
 

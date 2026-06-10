@@ -211,6 +211,7 @@ export const MobileBottomBar = () => {
                   key={item.path}
                   to={item.path}
                   end={item.path === '/app'}
+                  state={item.path === '/app/ai' ? { newChat: Date.now() } : undefined}
                   className="flex-1 flex flex-col items-center justify-center gap-0.5 py-1 outline-none relative"
                 >
                   {/* Active glow dot */}

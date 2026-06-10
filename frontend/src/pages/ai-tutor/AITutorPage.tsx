@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import { useTopBarContext } from '../../contexts/TopBarContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
 
@@ -141,6 +142,8 @@ export const AITutorPage = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [researchStatus, setResearchStatus] = useState<string>('');
   const { setLeftContent } = useTopBarContext();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
@@ -238,12 +241,20 @@ export const AITutorPage = () => {
     fetchData();
   }, [initConversation]);
 
-  const handleNewChat = async () => {
+  const handleNewChat = useCallback(async () => {
     setMessages([{ id: 'welcome-' + Date.now(), role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
     setInput('');
     setAttachedFiles([]);
     setActiveConvId(null);
-  };
+  }, [GREETING]);
+
+  useEffect(() => {
+    if (location.state?.newChat) {
+      handleNewChat();
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.newChat, handleNewChat, navigate, location.pathname]);
 
   const handleSelectConversation = async (id: string) => {
     setActiveConvId(id);

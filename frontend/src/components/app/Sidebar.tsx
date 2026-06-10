@@ -191,7 +191,7 @@ export const Sidebar = () => {
             return navItems.map((item) => {
               const active = isActive(item.path);
               return (
-                <NavLink key={item.path} to={item.path} end={item.path === '/app'} className="block outline-none">
+                <NavLink key={item.path} to={item.path} end={item.path === '/app'} className="block outline-none" state={item.path === '/app/ai' ? { newChat: Date.now() } : undefined}>
                   <motion.div
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}

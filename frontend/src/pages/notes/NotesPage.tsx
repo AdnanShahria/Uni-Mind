@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { turso } from '../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
 
@@ -175,18 +175,21 @@ export const NotesPage = () => {
     displayNotes.sort((a, b) => dbNotes.indexOf(a) - dbNotes.indexOf(b));
   }
 
-  const navigateToFolder = (folderId: string | null) => {
+  const navigateToFolder = useCallback((folderId: string | null) => {
     setCurrentFolderId(folderId);
-  };
+  }, []);
 
-  const breadcrumbs: BreadcrumbItem[] = [];
-  let curr = currentFolderId;
-  while (curr) {
-    const folder = allFolders.find(f => f.id === curr);
-    if (!folder) break;
-    breadcrumbs.unshift({ id: folder.id, name: folder.name });
-    curr = folder.parent_id || null;
-  }
+  const breadcrumbs = useMemo(() => {
+    const list: BreadcrumbItem[] = [];
+    let curr = currentFolderId;
+    while (curr) {
+      const folder = allFolders.find(f => f.id === curr);
+      if (!folder) break;
+      list.unshift({ id: folder.id, name: folder.name });
+      curr = folder.parent_id || null;
+    }
+    return list;
+  }, [currentFolderId, allFolders]);
 
   const toggleStar = async (e: React.MouseEvent, noteId: string | number) => {
     e.stopPropagation();
@@ -211,6 +214,10 @@ export const NotesPage = () => {
     setDbNotes(prev => prev.filter(n => n.id !== id));
   };
 
+  const handleNoteCreated = useCallback(() => {
+    fetchNotes(true);
+  }, [fetchNotes]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -218,7 +225,7 @@ export const NotesPage = () => {
       className="p-4 pb-24 md:p-6 lg:p-8 max-w-[1400px] mx-auto"
     >
       <NotesHeader 
-        onNoteCreated={() => fetchNotes(true)} 
+        onNoteCreated={handleNoteCreated} 
         currentFolderId={currentFolderId} 
         breadcrumbs={breadcrumbs}
         onNavigate={navigateToFolder}

@@ -25,9 +25,12 @@ export const AITutorSidebar = ({
 }: SidebarProps) => {
   return (
     <div 
-      className={`shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0A0A0A] transition-all duration-300
-        ${isOpen ? 'w-64' : 'w-0 overflow-hidden border-none'}
+      className={`shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0A0A0A] transition-all duration-300 ease-in-out
         absolute md:relative inset-y-0 left-0 z-20
+        ${isOpen 
+          ? 'translate-x-0 w-64' 
+          : '-translate-x-full w-64 md:translate-x-0 md:w-0 md:overflow-hidden md:border-none'
+        }
       `}
     >
       <div className="p-4 flex items-center justify-between border-b border-white/[0.06]">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StickyNote, Plus, Search, FolderPlus } from 'lucide-react';
+import { StickyNote, Plus, FolderPlus } from 'lucide-react';
 import { CreateNoteModal } from './CreateNoteModal';
 import { CreateFolderModal } from './CreateFolderModal';
 import { FolderBreadcrumbs, BreadcrumbItem } from './FolderBreadcrumbs';

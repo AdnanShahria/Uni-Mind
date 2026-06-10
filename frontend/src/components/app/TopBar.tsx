@@ -481,7 +481,7 @@ export const TopBar = () => {
                 name="global-search"
                 autoComplete="off"
                 placeholder="Search anything... (⌘K)"
-                value={globalSearchQuery}
+                value={globalSearchQuery ?? ''}
                 onChange={(e) => setGlobalSearchQuery(e.target.value)}
                 className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none font-poppins min-w-0"
                 onFocus={() => setSearchFocused(true)}
@@ -559,7 +559,7 @@ export const TopBar = () => {
                     type="text"
                     autoFocus
                     placeholder="Search notes, people, communities..."
-                    value={globalSearchQuery}
+                    value={globalSearchQuery ?? ''}
                     onChange={(e) => setGlobalSearchQuery(e.target.value)}
                     className="flex-1 bg-transparent text-[15px] text-slate-200 placeholder-slate-500 outline-none font-poppins min-w-0"
                   />
