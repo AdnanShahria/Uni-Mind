@@ -28,7 +28,7 @@ const AppLayoutInner = () => {
         {!isAppFullScreen && <TopBar />}
 
         {/* Page Content */}
-        <main className={`flex-1 overflow-y-scroll overflow-x-hidden bg-slate-900/40 backdrop-blur-md relative transition-all duration-300 pb-24 md:pb-0 ${isAppFullScreen ? 'rounded-none border-0 shadow-none' : 'rounded-none md:rounded-3xl border-0 md:border md:border-white/[0.05] shadow-none md:shadow-2xl'}`}>
+        <main className={`flex-1 flex flex-col overflow-y-scroll overflow-x-hidden bg-slate-900/40 backdrop-blur-md relative transition-all duration-300 pb-[calc(3rem+env(safe-area-inset-bottom)+0.5rem)] md:pb-0 ${isAppFullScreen ? 'rounded-none border-0 shadow-none' : 'rounded-none md:rounded-3xl border-0 md:border md:border-white/[0.05] shadow-none md:shadow-2xl'}`}>
           <Outlet />
         </main>
       </div>

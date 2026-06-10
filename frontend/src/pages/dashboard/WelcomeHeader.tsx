@@ -8,9 +8,9 @@ export const WelcomeHeader = ({ userName }: { userName: string }) => {
 
   useEffect(() => {
     setLeftContent(
-      <div className="flex items-center justify-between gap-3 w-full min-w-0 overflow-hidden pr-2">
+      <div className="flex items-center justify-between gap-2 md:gap-3 w-full min-w-0 overflow-hidden pr-1 md:pr-2">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold font-outfit text-white tracking-tight truncate">
+          <h1 className="text-sm md:text-lg sm:text-xl font-bold font-outfit text-white tracking-tight truncate">
             Welcome back, <span className="text-gradient">{userName}</span> 👋
           </h1>
           <p className="text-xs text-slate-400 font-poppins mt-0.5 hidden md:block">

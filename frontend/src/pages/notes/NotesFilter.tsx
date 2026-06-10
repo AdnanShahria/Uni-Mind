@@ -1,11 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Grid3X3, List, ArrowDownUp, Check } from 'lucide-react';
+import { Filter, Grid3X3, List, ArrowDownUp, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { fadeIn } from './data';
 
 interface NotesFilterProps {
-  searchQuery: string;
-  setSearchQuery: (val: string) => void;
   filterActive: boolean;
   setFilterActive: (val: boolean) => void;
   viewMode: 'list' | 'grid';
@@ -15,8 +13,6 @@ interface NotesFilterProps {
 }
 
 export const NotesFilter = ({
-  searchQuery,
-  setSearchQuery,
   filterActive,
   setFilterActive,
   viewMode,
@@ -40,17 +36,6 @@ export const NotesFilter = ({
   return (
     <>
       <motion.div variants={fadeIn} className="flex items-center gap-1.5 sm:gap-2">
-        <div className="hidden sm:flex flex-1 max-w-md items-center gap-2 h-9 px-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/10 transition-all focus-within:border-primary/50 focus-within:bg-white/[0.06] shadow-inner">
-          <Search className="w-3.5 h-3.5 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent text-xs text-slate-200 placeholder-slate-500 outline-none font-poppins"
-          />
-        </div>
-        
         {/* Sort Dropdown */}
         {setSortBy && sortBy && (
           <div className="relative" ref={sortRef}>

@@ -6,6 +6,8 @@ interface TopBarContextType {
   setLeftContent: (content: ReactNode | null) => void;
   isAppFullScreen: boolean;
   setIsAppFullScreen: (v: boolean) => void;
+  globalSearchQuery: string;
+  setGlobalSearchQuery: (v: string) => void;
 }
 
 export const TopBarContext = createContext<TopBarContextType>({
@@ -13,13 +15,16 @@ export const TopBarContext = createContext<TopBarContextType>({
   setLeftContent: () => {},
   isAppFullScreen: false,
   setIsAppFullScreen: () => {},
+  globalSearchQuery: '',
+  setGlobalSearchQuery: () => {},
 });
 
 export const TopBarProvider = ({ children }: { children: ReactNode }) => {
   const [leftContent, setLeftContent] = useState<ReactNode | null>(null);
   const [isAppFullScreen, setIsAppFullScreen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   return (
-    <TopBarContext.Provider value={{ leftContent, setLeftContent, isAppFullScreen, setIsAppFullScreen }}>
+    <TopBarContext.Provider value={{ leftContent, setLeftContent, isAppFullScreen, setIsAppFullScreen, globalSearchQuery, setGlobalSearchQuery }}>
       {children}
     </TopBarContext.Provider>
   );

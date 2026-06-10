@@ -545,7 +545,7 @@ export const AITutorPage = () => {
   };
 
   return (
-    <div className="flex h-full relative overflow-hidden">
+    <div className="flex flex-1 w-full relative overflow-hidden">
       <AITutorSidebar
         conversations={conversations}
         activeConvId={activeConvId}

@@ -11,16 +11,12 @@ interface NotesHeaderProps {
   currentFolderId: string | null;
   breadcrumbs: BreadcrumbItem[];
   onNavigate: (id: string | null) => void;
-  searchQuery: string;
-  setSearchQuery: (val: string) => void;
   filterActive: boolean;
   setFilterActive: (val: boolean) => void;
   viewMode: 'list' | 'grid';
   setViewMode: (val: 'list' | 'grid') => void;
   sortBy?: 'date' | 'name' | 'pages';
   setSortBy?: (val: 'date' | 'name' | 'pages') => void;
-  isSearchModalOpen?: boolean;
-  setIsSearchModalOpen?: (val: boolean) => void;
 }
 
 export const NotesHeader = ({ 
@@ -28,16 +24,12 @@ export const NotesHeader = ({
   currentFolderId, 
   breadcrumbs, 
   onNavigate,
-  searchQuery,
-  setSearchQuery,
   filterActive,
   setFilterActive,
   viewMode,
   setViewMode,
   sortBy,
-  setSortBy,
-  isSearchModalOpen,
-  setIsSearchModalOpen
+  setSortBy
 }: NotesHeaderProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -70,8 +62,6 @@ export const NotesHeader = ({
 
           <div className="hidden xl:block pl-4 shrink-0">
             <NotesFilter 
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
               filterActive={filterActive}
               setFilterActive={setFilterActive}
               viewMode={viewMode}
@@ -98,19 +88,13 @@ export const NotesHeader = ({
             <span className="hidden sm:inline">New Note</span>
             <span className="inline sm:hidden">Note</span>
           </button>
-          <button 
-            onClick={() => setIsSearchModalOpen?.(true)}
-            className="flex sm:hidden w-9 h-9 items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
-          >
-            <Search className="w-3.5 h-3.5 text-slate-300" />
-          </button>
         </div>
       </div>
     );
     return () => setLeftContent(null);
   }, [
-    currentFolderId, breadcrumbs, onNavigate, searchQuery, filterActive, viewMode, sortBy,
-    setLeftContent, setSearchQuery, setFilterActive, setViewMode, setSortBy, isSearchModalOpen, setIsSearchModalOpen
+    currentFolderId, breadcrumbs, onNavigate, filterActive, viewMode, sortBy,
+    setLeftContent, setFilterActive, setViewMode, setSortBy
   ]);
 
   return (
@@ -139,8 +123,6 @@ export const NotesHeader = ({
 
         <div className="flex-1 flex justify-end shrink-0">
           <NotesFilter 
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
             filterActive={filterActive}
             setFilterActive={setFilterActive}
             viewMode={viewMode}

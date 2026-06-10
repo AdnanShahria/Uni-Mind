@@ -202,8 +202,8 @@ export const MobileBottomBar = () => {
 
       {/* Bottom Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-[80] md:hidden">
-        <div className="bg-slate-900/80 backdrop-blur-2xl border-t border-white/[0.06] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-[max(env(safe-area-inset-bottom),12px)]">
-          <div className="flex items-center justify-around h-16 px-1">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border-t border-l border-r border-slate-700 rounded-t-[24px] shadow-[0_-4px_24px_rgba(0,0,0,0.3)] pb-[max(env(safe-area-inset-bottom),6px)]">
+          <div className="flex items-center justify-around h-12 px-1">
             {primaryNav.map((item) => {
               const active = isActive(item.path);
               return (
@@ -222,12 +222,12 @@ export const MobileBottomBar = () => {
                     />
                   )}
                   <item.icon
-                    className={`w-5 h-5 transition-all duration-200 ${
+                    className={`w-4 h-4 transition-all duration-200 ${
                       active ? item.color || 'text-white' : 'text-white/40'
                     }`}
                     strokeWidth={active ? 2.2 : 1.6}
                   />
-                  <span className={`text-[9px] font-medium font-poppins transition-colors duration-200 ${
+                  <span className={`text-[8px] font-medium font-poppins transition-colors duration-200 ${
                     active ? 'text-white' : 'text-white/35'
                   }`}>
                     {item.label}
@@ -247,12 +247,12 @@ export const MobileBottomBar = () => {
                 />
               )}
               <MoreHorizontal
-                className={`w-5 h-5 transition-all duration-200 ${
+                className={`w-4 h-4 transition-all duration-200 ${
                   isMoreActive || moreOpen ? 'text-primary-glow' : 'text-white/40'
                 }`}
                 strokeWidth={isMoreActive || moreOpen ? 2.2 : 1.6}
               />
-              <span className={`text-[9px] font-medium font-poppins transition-colors duration-200 ${
+              <span className={`text-[8px] font-medium font-poppins transition-colors duration-200 ${
                 isMoreActive || moreOpen ? 'text-white' : 'text-white/35'
               }`}>
                 More

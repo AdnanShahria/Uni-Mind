@@ -1,6 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
 import { turso } from '../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
 
@@ -9,6 +8,7 @@ import { NotesHeader } from './NotesHeader';
 import { FolderGrid } from './FolderGrid';
 import { NotesList } from './NotesList';
 import { BreadcrumbItem } from './FolderBreadcrumbs';
+import { useTopBarContext } from '../../contexts/TopBarContext';
 
 export const NotesPage = () => {
   const [dbNotes, setDbNotes] = useState<NoteType[]>([]);
@@ -16,12 +16,11 @@ export const NotesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // UI State
-  const [searchQuery, setSearchQuery] = useState('');
+  const { globalSearchQuery, setGlobalSearchQuery } = useTopBarContext();
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [allFolders, setAllFolders] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [filterActive, setFilterActive] = useState(false);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'pages'>('date');
 
   const fetchNotes = useCallback(async (background = false) => {
@@ -156,10 +155,10 @@ export const NotesPage = () => {
 
   const currentChildrenFolders = dbFolders.filter(f => (f.parent_id || null) === currentFolderId);
 
-  if (searchQuery.trim() !== '') {
+  if (globalSearchQuery.trim() !== '') {
     displayNotes = displayNotes.filter(n =>
-      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      n.course.toLowerCase().includes(searchQuery.toLowerCase())
+      n.title.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
+      n.course.toLowerCase().includes(globalSearchQuery.toLowerCase())
     );
   } else {
     // Only filter by currentFolderId if not searching
@@ -223,16 +222,12 @@ export const NotesPage = () => {
         currentFolderId={currentFolderId} 
         breadcrumbs={breadcrumbs}
         onNavigate={navigateToFolder}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         filterActive={filterActive}
         setFilterActive={setFilterActive}
         viewMode={viewMode}
         setViewMode={setViewMode}
         sortBy={sortBy}
         setSortBy={setSortBy}
-        isSearchModalOpen={isSearchModalOpen}
-        setIsSearchModalOpen={setIsSearchModalOpen}
       />
 
       {currentChildrenFolders.length > 0 && (
@@ -245,52 +240,13 @@ export const NotesPage = () => {
       <NotesList
         notes={displayNotes}
         isLoading={isLoading}
-        searchQuery={searchQuery}
+        searchQuery={globalSearchQuery}
         viewMode={viewMode}
-        onClearFilters={() => { setSearchQuery(''); }}
+        onClearFilters={() => { setGlobalSearchQuery(''); }}
         toggleStar={toggleStar}
         onNoteDeleted={handleNoteDeleted}
         onNoteUpdated={() => fetchNotes(true)}
       />
-
-      {/* Mobile Search Modal */}
-      <AnimatePresence>
-        {isSearchModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm sm:hidden px-4 pt-20"
-            onClick={() => setIsSearchModalOpen(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-white/10 p-2 rounded-2xl shadow-2xl flex items-center gap-2"
-            >
-              <div className="flex-1 flex items-center gap-2.5 h-12 px-4 rounded-xl bg-white/[0.04] border border-primary/30 focus-within:bg-white/[0.06]">
-                <Search className="w-4 h-4 text-primary-glow" />
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Search notes..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-[15px] text-slate-200 placeholder-slate-500 outline-none font-poppins" 
-                />
-              </div>
-              <button 
-                onClick={() => setIsSearchModalOpen(false)}
-                className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
-              >
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };
