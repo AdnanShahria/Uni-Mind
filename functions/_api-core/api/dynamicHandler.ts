@@ -125,7 +125,7 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
             } else {
                  if (!body.user_id) body.user_id = payload.userId;
             }
-            if (!body.id) {
+            if (!body.id && table !== 'community_members' && table !== 'post_likes' && table !== 'post_shares') {
                  body.id = crypto.randomUUID();
             }
 
