@@ -154,7 +154,8 @@ Answer the user's questions based on this note content. Be concise, helpful, and
           const assistantContent = await callAI(apiMessages, {
             groqModel: 'llama-3.1-8b-instant',
             temperature: 0.6,
-            max_tokens: 1024
+            max_tokens: 1024,
+            provider: 'agent-router'
           });
           setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
         } catch (error) {

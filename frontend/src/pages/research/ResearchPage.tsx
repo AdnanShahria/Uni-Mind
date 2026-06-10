@@ -140,7 +140,7 @@ export const ResearchPage = () => {
           
           <div className="space-y-4 overflow-y-auto pr-2">
             <CollaboratorsList collaborators={dbCollaborators} />
-            <ResearchStats />
+            <ResearchStats papers={dbPapers} />
           </div>
         </div>
       </div>

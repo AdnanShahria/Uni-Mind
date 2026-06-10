@@ -12,7 +12,8 @@ const callGroq = async (prompt: string, model: string = 'llama-3.1-8b-instant', 
       [{ role: 'user', content: prompt }],
       {
         groqModel: model,
-        responseFormat
+        responseFormat,
+        provider: 'agent-router'
       }
     );
   } catch (error) {

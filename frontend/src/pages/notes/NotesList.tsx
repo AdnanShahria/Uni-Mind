@@ -133,15 +133,15 @@ export const NotesList = ({
                 transition={{ delay: 0.1 + (i % 10) * 0.05 }}
                 className={
                   viewMode === 'list'
-                    ? `flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative first:rounded-t-2xl last:rounded-b-2xl ${openMenuId === note.id ? 'z-50' : 'z-0'}`
-                    : `flex flex-col p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-3 relative ${openMenuId === note.id ? 'z-50' : 'z-0'}`
+                    ? `flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative first:rounded-t-2xl last:rounded-b-2xl ${openMenuId === note.id ? 'z-50' : 'z-0'}`
+                    : `flex flex-col p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-2 sm:gap-3 relative ${openMenuId === note.id ? 'z-50' : 'z-0'}`
                 }
               >
                 <div
                   className={
                     viewMode === 'list'
-                      ? 'w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0'
-                      : 'w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center'
+                      ? 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0'
+                      : 'w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center'
                   }
                 >
                   <FileText className={`${viewMode === 'list' ? 'w-5 h-5' : 'w-6 h-6'} ${note.color}`} />
@@ -202,7 +202,7 @@ export const NotesList = ({
                       <button
                         onClick={e => handleOptionsClick(e, note.id)}
                         className={`w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-all ${
-                          viewMode === 'list' ? 'opacity-0 group-hover:opacity-100' : ''
+                          viewMode === 'list' ? 'sm:opacity-0 sm:group-hover:opacity-100 opacity-100' : ''
                         }`}
                       >
                         <MoreHorizontal className="w-3.5 h-3.5" />

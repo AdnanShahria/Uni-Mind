@@ -27,7 +27,8 @@ async function generateSummary(title: string, content: string): Promise<string> 
       {
         groqModel: 'llama-3.1-8b-instant',
         temperature: 0.5,
-        max_tokens: 300
+        max_tokens: 300,
+        provider: 'agent-router'
       }
     );
     return summaryContent;
@@ -61,7 +62,8 @@ Content: ${content || 'Basic general knowledge about ' + title}`;
       {
         groqModel: 'llama-3.3-70b-versatile',
         temperature: 0.3,
-        responseFormat: { type: "json_object" }
+        responseFormat: { type: "json_object" },
+        provider: 'agent-router'
       }
     );
     

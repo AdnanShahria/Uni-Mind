@@ -14,6 +14,7 @@ export interface NoteType {
   course: string;
   pages: number;
   lastEdited: string;
+  createdAt?: string;
   starred: boolean;
   color: string;
   aiSummary: boolean;

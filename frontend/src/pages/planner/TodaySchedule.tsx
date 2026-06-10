@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, CheckCircle2, Circle, AlertTriangle, Target, Mountain, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Clock, CheckCircle2, Circle, AlertTriangle, Target, Mountain, MoreVertical, Pencil, Trash2, Brain, Plus } from 'lucide-react';
+import { CustomDatePicker } from './CustomDatePicker';
 
 export const TodaySchedule = ({ 
   displayTasks, 
   weeklyGoals, 
   longTermGoals, 
   selectedDate = new Date(), 
+  onDateChange,
+  onOpenModal,
+  onAIOptimize,
   onTaskToggle,
   onEdit,
   onDelete
@@ -15,6 +19,9 @@ export const TodaySchedule = ({
   weeklyGoals?: any[], 
   longTermGoals?: any[], 
   selectedDate?: Date, 
+  onDateChange: (date: Date) => void,
+  onOpenModal: () => void,
+  onAIOptimize: () => void,
   onTaskToggle?: (taskId: string, currentStatus: string) => void,
   onEdit?: (task: any) => void,
   onDelete?: (id: string, type: 'task' | 'weekly' | 'long-term') => void
@@ -25,14 +32,32 @@ export const TodaySchedule = ({
   
   return (
     <div className={`lg:col-span-2 rounded-2xl glass-card transition-all ${activeMenuId ? 'relative z-50' : 'relative z-10'}`}>
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-        <h3 className="text-sm font-semibold text-white font-poppins flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-white/[0.06]">
+        <h3 className="text-sm font-semibold text-white font-poppins flex items-center gap-2 shrink-0">
           <Clock className="w-4 h-4 text-orange-400" />
           {dateLabel}
         </h3>
-        <span className="text-[10px] text-slate-500 font-poppins">
-          {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-        </span>
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+          <CustomDatePicker 
+            selectedDate={selectedDate}
+            onDateChange={onDateChange}
+          />
+          <button 
+            onClick={onOpenModal}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-glow text-white text-[10px] sm:text-xs font-semibold font-poppins transition-all shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 active:scale-95 whitespace-nowrap"
+          >
+            <Plus className="w-3.5 h-3.5" /> 
+            Add Objective
+          </button>
+          
+          <button 
+            onClick={onAIOptimize}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-400 text-[10px] sm:text-xs font-semibold font-poppins transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+          >
+            <Brain className="w-3.5 h-3.5" /> 
+            AI Optimize
+          </button>
+        </div>
       </div>
       <div className="divide-y divide-white/[0.04]">
         {displayTasks.length === 0 ? (
@@ -108,7 +133,7 @@ export const TodaySchedule = ({
                 </div>
 
                 {/* 3-Dot Action Menu */}
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center">
+                <div className={`absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center transition-opacity duration-200 ${activeMenuId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

@@ -18,6 +18,7 @@ export interface CallAIOptions {
   responseFormat?: any;
   agentRouterModel?: string;
   groqModel?: string;
+  provider?: 'groq' | 'agent-router';
 }
 
 export interface StreamResult {
@@ -76,17 +77,17 @@ export async function callAIStream(
 ): Promise<string> {
   const temperature = options?.temperature ?? 0.7;
   const max_tokens = options?.max_tokens ?? 2048;
+  const provider = options?.provider ?? 'groq';
   const maxContinuations = 3; // Prevent infinite loops
   let continuations = 0;
   
-  let currentMessages = [...messages];
+  const currentMessages = [...messages];
   let accumulatedContent = '';
 
   while (continuations <= maxContinuations) {
     let result: StreamResult | null = null;
 
-    // Try Agent Router via backend proxy first
-    if (AGENT_ROUTER_API_KEY) {
+    if (provider === 'agent-router' && AGENT_ROUTER_API_KEY) {
       try {
         const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
         const res = await fetch(AI_PROXY_URL, {
@@ -107,15 +108,14 @@ export async function callAIStream(
           if (continuations === 0) console.log('[AI Client] Streaming response from Agent Router (via proxy)');
           result = await handleStreamResponse(res.body, onChunk);
         } else {
-          console.warn('Agent Router failed, falling back to Groq...', await res.text());
+          console.warn('Agent Router failed...', await res.text());
         }
       } catch (e) {
-        console.warn('Agent Router threw an error, falling back to Groq...', e);
+        console.warn('Agent Router threw an error...', e);
       }
     }
 
-    // Fallback to Groq
-    if (!result && GROQ_API_KEY) {
+    if (!result && (provider === 'groq' || !AGENT_ROUTER_API_KEY) && GROQ_API_KEY) {
       const model = options?.groqModel || DEFAULT_GROQ_MODEL;
       const res = await fetch(GROQ_URL, {
         method: 'POST',
@@ -144,7 +144,7 @@ export async function callAIStream(
     }
 
     if (!result) {
-      if (continuations === 0) throw new Error("No API keys configured or providers failed.");
+      if (continuations === 0) throw new Error(`No API keys configured or provider ${provider} failed.`);
       break;
     }
 
@@ -181,9 +181,9 @@ export async function callAI(
 ): Promise<string> {
   const temperature = options?.temperature ?? 0.5;
   const max_tokens = options?.max_tokens;
+  const provider = options?.provider ?? 'groq';
 
-  // Try Agent Router via backend proxy first
-  if (AGENT_ROUTER_API_KEY) {
+  if (provider === 'agent-router' && AGENT_ROUTER_API_KEY) {
     try {
       const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
       const payload: any = { model, messages, temperature };
@@ -203,15 +203,14 @@ export async function callAI(
         console.log('[AI Client] Received response from Agent Router (via proxy)');
         return data.choices?.[0]?.message?.content || '';
       } else {
-        console.warn('Agent Router failed, falling back to Groq...', await res.text());
+        console.warn('Agent Router failed...', await res.text());
       }
     } catch (e) {
-      console.warn('Agent Router threw an error, falling back to Groq...', e);
+      console.warn('Agent Router threw an error...', e);
     }
   }
 
-  // Fallback to Groq
-  if (GROQ_API_KEY) {
+  if ((provider === 'groq' || !AGENT_ROUTER_API_KEY) && GROQ_API_KEY) {
     const model = options?.groqModel || DEFAULT_GROQ_MODEL;
     const payload: any = { model, messages, temperature };
     if (max_tokens) payload.max_tokens = max_tokens;
@@ -236,5 +235,5 @@ export async function callAI(
     return data.choices?.[0]?.message?.content || '';
   }
 
-  throw new Error("No API keys configured for AI providers. Please configure VITE_AGENT_ROUTER_API_KEY or VITE_GROQ_API_KEY in your .env file.");
+  throw new Error(`No API keys configured or provider ${provider} failed.`);
 }

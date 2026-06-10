@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useCallback } from 'react';
+import { Search, X } from 'lucide-react';
 import { turso } from '../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
 
@@ -20,6 +21,8 @@ export const NotesPage = () => {
   const [allFolders, setAllFolders] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [filterActive, setFilterActive] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'pages'>('date');
 
   const fetchNotes = useCallback(async (background = false) => {
     if (!background) {
@@ -121,6 +124,7 @@ export const NotesPage = () => {
             course: n.folders?.name || 'General',
             pages,
             lastEdited: timeStr,
+            createdAt: n.created_at,
             starred: n.is_starred || false,
             color: NOTE_COLORS[idx % NOTE_COLORS.length],
             aiSummary: n.is_ai_summarized || false,
@@ -148,7 +152,7 @@ export const NotesPage = () => {
   }, [fetchNotes]);
 
   // ── Derived display data ──────────────────────────────────────────────────
-  let displayNotes = dbNotes;
+  let displayNotes = [...dbNotes];
 
   const currentChildrenFolders = dbFolders.filter(f => (f.parent_id || null) === currentFolderId);
 
@@ -160,6 +164,16 @@ export const NotesPage = () => {
   } else {
     // Only filter by currentFolderId if not searching
     displayNotes = displayNotes.filter(n => (n.folder_id || null) === currentFolderId);
+  }
+
+  // Apply Sort
+  if (sortBy === 'name') {
+    displayNotes.sort((a, b) => a.title.localeCompare(b.title));
+  } else if (sortBy === 'pages') {
+    displayNotes.sort((a, b) => b.pages - a.pages);
+  } else {
+    // sort by date (fallback to original dbNotes order which is newest first)
+    displayNotes.sort((a, b) => dbNotes.indexOf(a) - dbNotes.indexOf(b));
   }
 
   const navigateToFolder = (folderId: string | null) => {
@@ -215,6 +229,10 @@ export const NotesPage = () => {
         setFilterActive={setFilterActive}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        isSearchModalOpen={isSearchModalOpen}
+        setIsSearchModalOpen={setIsSearchModalOpen}
       />
 
       {currentChildrenFolders.length > 0 && (
@@ -234,6 +252,45 @@ export const NotesPage = () => {
         onNoteDeleted={handleNoteDeleted}
         onNoteUpdated={() => fetchNotes(true)}
       />
+
+      {/* Mobile Search Modal */}
+      <AnimatePresence>
+        {isSearchModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm sm:hidden px-4 pt-20"
+            onClick={() => setIsSearchModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-white/10 p-2 rounded-2xl shadow-2xl flex items-center gap-2"
+            >
+              <div className="flex-1 flex items-center gap-2.5 h-12 px-4 rounded-xl bg-white/[0.04] border border-primary/30 focus-within:bg-white/[0.06]">
+                <Search className="w-4 h-4 text-primary-glow" />
+                <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Search notes..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-[15px] text-slate-200 placeholder-slate-500 outline-none font-poppins" 
+                />
+              </div>
+              <button 
+                onClick={() => setIsSearchModalOpen(false)}
+                className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

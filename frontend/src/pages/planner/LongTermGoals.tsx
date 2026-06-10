@@ -88,7 +88,7 @@ export const LongTermGoals = ({
                 </div>
 
                 {/* 3-Dot Action Menu */}
-                <div className="absolute right-0 top-0 z-20 flex items-center">
+                <div className={`absolute right-0 top-0 z-20 flex items-center transition-opacity duration-200 ${activeMenuId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

@@ -24,17 +24,17 @@ export const FolderGrid = ({ folders, onFolderClick }: FolderGridProps) => {
             transition={{ delay: 0.1 + i * 0.08 }}
             className={`
               relative overflow-hidden text-left
-              px-5 py-4 rounded-2xl border transition-all duration-300
-              group flex items-start gap-4 hover:-translate-y-1
+              px-4 sm:px-5 py-4 rounded-2xl border transition-all duration-300
+              group flex flex-col sm:flex-row items-start gap-3 sm:gap-4 hover:-translate-y-1
               bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.08]
             `}
           >
-            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${folder.color} border ${folder.borderColor} mb-3 inline-block`}>
-              <FolderOpen className="w-6 h-6 text-white" />
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${folder.color} border ${folder.borderColor} shrink-0`}>
+              <FolderOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white font-poppins">{folder.name}</p>
-              <p className="text-[11px] text-slate-400 font-poppins mt-0.5">{folder.count} items</p>
+            <div className="min-w-0 w-full">
+              <p className="text-[13px] sm:text-sm font-semibold text-white font-poppins truncate">{folder.name}</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-poppins mt-0.5 truncate">{folder.count} items</p>
             </div>
           </motion.button>
         ))}

@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS public.research_papers (
     authors TEXT,
     abstract TEXT,
     url VARCHAR(1000),
-    status VARCHAR(50) DEFAULT 'to_read' NOT NULL, -- 'to_read', 'reading', 'read'
+    journal VARCHAR(255),
+    year VARCHAR(4),
+    citations INTEGER DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'to_read' NOT NULL, -- 'to_read', 'reading', 'read', 'writing', 'completed'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

@@ -161,7 +161,7 @@ UNIMIND transforms scattered, passive study materials into an **active, intellig
 | **Primary Database** | Neon PostgreSQL | Serverless, scalable relational database |
 | **Authentication** | Supabase Auth | Battle-tested auth with social login, magic links, and RLS |
 | **File Storage** | Cloudflare R2 | S3-compatible storage with zero egress fees — critical for media |
-| **AI Engine** | OpenAI APIs | GPT models for tutoring, summarization, and content generation |
+| **AI Engine** | OpenAI / Groq / Agent Router | Flexible provider setup for tutoring, summarization, and content generation. Notes and Tutor use Agent Router proxy, others use Groq directly. |
 | **Semantic Search** | pgvector | Vector similarity search directly in PostgreSQL |
 | **OCR / Document AI** | Google Document AI | Best-in-class extraction for handwritten notes and scans |
 

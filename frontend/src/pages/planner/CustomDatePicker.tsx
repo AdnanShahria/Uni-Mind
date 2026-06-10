@@ -110,7 +110,6 @@ export const CustomDatePicker = ({ selectedDate, onDateChange }: CustomDatePicke
         className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/10 active:scale-[0.98] px-4 py-2 rounded-xl transition-all cursor-pointer select-none font-poppins"
       >
         <CalendarIcon className="w-4 h-4 text-orange-400" />
-        <span className="text-xs font-semibold text-slate-300">Select Date:</span>
         <span className="text-sm font-medium text-white">{formatDateString(selectedDate)}</span>
       </button>
 

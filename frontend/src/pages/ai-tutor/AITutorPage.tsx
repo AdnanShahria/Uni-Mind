@@ -51,7 +51,7 @@ async function generateSmartSearchQueries(
         { role: 'system', content: SEARCH_QUERY_PROMPT },
         { role: 'user', content: prompt }
       ],
-      { temperature: 0.3, max_tokens: 200 }
+      { temperature: 0.3, max_tokens: 200, provider: 'agent-router' }
     );
 
     // Parse JSON array from response
@@ -498,6 +498,7 @@ export const AITutorPage = () => {
             agentRouterModel: hasImage ? 'gpt-4o' : undefined,
             groqModel: hasImage ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
             max_tokens: 8192,
+            provider: 'agent-router'
           }
         );
       } else {

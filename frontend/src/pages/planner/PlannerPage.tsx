@@ -225,9 +225,9 @@ export const PlannerPage = () => {
     } else {
       // CREATE MODE
       if (type === 'long-term') {
-        await turso.from('long_term_goals').insert([{ user_id: user.id, goal: data.title }]);
+        await turso.from('long_term_goals').insert([{ id: crypto.randomUUID(), user_id: user.id, goal: data.title }]);
       } else if (type === 'weekly') {
-        await turso.from('weekly_goals').insert([{ user_id: user.id, goal: data.title, long_term_goal_id: data.parentId || null }]);
+        await turso.from('weekly_goals').insert([{ id: crypto.randomUUID(), user_id: user.id, goal: data.title, long_term_goal_id: data.parentId || null }]);
       } else if (type === 'task') {
         const due = data.date ? new Date(data.date) : new Date();
         if (!data.date) {
@@ -235,6 +235,7 @@ export const PlannerPage = () => {
         }
         
         const insertObj: any = { 
+          id: crypto.randomUUID(),
           user_id: user.id, 
           title: data.title, 
           due_date: due.toISOString(), 
@@ -343,6 +344,7 @@ export const PlannerPage = () => {
 
     const inserts = newTasks.map(t => {
       const insertObj: any = {
+        id: crypto.randomUUID(),
         user_id: user.id,
         title: t.title,
         due_date: new Date(t.date).toISOString(),
@@ -375,10 +377,6 @@ export const PlannerPage = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto">
       <PlannerHeader 
         userName={userName} 
-        onOpenModal={() => { setEditItem(null); setIsModalOpen(true); }} 
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        onAIOptimize={() => setIsAiOptimizerOpen(true)}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -387,6 +385,9 @@ export const PlannerPage = () => {
           weeklyGoals={dbGoals} 
           longTermGoals={dbLongTermGoals}
           selectedDate={selectedDate} 
+          onDateChange={setSelectedDate}
+          onOpenModal={() => { setEditItem(null); setIsModalOpen(true); }}
+          onAIOptimize={() => setIsAiOptimizerOpen(true)}
           onTaskToggle={handleTaskToggle} 
           onEdit={(task) => {
             setEditItem({

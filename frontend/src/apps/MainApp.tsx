@@ -62,6 +62,7 @@ function MainApp() {
             <Route path="communities" element={<CommunitiesPage />} />
             <Route path="communities/:id" element={<CommunityDetailPage />} />
             <Route path="messages" element={<MessagesPage />} />
+            <Route path="messeges" element={<Navigate to="messages" replace />} />
             <Route path="planner" element={<PlannerPage />} />
             <Route path="research" element={<ResearchPage />} />
             <Route path="research/:id" element={<ResearchDetailPage />} />
