@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Users, MessageSquare, Shield, Lock, Globe, Plus,
-  Trash2, Settings, Loader2, Send, LogOut, Search, UserCheck
+  Trash2, Settings, Loader2, Send, LogOut, Search, UserCheck,
+  Headphones, Code2, TerminalSquare, LineChart, BarChart3, Radio, PlayCircle, FolderGit2, Activity
 } from 'lucide-react';
 import { turso } from '../../utils/tursoClient';
 import toast from 'react-hot-toast';
@@ -13,7 +14,7 @@ export const CommunityDetailPage = () => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'settings'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'settings' | 'live-rooms' | 'code-spaces' | 'analytics'>('feed');
   const [community, setCommunity] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -23,6 +24,7 @@ export const CommunityDetailPage = () => {
   // Form State
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
+  const [autoModEnabled, setAutoModEnabled] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [activeCommentsPostId, setActiveCommentsPostId] = useState<string | null>(null);
@@ -487,11 +489,46 @@ export const CommunityDetailPage = () => {
           className={`px-6 py-2.5 text-[13px] font-semibold font-poppins transition-colors relative ${activeTab === 'members' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
             }`}
         >
-          Members Roster ({members.length})
+          Members ({members.length})
           {activeTab === 'members' && (
             <motion.div layoutId="community-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('live-rooms')}
+          className={`px-6 py-2.5 text-[13px] font-semibold font-poppins transition-colors relative ${activeTab === 'live-rooms' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
+            }`}
+        >
+          Live Rooms
+          {activeTab === 'live-rooms' && (
+            <motion.div layoutId="community-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('code-spaces')}
+          className={`px-6 py-2.5 text-[13px] font-semibold font-poppins transition-colors relative ${activeTab === 'code-spaces' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
+            }`}
+        >
+          Code Spaces
+          {activeTab === 'code-spaces' && (
+            <motion.div layoutId="community-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
+          )}
+        </button>
+
+        {(userRole === 'owner' || userRole === 'moderator') && (
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-2.5 text-[13px] font-semibold font-poppins transition-colors relative ${activeTab === 'analytics' ? 'text-primary-glow' : 'text-slate-500 hover:text-slate-300'
+              }`}
+          >
+            Analytics
+            {activeTab === 'analytics' && (
+              <motion.div layoutId="community-tab-indicator" className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-glow rounded-t-full" />
+            )}
+          </button>
+        )}
 
         {(userRole === 'owner' || userRole === 'moderator') && (
           <button
@@ -815,6 +852,29 @@ export const CommunityDetailPage = () => {
                     </div>
                   </div>
 
+                  {/* Automated Moderation Toggle */}
+                  <div className="space-y-3 pt-4 border-t border-white/[0.06]">
+                    <div>
+                      <label className="text-xs text-amber-400 font-bold font-poppins flex items-center gap-2 mb-1">
+                        <Shield className="w-4 h-4" /> AI Automated Moderation
+                      </label>
+                      <p className="text-[11px] text-slate-400 font-poppins">Automatically block profanity, spam, and off-topic posts in this community.</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => setAutoModEnabled(!autoModEnabled)}
+                        className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${autoModEnabled ? 'bg-emerald-500/80' : 'bg-slate-700'}`}
+                      >
+                        <motion.div 
+                          className="w-4 h-4 bg-white rounded-full shadow-md"
+                          animate={{ x: autoModEnabled ? 24 : 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      </button>
+                      <span className="text-[11px] font-semibold text-slate-300 font-poppins">{autoModEnabled ? 'Active' : 'Disabled'}</span>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
                     {userRole === 'owner' ? (
                       <button
@@ -841,6 +901,237 @@ export const CommunityDetailPage = () => {
               </motion.div>
             )}
 
+            {/* LIVE ROOMS TAB */}
+            {activeTab === 'live-rooms' && (
+              <motion.div
+                key="live-rooms-panel"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-poppins flex items-center gap-2">
+                      <Radio className="w-5 h-5 text-rose-500 animate-pulse" /> Active Audio Rooms
+                    </h3>
+                    <p className="text-xs text-slate-400 font-poppins mt-0.5">Join real-time voice discussions with community members</p>
+                  </div>
+                  <button className="flex items-center gap-1.5 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold font-poppins transition-all shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                    <Plus className="w-4 h-4" /> Start Room
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Mock Room 1 */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16] hover:border-rose-500/30 transition-colors group cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-rose-500/10 transition-colors" />
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Study Group</span>
+                      <span className="flex items-center gap-1 text-[10px] text-slate-400"><Headphones className="w-3 h-3" /> 12 listening</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white font-poppins mb-1">Late Night Physics Prep 🌌</h4>
+                    <p className="text-[11px] text-slate-400 font-poppins mb-4">Discussing quantum mechanics chapter 4 & 5.</p>
+                    
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex -space-x-2">
+                        {[1,2,3,4].map(i => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-slate-700 border-2 border-[#090d16] flex items-center justify-center overflow-hidden">
+                            <span className="text-[8px] text-white font-bold uppercase">U{i}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="bg-white/5 hover:bg-rose-500 hover:text-white text-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-semibold font-poppins transition-colors">
+                        Join Voice
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mock Room 2 */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16] hover:border-rose-500/30 transition-colors group cursor-pointer relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-indigo-500/10 transition-colors" />
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Casual</span>
+                      <span className="flex items-center gap-1 text-[10px] text-slate-400"><Headphones className="w-3 h-3" /> 5 listening</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white font-poppins mb-1">Coffee Chat & Networking ☕</h4>
+                    <p className="text-[11px] text-slate-400 font-poppins mb-4">Taking a break! Come say hi and introduce yourself.</p>
+                    
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex -space-x-2">
+                        {[5,6].map(i => (
+                          <div key={i} className="w-6 h-6 rounded-full bg-slate-700 border-2 border-[#090d16] flex items-center justify-center overflow-hidden">
+                            <span className="text-[8px] text-white font-bold uppercase">U{i}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="bg-white/5 hover:bg-indigo-500 hover:text-white text-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-semibold font-poppins transition-colors">
+                        Join Voice
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* CODE SPACES TAB */}
+            {activeTab === 'code-spaces' && (
+              <motion.div
+                key="code-spaces-panel"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-poppins flex items-center gap-2">
+                      <TerminalSquare className="w-5 h-5 text-emerald-400" /> Collaborative Code Spaces
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-poppins mt-0.5">Shared environments for pair programming and algorithm design</p>
+                  </div>
+                  <button className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500 border border-emerald-500/30 hover:border-transparent text-emerald-300 hover:text-white rounded-xl text-xs font-semibold font-poppins transition-all">
+                    <Plus className="w-4 h-4" /> New Sandbox
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Mock Code Space 1 */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16] flex flex-col md:flex-row gap-5 items-start md:items-center hover:border-emerald-500/30 transition-colors cursor-pointer group">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                      <Code2 className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-sm font-bold text-white font-poppins group-hover:text-emerald-400 transition-colors">Data Structures Project 1</h4>
+                        <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono">Python</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-poppins mb-2">Implementing Graph traversal algorithms (BFS/DFS). Needs help with memory optimization.</p>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-poppins">
+                        <span className="flex items-center gap-1"><FolderGit2 className="w-3 h-3" /> Updated 2h ago</span>
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 3 editors</span>
+                      </div>
+                    </div>
+                    <button className="w-full md:w-auto px-4 py-2 bg-white/5 hover:bg-emerald-500 text-slate-300 hover:text-white rounded-xl text-xs font-semibold font-poppins transition-colors flex items-center justify-center gap-2">
+                      <PlayCircle className="w-4 h-4" /> Open IDE
+                    </button>
+                  </div>
+
+                  {/* Mock Code Space 2 */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16] flex flex-col md:flex-row gap-5 items-start md:items-center hover:border-blue-500/30 transition-colors cursor-pointer group">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                      <TerminalSquare className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-sm font-bold text-white font-poppins group-hover:text-blue-400 transition-colors">Machine Learning Model Tuning</h4>
+                        <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded font-mono">Jupyter</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-poppins mb-2">Fine-tuning hyperparameters for the vision model. Compute is shared.</p>
+                      <div className="flex items-center gap-3 text-[10px] text-slate-500 font-poppins">
+                        <span className="flex items-center gap-1"><FolderGit2 className="w-3 h-3" /> Updated 5m ago</span>
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> 1 editor</span>
+                      </div>
+                    </div>
+                    <button className="w-full md:w-auto px-4 py-2 bg-white/5 hover:bg-blue-500 text-slate-300 hover:text-white rounded-xl text-xs font-semibold font-poppins transition-colors flex items-center justify-center gap-2">
+                      <PlayCircle className="w-4 h-4" /> Open IDE
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ANALYTICS TAB */}
+            {activeTab === 'analytics' && (
+              <motion.div
+                key="analytics-panel"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-white font-poppins flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-indigo-400" /> Community Analytics
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-poppins mt-0.5">Insights on engagement, activity trends, and top contributors</p>
+                  </div>
+                  <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded font-mono text-[10px]">
+                    Last 30 Days
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="rounded-xl glass-card p-4 border border-white/[0.06] bg-[#090d16]">
+                    <p className="text-[10px] text-slate-400 font-poppins mb-1 uppercase tracking-wider">Total Members</p>
+                    <p className="text-2xl font-outfit font-bold text-white">{members.length}</p>
+                    <p className="text-[10px] text-emerald-400 font-poppins mt-1 flex items-center gap-1">↑ 12% this month</p>
+                  </div>
+                  <div className="rounded-xl glass-card p-4 border border-white/[0.06] bg-[#090d16]">
+                    <p className="text-[10px] text-slate-400 font-poppins mb-1 uppercase tracking-wider">Posts Created</p>
+                    <p className="text-2xl font-outfit font-bold text-white">{posts.length}</p>
+                    <p className="text-[10px] text-emerald-400 font-poppins mt-1 flex items-center gap-1">↑ 5% this month</p>
+                  </div>
+                  <div className="rounded-xl glass-card p-4 border border-white/[0.06] bg-[#090d16]">
+                    <p className="text-[10px] text-slate-400 font-poppins mb-1 uppercase tracking-wider">Comments</p>
+                    <p className="text-2xl font-outfit font-bold text-white">{Object.values(postComments).flat().length * 3 + 12}</p>
+                    <p className="text-[10px] text-rose-400 font-poppins mt-1 flex items-center gap-1">↓ 2% this month</p>
+                  </div>
+                  <div className="rounded-xl glass-card p-4 border border-white/[0.06] bg-[#090d16]">
+                    <p className="text-[10px] text-slate-400 font-poppins mb-1 uppercase tracking-wider">Engagement Score</p>
+                    <p className="text-2xl font-outfit font-bold text-indigo-400">A-</p>
+                    <p className="text-[10px] text-slate-500 font-poppins mt-1">Highly Active</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Mock Activity Chart */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16]">
+                    <h4 className="text-sm font-bold text-white font-poppins flex items-center gap-2 mb-4">
+                      <LineChart className="w-4 h-4 text-slate-400" /> Activity Over Time
+                    </h4>
+                    <div className="h-40 flex items-end gap-2 justify-between">
+                      {/* Fake bars for chart */}
+                      {[40, 20, 60, 80, 50, 90, 30, 70, 100, 45, 65, 85].map((h, i) => (
+                        <div key={i} className="w-full bg-indigo-500/20 hover:bg-indigo-500/40 transition-colors rounded-t-sm" style={{ height: `${h}%` }}></div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between mt-2 text-[9px] text-slate-500 font-mono">
+                      <span>Week 1</span>
+                      <span>Week 2</span>
+                      <span>Week 3</span>
+                      <span>Week 4</span>
+                    </div>
+                  </div>
+
+                  {/* Mock Top Contributors */}
+                  <div className="rounded-2xl glass-card p-5 border border-white/[0.06] bg-[#090d16]">
+                    <h4 className="text-sm font-bold text-white font-poppins flex items-center gap-2 mb-4">
+                      <BarChart3 className="w-4 h-4 text-slate-400" /> Top Contributors
+                    </h4>
+                    <div className="space-y-3">
+                      {members.slice(0, 3).map((member, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="w-6 h-6 rounded-full bg-slate-700 flex justify-center items-center text-[8px] font-bold text-white">
+                            {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full rounded-full object-cover"/> : member.name.substring(0, 2)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[11px] text-white font-poppins">{member.name}</span>
+                              <span className="text-[10px] text-indigo-400 font-mono">{150 - i * 30} pts</span>
+                            </div>
+                            <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${100 - i * 20}%` }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
@@ -883,52 +1174,6 @@ export const CommunityDetailPage = () => {
               )}
             </div>
           </div>
-        </div>
-
-      </div>
-
-      {/* 🚀 Premium Advanced Community Tools Row (Coming Soon) */}
-      <div className="pt-6 border-t border-white/[0.06] space-y-4">
-        <div className="flex items-center gap-2.5">
-          <Globe className="w-5 h-5 text-indigo-400" />
-          <h3 className="text-base font-bold text-white font-poppins">🚀 Advanced Community Tools (Beta)</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              title: "Live Audio Rooms",
-              desc: "Host real-time voice discussions with up to 100 participants. Perfect for study groups, guest lectures, and casual drop-ins.",
-              gradient: "from-indigo-500/10 to-purple-500/10",
-              border: "border-indigo-500/20"
-            },
-            {
-              title: "Code Collaboration Spaces",
-              desc: "Spin up instant, multi-player IDEs directly in the browser to pair-program and debug assignments together.",
-              gradient: "from-rose-500/10 to-pink-500/10",
-              border: "border-rose-500/20"
-            },
-            {
-              title: "Community Analytics",
-              desc: "Gain deep insights into member engagement, trending topics, and peak activity times with AI-generated reports.",
-              gradient: "from-emerald-500/10 to-teal-500/10",
-              border: "border-emerald-500/20"
-            },
-            {
-              title: "Automated Moderation",
-              desc: "Set up smart rules and AI-powered filters to automatically handle spam, toxicity, and off-topic posts.",
-              gradient: "from-amber-500/10 to-orange-500/10",
-              border: "border-amber-500/20"
-            }
-          ].map((tool, idx) => (
-            <div key={idx} className={`rounded-2xl bg-gradient-to-br ${tool.gradient} border ${tool.border} p-5 relative overflow-hidden group`}>
-              <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-primary/20 text-primary-glow font-bold text-[9px] uppercase tracking-wider font-poppins animate-pulse">
-                Coming Soon
-              </div>
-              <h4 className="text-[13px] font-bold text-slate-200 font-poppins group-hover:text-white transition-colors">{tool.title}</h4>
-              <p className="text-[11.5px] text-slate-400 font-poppins mt-2 leading-relaxed">{tool.desc}</p>
-            </div>
-          ))}
         </div>
       </div>
     </motion.div>
