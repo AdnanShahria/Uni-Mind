@@ -1,15 +1,103 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Users, Globe, Lock } from 'lucide-react';
-import { useState } from 'react';
+import { X, Users, Globe, Lock, Upload, Image as ImageIcon } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { turso } from '../../utils/tursoClient';
+import { uploadImageToImgbb } from '../../utils/imgbbUpload';
+import { CustomSelect } from '../../components/CustomSelect';
 
 export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('Study Group');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
+  const [uniName, setUniName] = useState('');
+  const [sessions, setSessions] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [customUniversities, setCustomUniversities] = useState<{ value: string; isCustom: boolean }[]>([]);
+  const [customSessions, setCustomSessions] = useState<{ value: string; isCustom: boolean }[]>([]);
+  
+  const [isCustomUni, setIsCustomUni] = useState(false);
+  const [isCustomSession, setIsCustomSession] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchApprovedMetadata = async () => {
+      try {
+        const { data, error } = await turso.from('metadata_approved').select();
+        if (!error && data) {
+          setCustomUniversities(data.institutions || []);
+          setCustomSessions(data.sessions || []);
+        }
+      } catch (err) {
+        console.error("Error loading approved metadata:", err);
+      }
+    };
+    if (isOpen) {
+      fetchApprovedMetadata();
+    }
+  }, [isOpen]);
+
+  const institutionOptions = customUniversities
+    .map(item => {
+      const uni = item.value;
+      const hasLocation = uni.includes(' | Location: ');
+      const labelName = hasLocation ? uni.split(' | Location: ')[0] : uni;
+      const subtitleVal = hasLocation ? uni.split(' | Location: ')[1] : undefined;
+      return { 
+        value: uni, 
+        label: labelName, 
+        subtitle: subtitleVal,
+        isCustom: item.isCustom
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your institution? Add new", isAction: true } as any);
+
+  const sessionOptions = customSessions
+    .map(item => ({ 
+      value: item.value, 
+      label: item.value, 
+      isCustom: item.isCustom 
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .concat({ value: "unlisted", label: "Can't find your Session? Add custom", isAction: true } as any);
+
+  const handleInstitutionSelect = (value: string) => {
+    if (value === "unlisted") {
+      setIsCustomUni(true);
+      setUniName('');
+    } else {
+      setIsCustomUni(false);
+      setUniName(value);
+    }
+  };
+
+  const handleSessionSelect = (value: string) => {
+    if (value === "unlisted") {
+      setIsCustomSession(true);
+      setSessions('');
+    } else {
+      setIsCustomSession(false);
+      setSessions(value);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,12 +114,28 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
       return;
     }
 
+    let logo_url = null;
+    if (logoFile) {
+      toast.loading('Uploading logo...', { id: 'upload' });
+      const uploadResult = await uploadImageToImgbb(logoFile, `${name}-logo`);
+      if (uploadResult.success) {
+        logo_url = uploadResult.url;
+        toast.success('Logo uploaded!', { id: 'upload' });
+      } else {
+        toast.error(`Logo upload failed: ${uploadResult.error}`, { id: 'upload' });
+        // We continue creating the community even if logo fails
+      }
+    }
+
     // 1. Create Community
     const { data: communityData, error: commError } = await turso.from('communities').insert({
       name,
       description,
       type,
       visibility,
+      uni_name: uniName || null,
+      sessions: sessions || null,
+      logo_url,
       created_by: userData.user.id
     }).select().single();
 
@@ -60,7 +164,6 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
 
     setIsSubmitting(false);
     onClose();
-    // In a real app, we'd fire an event to refresh the community list
   };
 
   if (!isOpen) return null;
@@ -71,7 +174,7 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md"
       >
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -89,7 +192,7 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 max-h-[85vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 font-poppins mb-1.5 uppercase tracking-wide">Name</label>
               <input
@@ -99,6 +202,96 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
                 placeholder="e.g., AI Research Group"
                 className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-slate-200 outline-none focus:border-primary/50"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <label className="block text-[11px] font-semibold text-slate-300 font-poppins mb-1.5 uppercase tracking-wide">University Name</label>
+                {!isCustomUni ? (
+                  <CustomSelect
+                    value={uniName}
+                    onChange={handleInstitutionSelect}
+                    options={institutionOptions}
+                    placeholder="Select Institution"
+                  />
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="text"
+                      value={uniName}
+                      onChange={e => setUniName(e.target.value)}
+                      placeholder="Enter Custom Institution Name"
+                      className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-slate-200 outline-none focus:border-primary/50"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsCustomUni(false); setUniName(''); }} 
+                      className="text-[10px] text-primary-glow hover:underline font-poppins self-start"
+                    >
+                      ← Back to list
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <label className="block text-[11px] font-semibold text-slate-300 font-poppins mb-1.5 uppercase tracking-wide">Session(s)</label>
+                {!isCustomSession ? (
+                  <CustomSelect
+                    value={sessions}
+                    onChange={handleSessionSelect}
+                    options={sessionOptions}
+                    placeholder="Select Session"
+                  />
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="text"
+                      value={sessions}
+                      onChange={e => setSessions(e.target.value)}
+                      placeholder="e.g., 2023-2024"
+                      className="w-full h-11 bg-white/5 border border-white/10 rounded-xl px-3 text-sm text-slate-200 outline-none focus:border-primary/50"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsCustomSession(false); setSessions(''); }} 
+                      className="text-[10px] text-primary-glow hover:underline font-poppins self-start"
+                    >
+                      ← Back to list
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 font-poppins mb-1.5 uppercase tracking-wide">Community Logo</label>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-16 border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors group relative overflow-hidden bg-white/5"
+              >
+                {logoPreview ? (
+                  <>
+                    <img src={logoPreview} alt="Preview" className="w-full h-full object-cover opacity-50" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-medium text-white px-3 py-1 bg-black/50 rounded-lg backdrop-blur-sm flex items-center gap-2">
+                        <Upload className="w-3 h-3" /> Change Logo
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-slate-400 group-hover:text-slate-300 transition-colors">
+                    <ImageIcon className="w-5 h-5" />
+                    <span className="text-xs font-medium">Click to upload logo</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div>
@@ -121,7 +314,7 @@ export const CreateCommunityModal = ({ isOpen, onClose }: { isOpen: boolean; onC
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What is this community about?"
-                rows={3}
+                rows={2}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:border-primary/50 resize-none"
               />
             </div>

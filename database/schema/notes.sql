@@ -59,3 +59,5 @@ CREATE TABLE IF NOT EXISTS public.note_shares (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(note_id, shared_with_user_id)
 );
+
+

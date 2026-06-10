@@ -4,6 +4,7 @@ import { turso } from '../../utils/tursoClient';
 import { CommunitiesHeader } from './CommunitiesHeader';
 import { CommunitiesFilter } from './CommunitiesFilter';
 import { CommunitiesGrid } from './CommunitiesGrid';
+import { CreateCommunityModal } from './CreateCommunityModal';
 
 import { toast } from 'react-hot-toast';
 
@@ -12,6 +13,9 @@ export const CommunitiesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   const fetchCommunities = async () => {
     setIsLoading(true);
@@ -47,6 +51,9 @@ export const CommunitiesPage = () => {
           type: c.type,
           description: c.description || 'Welcome to our collaborative academic space! Share research, materials, and discuss homework here.',
           visibility: c.visibility || 'public',
+          logo_url: c.logo_url || null,
+          uni_name: c.uni_name || null,
+          sessions: c.sessions || null,
           myRole: myMembership ? myMembership.role : null,
           members: membersCount,
           posts: postsCount.toString(),
@@ -102,17 +109,25 @@ export const CommunitiesPage = () => {
       animate={{ opacity: 1 }}
       className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto"
     >
-      <CommunitiesHeader />
+      <CommunitiesHeader onOpenSearch={() => setIsSearchModalOpen(true)} />
       <CommunitiesFilter
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         filter={filter}
         setFilter={setFilter}
+        onCreateCommunity={() => setIsCreateModalOpen(true)}
+        isSearchModalOpen={isSearchModalOpen}
+        setIsSearchModalOpen={setIsSearchModalOpen}
       />
       <CommunitiesGrid
         displayCommunities={displayCommunities}
         isLoading={isLoading}
         onJoin={handleJoin}
+      />
+
+      <CreateCommunityModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
       />
     </motion.div>
   );

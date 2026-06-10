@@ -32,33 +32,38 @@ export const CommunitiesGrid = ({
             className={`rounded-2xl bg-gradient-to-br ${community.color} border ${community.border} p-5 cursor-pointer group transition-all`}
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center text-2xl">
-                  {community.icon}
-                </div>
-                <div>
-                  <span className="text-[9px] text-slate-400 bg-white/[0.06] px-2 py-1 rounded-lg font-poppins font-medium uppercase tracking-wider">
+              <div className="flex items-center gap-3 w-full">
+                {community.logo_url ? (
+                  <img src={community.logo_url} alt={community.name} className="w-10 h-10 rounded-xl object-cover bg-white/[0.08] border border-white/[0.1]" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center text-xl shrink-0">
+                    {community.icon}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 flex items-center flex-wrap gap-2">
+                  <h3 className="text-base font-semibold text-white font-poppins truncate group-hover:text-primary-glow transition-colors">
+                    {community.name}
+                  </h3>
+                  <span className="text-[9px] text-slate-400 bg-white/[0.06] px-2 py-0.5 rounded-lg font-poppins font-medium uppercase tracking-wider shrink-0">
                     {community.type}
                   </span>
                 </div>
               </div>
               {community.visibility === 'private' && (
-                <span title="Private Community">
+                <span title="Private Community" className="ml-2 mt-1 shrink-0">
                   <Lock className="w-4 h-4 text-slate-500" />
                 </span>
               )}
             </div>
-            <h3 className="text-base font-semibold text-white font-poppins mb-1 group-hover:text-primary-glow transition-colors">
-              {community.name}
-            </h3>
-            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-poppins mb-4">
-              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {community.members}</span>
-              <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {community.posts} posts</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-emerald-400 font-poppins font-medium">{community.active} online</span>
+
+            <div className="flex items-center flex-wrap justify-between gap-3 mt-auto">
+              <div className="flex items-center flex-wrap gap-3 text-[11px] text-slate-400 font-poppins">
+                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {community.members} members</span>
+                <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {community.posts} posts</span>
+                <div className="flex items-center gap-1.5 ml-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-emerald-400 font-medium">{community.active} online</span>
+                </div>
               </div>
               
               {community.myRole ? (

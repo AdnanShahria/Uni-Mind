@@ -293,7 +293,7 @@ export const ChatMessages = ({
                 {msg.role === 'user' ? (
                   <UserMessageContent content={msg.content} />
                 ) : (
-                  <div className="prose prose-invert prose-p:leading-snug prose-pre:p-0 prose-pre:bg-transparent prose-p:my-2 max-w-none text-[13px] md:text-[14px]">
+                  <div className="prose prose-invert prose-p:leading-snug prose-pre:p-0 prose-pre:bg-transparent prose-p:my-2 prose-headings:font-semibold prose-strong:font-medium prose-h1:text-lg prose-h2:text-base prose-h3:text-[15px] max-w-none text-[13px] md:text-[14px]">
                     {msg.content === '' && isTyping && isLastAiMessage ? (
                       <ThinkingIndicator />
                     ) : (
@@ -316,7 +316,7 @@ export const ChatMessages = ({
                             const language = match ? match[1] : '';
                             
                             if (!inline && language === 'mermaid') {
-                              return <MermaidDiagram chart={String(children)} isTyping={isTyping && isLastAiMessage} />;
+                               return <MermaidDiagram chart={String(children)} isTyping={isTyping && isLastAiMessage} />;
                             }
 
                             return !inline && match ? (
@@ -347,7 +347,14 @@ export const ChatMessages = ({
                           }
                         }}
                       >
-                        {msg.content + (isTyping && isLastAiMessage ? ' ▍' : '')}
+                        {(() => {
+                          let text = msg.content;
+                          const boldCount = (text.match(/\*\*/g) || []).length;
+                          if (boldCount % 2 !== 0) {
+                            text += '**';
+                          }
+                          return text + (isTyping && isLastAiMessage ? ' ▍' : '');
+                        })()}
                       </ReactMarkdown>
                     )}
                   </div>
