@@ -8,7 +8,8 @@ import { corsHeaders } from "../utils";
 export async function handleCompressRoutes(
   url: URL,
   request: Request,
-  _db: any
+  db: any,
+  env?: any
 ): Promise<Response | null> {
   if (!url.pathname.startsWith("/compress")) return null;
 

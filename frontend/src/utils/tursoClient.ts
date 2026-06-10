@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 const API_URL = '';
-let cachedMetadata: any = null;
+let cachedMetadata: { data: any, timestamp: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const getStoredUser = () => {
   const token = localStorage.getItem('unimind_token');
   if (!token) return null;
@@ -347,18 +348,21 @@ export const turso: any = {
             }
           } else if (table === 'metadata_approved') {
             if (builder._action === 'select') {
-              if (cachedMetadata) {
-                result.data = cachedMetadata;
+              if (cachedMetadata && (Date.now() - cachedMetadata.timestamp < CACHE_TTL)) {
+                result.data = cachedMetadata.data;
               } else {
                 const res = await fetch(`${API_URL}/api/metadata/approved`, { headers });
                 const json = await res.json();
                 cachedMetadata = {
-                  institutions: json.institutions || [],
-                  majors: json.majors || [],
-                  sessions: json.sessions || [],
-                  roles: json.roles || []
+                  data: {
+                    institutions: json.institutions || [],
+                    majors: json.majors || [],
+                    sessions: json.sessions || [],
+                    roles: json.roles || []
+                  },
+                  timestamp: Date.now()
                 };
-                result.data = cachedMetadata;
+                result.data = cachedMetadata.data;
               }
             }
           } else {

@@ -13,7 +13,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
 
-import { callAI, callAIStream, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../utils/aiClient';
+import { callAI, callAIStream } from '../../utils/aiClient';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are UniMind AI Tutor — a super advanced academic assistant for university students. 
@@ -22,6 +22,7 @@ Format your responses beautifully using Markdown.
 Use LaTeX for math equations (e.g. $E=mc^2$ or $$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$). 
 For tables, always use standard Markdown tables. Never use ASCII tables inside code blocks.
 For diagrams, flowcharts, or visual representations, ALWAYS use \`\`\`mermaid code blocks. Never use ASCII art.
+CRITICAL for Mermaid diagrams: Always use alphanumeric English node IDs (e.g., A, B, node1). For node labels containing spaces or non-English characters (like Bengali), you MUST wrap the label in double quotes: \`A["সম্পর্ক"]\`.
 Use formatted code blocks for code snippets.
 Be concise, accurate, and highly educational.
 IMPORTANT: You MUST respond in the same language as the user's message (e.g., if the user asks in Bengali/Bangla, you must reply entirely in fluent Bengali). If the user explicitly asks you to reply in a specific language, you must reply entirely in that requested language.`;
@@ -112,17 +113,6 @@ async function executeParallelWebSearches(queries: string[]): Promise<string[]> 
   return allResults;
 }
 
-// ─── Smart Contextual Simulation (Fallback) ───────────────────────────────
-async function simulateStream(question: string, onChunk: (c: string) => void): Promise<string> {
-  const fallback = `## Great Question! 🎓\n\nYou asked: "${question}"\n\nI am currently in **Offline Simulation Mode** because no Groq API Key was found.\n\nBut here is a math equation anyway:\n$$ \\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} $$`;
-  const chunks = fallback.split(' ');
-  for (let i = 0; i < chunks.length; i++) {
-    onChunk(chunks[i] + ' ');
-    await new Promise(r => setTimeout(r, 50)); // typing effect
-  }
-  return fallback;
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 export const AITutorPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
@@ -186,6 +176,9 @@ export const AITutorPage = () => {
   }, []);
 
   useEffect(() => {
+    // Capture the initial intent to start a new chat so we don't overwrite it when fetchData finishes
+    const isNewChatIntent = !!location.state?.newChat;
+    
     const fetchData = async () => {
       try {
         const { data: prompts } = await turso.from('ai_prompts').select('*');
@@ -207,10 +200,13 @@ export const AITutorPage = () => {
         let convId: string | null = null;
         if (convs && convs.length > 0) {
           setConversations(convs);
-          convId = convs[0].id;
-          setActiveConvId(convId);
+          // Only auto-load the most recent conversation if we aren't explicitly requesting a new chat
+          if (!isNewChatIntent) {
+            convId = convs[0].id;
+            setActiveConvId(convId);
+          }
         } else {
-          setActiveConvId(null);
+          if (!isNewChatIntent) setActiveConvId(null);
         }
 
         if (convId) {
@@ -231,14 +227,21 @@ export const AITutorPage = () => {
             setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
           }
         } else {
-          // Logged-in user with no conversations — show welcome message
-          setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+          // If we have no convId, and we aren't explicitly in a new chat intent (which handles its own greeting)
+          if (!isNewChatIntent) {
+            setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+          }
         }
       } else {
-        setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+        if (!isNewChatIntent) {
+          setMessages([{ id: 'welcome', role: 'assistant', content: GREETING, timestamp: 'Just now' }]);
+        }
       }
     };
     fetchData();
+    // We intentionally do NOT include location.state?.newChat in dependencies 
+    // because we only want to prevent clobbering on initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initConversation]);
 
   const handleNewChat = useCallback(async () => {
@@ -315,6 +318,7 @@ export const AITutorPage = () => {
   };
 
   const handleSend = async (overrideInput?: string) => {
+    if (isTyping || isParsing) return;
     const messageText = (overrideInput ?? input).trim();
     if (!messageText && attachedFiles.length === 0) return;
 
@@ -322,11 +326,24 @@ export const AITutorPage = () => {
     setIsTyping(true);
     setActiveTools([]); // Reset tools when message is sent
 
+    const fileNames = attachedFiles.map(f => f.name).join(', ');
+    const displayMessage = fileNames 
+      ? `*(Attached: ${fileNames})*\n\n${messageText}` 
+      : messageText;
+
+    // Immediately show user message and AI placeholder for instant feedback
+    const tempUserMsg = { id: crypto.randomUUID(), role: 'user', content: displayMessage, timestamp: 'Just now' };
+    const aiMsgId = crypto.randomUUID();
+    setMessages(prev => [
+      ...prev, 
+      tempUserMsg,
+      { id: aiMsgId, role: 'assistant', content: '', timestamp: 'Just now' }
+    ]);
+
     // Parse files NOW before sending
     let allFileContent = '';
     let hasImage = false;
     let imageUrl = '';
-    const fileNames = attachedFiles.map(f => f.name).join(', ');
 
     if (attachedFiles.length > 0) {
       setIsParsing(true);
@@ -435,20 +452,7 @@ export const AITutorPage = () => {
         "You MUST think step-by-step. Break down the user's request into analytical components, deeply evaluate edge cases, and present a structured, multi-faceted conclusion.";
     }
 
-    const displayMessage = fileNames 
-      ? `*(Attached: ${fileNames})*\n\n${messageText}` 
-      : messageText;
-      
     const backendMessageText = messageText + researchContext;
-
-    // Immediately show user message and AI placeholder
-    const tempUserMsg = { id: Date.now(), role: 'user', content: displayMessage, timestamp: 'Just now' };
-    const aiMsgId = Date.now() + 1;
-    setMessages(prev => [
-      ...prev, 
-      tempUserMsg,
-      { id: aiMsgId, role: 'assistant', content: '', timestamp: 'Just now' }
-    ]);
 
     let currentConvId = activeConvId;
     let isFirstMessage = false;
@@ -473,10 +477,8 @@ export const AITutorPage = () => {
       }
     }
 
-    try {
-      let finalContent = '';
-
-      if (AGENT_ROUTER_API_KEY || GROQ_API_KEY) {
+      try {
+        let finalContent = '';
         const history = messages.filter(m => (m.role === 'user' || m.role === 'assistant') && !m.id.toString().startsWith('welcome'));
         
         let formattedUserMessage: any = backendMessageText;
@@ -506,19 +508,12 @@ export const AITutorPage = () => {
             ));
           },
           {
-            agentRouterModel: hasImage ? 'gpt-4o' : undefined,
+            agentRouterModel: hasImage ? 'glm-5.1' : undefined,
             groqModel: hasImage ? 'llama-3.2-11b-vision-preview' : 'llama-3.3-70b-versatile',
             max_tokens: 8192,
             provider: 'agent-router'
           }
         );
-      } else {
-        finalContent = await simulateStream(backendMessageText, (chunk) => {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMsgId ? { ...msg, content: msg.content + chunk } : msg
-          ));
-        });
-      }
 
       if (currentConvId) {
         await turso.from('ai_messages').insert([{

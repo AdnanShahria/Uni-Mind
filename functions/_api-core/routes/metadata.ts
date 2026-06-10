@@ -1,6 +1,6 @@
 import { generateUUID, mockMetadataRequests, corsHeaders } from '../utils';
 
-export async function handleMetadataRoutes(url: URL, request: Request, db: any): Promise<Response | null> {
+export async function handleMetadataRoutes(url: URL, request: Request, db: any, env?: any): Promise<Response | null> {
   if (url.pathname === "/api/metadata/approved" && request.method === "GET") {
     try {
       let cache: any = null;

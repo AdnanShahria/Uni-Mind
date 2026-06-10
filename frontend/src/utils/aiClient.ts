@@ -1,8 +1,3 @@
-export const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-export const AGENT_ROUTER_API_KEY = import.meta.env.VITE_AGENT_ROUTER_API_KEY || '';
-// Route through backend proxy to bypass browser User-Agent restrictions
 const AI_PROXY_URL = '/api/ai-proxy';
 const DEFAULT_AGENT_ROUTER_MODEL = 'glm-5.1';
 const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
@@ -70,6 +65,10 @@ async function handleStreamResponse(body: ReadableStream<Uint8Array>, onChunk: (
   return { fullContent, finishReason };
 }
 
+function getToken() {
+  return localStorage.getItem('unimind_token') || '';
+}
+
 export async function callAIStream(
   messages: Message[],
   onChunk: (chunk: string) => void,
@@ -87,41 +86,16 @@ export async function callAIStream(
   while (continuations <= maxContinuations) {
     let result: StreamResult | null = null;
 
-    if (provider === 'agent-router' && AGENT_ROUTER_API_KEY) {
-      try {
-        const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
-        const res = await fetch(AI_PROXY_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model,
-            messages: currentMessages,
-            temperature,
-            max_tokens,
-            stream: true
-          })
-        });
+    try {
+      const model = provider === 'agent-router' 
+          ? (options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL)
+          : (options?.groqModel || DEFAULT_GROQ_MODEL);
 
-        if (res.ok && res.body) {
-          if (continuations === 0) console.log('[AI Client] Streaming response from Agent Router (via proxy)');
-          result = await handleStreamResponse(res.body, onChunk);
-        } else {
-          console.warn('Agent Router failed...', await res.text());
-        }
-      } catch (e) {
-        console.warn('Agent Router threw an error...', e);
-      }
-    }
-
-    if (!result && (provider === 'groq' || !AGENT_ROUTER_API_KEY) && GROQ_API_KEY) {
-      const model = options?.groqModel || DEFAULT_GROQ_MODEL;
-      const res = await fetch(GROQ_URL, {
+      const res = await fetch(`${AI_PROXY_URL}?provider=${provider === 'agent-router' ? 'agentrouter' : 'groq'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
           model,
@@ -132,19 +106,20 @@ export async function callAIStream(
         })
       });
 
-      if (!res.ok) {
-        if (continuations === 0) throw new Error(`Groq API error: ${res.status} - ${await res.text()}`);
+      if (res.ok && res.body) {
+        if (continuations === 0) console.log(`[AI Client] Streaming response from proxy (${provider})`);
+        result = await handleStreamResponse(res.body, onChunk);
+      } else {
+        if (continuations === 0) throw new Error(`${provider} API error: ${res.status} - ${await res.text()}`);
         else break; // If continuation fails, just stop
       }
-      
-      if (res.body) {
-        if (continuations === 0) console.log('[AI Client] Streaming response from Groq');
-        result = await handleStreamResponse(res.body, onChunk);
-      }
+    } catch (e) {
+      if (continuations === 0) throw e;
+      break;
     }
 
     if (!result) {
-      if (continuations === 0) throw new Error(`No API keys configured or provider ${provider} failed.`);
+      if (continuations === 0) throw new Error(`Provider ${provider} failed to return a result.`);
       break;
     }
 
@@ -183,57 +158,33 @@ export async function callAI(
   const max_tokens = options?.max_tokens;
   const provider = options?.provider ?? 'groq';
 
-  if (provider === 'agent-router' && AGENT_ROUTER_API_KEY) {
-    try {
-      const model = options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL;
-      const payload: any = { model, messages, temperature };
-      if (max_tokens) payload.max_tokens = max_tokens;
-      if (options?.responseFormat) payload.response_format = options.responseFormat;
+  try {
+    const model = provider === 'agent-router' 
+        ? (options?.agentRouterModel || DEFAULT_AGENT_ROUTER_MODEL)
+        : (options?.groqModel || DEFAULT_GROQ_MODEL);
 
-      const res = await fetch(AI_PROXY_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        console.log('[AI Client] Received response from Agent Router (via proxy)');
-        return data.choices?.[0]?.message?.content || '';
-      } else {
-        console.warn('Agent Router failed...', await res.text());
-      }
-    } catch (e) {
-      console.warn('Agent Router threw an error...', e);
-    }
-  }
-
-  if ((provider === 'groq' || !AGENT_ROUTER_API_KEY) && GROQ_API_KEY) {
-    const model = options?.groqModel || DEFAULT_GROQ_MODEL;
     const payload: any = { model, messages, temperature };
     if (max_tokens) payload.max_tokens = max_tokens;
     if (options?.responseFormat) payload.response_format = options.responseFormat;
 
-    const res = await fetch(GROQ_URL, {
+    const res = await fetch(`${AI_PROXY_URL}?provider=${provider === 'agent-router' ? 'agentrouter' : 'groq'}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Authorization': `Bearer ${getToken()}`
       },
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      console.log(`[AI Client] Received response from proxy (${provider})`);
+      return data.choices?.[0]?.message?.content || '';
+    } else {
       const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error?.message || 'Failed to generate from Groq');
+      throw new Error(errorData?.error?.message || errorData?.error || `Failed to generate from ${provider}`);
     }
-
-    const data = await res.json();
-    console.log('[AI Client] Received response from Groq');
-    return data.choices?.[0]?.message?.content || '';
+  } catch (e) {
+    throw e;
   }
-
-  throw new Error(`No API keys configured or provider ${provider} failed.`);
 }

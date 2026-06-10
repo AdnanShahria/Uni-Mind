@@ -5,28 +5,147 @@ export function generateUUID() {
   return crypto.randomUUID();
 }
 
-export async function hashPassword(password: string) {
-  const msgUint8 = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
+function encodeBase64Url(source: Uint8Array | string): string {
+  let uint8Array: Uint8Array;
+  if (typeof source === 'string') {
+    uint8Array = new TextEncoder().encode(source);
+  } else {
+    uint8Array = source;
+  }
+  let binary = '';
+  for (let i = 0; i < uint8Array.byteLength; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binary)
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function decodeBase64Url(source: string): Uint8Array {
+  const base64 = source.replace(/-/g, '+').replace(/_/g, '/');
+  const padLen = (4 - (base64.length % 4)) % 4;
+  const padded = base64 + '='.repeat(padLen);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// Generate a random salt (hex string)
+export function generateSalt(length = 16): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Hash password with salt using PBKDF2
+export async function hashPassword(password: string, salt: string): Promise<string> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+  
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: enc.encode(salt),
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'HMAC', hash: 'SHA-256', length: 256 },
+    true,
+    ['sign']
+  );
+  
+  const exportedKey = await crypto.subtle.exportKey('raw', key);
+  const hashArray = Array.from(new Uint8Array(exportedKey));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function verifyToken(request: Request) {
+export async function signToken(payload: any, secret: string): Promise<string> {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encodedHeader = encodeBase64Url(JSON.stringify(header));
+  const encodedPayload = encodeBase64Url(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) })); // 7 days expiry
+  
+  const dataToSign = `${encodedHeader}.${encodedPayload}`;
+  
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    enc.encode(dataToSign)
+  );
+  
+  const encodedSignature = encodeBase64Url(new Uint8Array(signature));
+  return `${dataToSign}.${encodedSignature}`;
+}
+
+export async function verifyToken(request: Request, secret: string) {
   const authHeader = request.headers.get("Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.error("[verifyToken] Missing or invalid Authorization header:", authHeader);
     return null;
   }
   const token = authHeader.substring(7);
-  try {
-    const payload = JSON.parse(atob(token));
-    if (payload && payload.userId) {
-      return payload;
-    }
-  } catch (e) {
+  
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    console.error("[verifyToken] Token does not have 3 parts");
     return null;
   }
-  return null;
+  
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  const dataToSign = `${encodedHeader}.${encodedPayload}`;
+  
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+  
+  const signatureBytes = decodeBase64Url(encodedSignature);
+  const isValid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    signatureBytes as any,
+    enc.encode(dataToSign)
+  );
+  
+  if (!isValid) {
+    console.error("[verifyToken] Signature is invalid");
+    return null;
+  }
+  
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(encodedPayload)));
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) {
+       console.error("[verifyToken] Token expired");
+       return null; // Expired
+    }
+    return payload;
+  } catch (e) {
+    console.error("[verifyToken] Payload parse error", e);
+    return null;
+  }
 }
 
 export const corsHeaders = {

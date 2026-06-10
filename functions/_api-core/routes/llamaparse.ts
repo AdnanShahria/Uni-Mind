@@ -1,4 +1,4 @@
-import { corsHeaders } from '../utils';
+import { corsHeaders, verifyToken } from '../utils';
 
 const LLAMAPARSE_BASE = 'https://api.cloud.llamaindex.ai/api/v1/parsing';
 
@@ -19,9 +19,19 @@ export async function handleLlamaParseRoutes(url: URL, request: Request, env: an
     });
   }
 
-  // ── Full extraction endpoint (upload → poll → markdown + images) ──────────
-  if (url.pathname === '/api/llamaparse/extract-full' && request.method === 'POST') {
-    return handleFullExtraction(request, apiKey, env);
+  // Enforce auth
+  const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
+  if (!payload) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+  }
+
+  // ── LlamaParse Extraction Endpoints ──────────
+  if (url.pathname === '/api/llamaparse/extract-start' && request.method === 'POST') {
+    return handleExtractStart(request, apiKey, env);
+  }
+
+  if (url.pathname === '/api/llamaparse/extract-status' && request.method === 'GET') {
+    return handleExtractStatus(url, request, apiKey, env);
   }
 
   // ── Generic proxy for other LlamaParse endpoints ──────────────────────────
@@ -70,12 +80,9 @@ export async function handleLlamaParseRoutes(url: URL, request: Request, env: an
   }
 }
 
-// ── Full extraction: upload → poll → fetch markdown + images → upload to imgbb ─
-async function handleFullExtraction(request: Request, apiKey: string, env: any): Promise<Response> {
-  const imgbbKey = env.VITE_IMGBB_API_KEY;
-
+// ── Start extraction: upload to LlamaParse ─
+async function handleExtractStart(request: Request, apiKey: string, env: any): Promise<Response> {
   try {
-    // --- Step 1: Upload the PDF to LlamaParse ---
     const formData = await request.formData();
     const file = formData.get('file');
     if (!file || !(file instanceof File)) {
@@ -117,38 +124,69 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
     const jobId = uploadData.id;
     console.log(`[LlamaParse] Job created: ${jobId}`);
 
-    // --- Step 2: Poll for completion ---
-    let status = 'PENDING';
-    let attempts = 0;
+    return new Response(JSON.stringify({
+      success: true,
+      jobId,
+      status: 'PENDING'
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
 
-    while (status === 'PENDING' && attempts < 60) {
-      await new Promise(r => setTimeout(r, 2000));
-      const statusRes = await fetch(`${LLAMAPARSE_BASE}/job/${jobId}`, {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'accept': 'application/json' }
+  } catch (err: any) {
+    console.error('[LlamaParse] Extraction start error:', err);
+    return new Response(JSON.stringify({ error: err.message, fallback: true }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+}
+
+// ── Check extraction status: poll → fetch markdown + images → upload to imgbb ─
+async function handleExtractStatus(url: URL, request: Request, apiKey: string, env: any): Promise<Response> {
+  const jobId = url.searchParams.get('jobId');
+  if (!jobId) {
+    return new Response(JSON.stringify({ error: 'No jobId provided' }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+
+  const imgbbKey = env.VITE_IMGBB_API_KEY;
+
+  try {
+    const statusRes = await fetch(`${LLAMAPARSE_BASE}/job/${jobId}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'accept': 'application/json' }
+    });
+
+    if (!statusRes.ok) {
+      return new Response(JSON.stringify({ error: `Status check failed: ${statusRes.status}`, fallback: true }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
+    }
 
-      if (!statusRes.ok) {
-        console.error(`[LlamaParse] Status check failed: ${statusRes.status}`);
-        break;
-      }
+    const statusData = await statusRes.json();
+    const status = statusData.status;
+    console.log(`[LlamaParse] Poll status for ${jobId}: ${status}`);
 
-      const statusData = await statusRes.json();
-      status = statusData.status;
-      attempts++;
-      console.log(`[LlamaParse] Poll #${attempts}: ${status}`);
+    if (status === 'PENDING') {
+      return new Response(JSON.stringify({ success: true, status: 'PENDING' }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     if (status !== 'SUCCESS') {
       return new Response(JSON.stringify({
-        error: `LlamaParse job did not complete. Final status: ${status}`,
+        success: false,
+        status,
+        error: `LlamaParse job failed or cancelled. Final status: ${status}`,
         fallback: true
       }), {
-        status: 502,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // --- Step 3: Fetch the Markdown result ---
+    // --- Job is SUCCESS, fetch the Markdown result ---
     const mdRes = await fetch(`${LLAMAPARSE_BASE}/job/${jobId}/result/markdown`, {
       headers: { 'Authorization': `Bearer ${apiKey}`, 'accept': 'application/json' }
     });
@@ -162,7 +200,7 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
     const mdData = await mdRes.json();
     let markdown: string = mdData.markdown || '';
 
-    // --- Step 4: Fetch images from the job ---
+    // --- Fetch images from the job ---
     const imageUrls: string[] = [];
 
     try {
@@ -180,7 +218,6 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
           for (const img of images) {
             try {
               const imgName = img.name || `pdf_image_${Date.now()}`;
-              // img.data is base64 encoded image data from LlamaParse
               const base64Data = img.data || img.image;
               if (!base64Data) continue;
 
@@ -198,13 +235,9 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
                 const publicUrl = imgbbData.data.display_url || imgbbData.data.url;
                 imageUrls.push(publicUrl);
 
-                // Replace the image reference in the markdown
-                // LlamaParse uses references like ![](image_name.png) or ![image](img-X-X.png)
                 const escapedName = imgName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const imgRegex = new RegExp(`!\\[([^\\]]*)\\]\\((?:[^)]*${escapedName}[^)]*)\\)`, 'g');
                 markdown = markdown.replace(imgRegex, `![$1](${publicUrl})`);
-
-                console.log(`[LlamaParse] Uploaded image: ${imgName} → ${publicUrl}`);
               }
             } catch (imgErr) {
               console.error('[LlamaParse] Image upload error:', imgErr);
@@ -216,9 +249,10 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
       console.error('[LlamaParse] Image fetch error (non-fatal):', imgFetchErr);
     }
 
-    // --- Step 5: Return the final result ---
+    // --- Return the final result ---
     return new Response(JSON.stringify({
       success: true,
+      status: 'SUCCESS',
       markdown,
       imageUrls,
       jobId,
@@ -228,7 +262,7 @@ async function handleFullExtraction(request: Request, apiKey: string, env: any):
     });
 
   } catch (err: any) {
-    console.error('[LlamaParse] Full extraction error:', err);
+    console.error('[LlamaParse] Extraction status error:', err);
     return new Response(JSON.stringify({ error: err.message, fallback: true }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }

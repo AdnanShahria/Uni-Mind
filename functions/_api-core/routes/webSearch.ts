@@ -1,13 +1,58 @@
-import { corsHeaders } from "../utils";
+import { corsHeaders, verifyToken } from "../utils";
+import type { Env } from "../index";
+
+const RATE_LIMIT_MAX = 20;
+const rateLimits = new Map<string, { count: number, resetTime: number }>();
 
 export async function handleWebSearchRoutes(
   url: URL,
-  request: Request
+  request: Request,
+  env: Env
 ): Promise<Response | null> {
   if (!url.pathname.startsWith("/api/web-search")) return null;
 
   if (request.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Enforce Auth
+  const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
+  if (!payload) {
+    return new Response(JSON.stringify({ error: "Unauthorized for Web Search" }), { status: 401, headers: corsHeaders });
+  }
+
+  // Enforce Rate Limiting
+  const userId = payload.userId;
+  const now = Date.now();
+  let userLimit;
+
+  if (env.RATE_LIMITER) {
+    // KV Rate Limiter
+    const key = `ratelimit:web:${userId}`;
+    const stored = await env.RATE_LIMITER.get(key, 'json');
+    if (stored) {
+      userLimit = stored as { count: number, resetTime: number };
+    }
+    if (!userLimit || now > userLimit.resetTime) {
+      userLimit = { count: 0, resetTime: now + 60000 };
+    }
+    userLimit.count++;
+    await env.RATE_LIMITER.put(key, JSON.stringify(userLimit), { expirationTtl: 60 });
+  } else {
+    // Fallback to in-memory
+    userLimit = rateLimits.get(userId);
+    if (!userLimit || now > userLimit.resetTime) {
+      userLimit = { count: 0, resetTime: now + 60000 };
+    }
+    userLimit.count++;
+    rateLimits.set(userId, userLimit);
+  }
+
+  if (userLimit.count > RATE_LIMIT_MAX) {
+      return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+      );
   }
 
   const query = url.searchParams.get("q");

@@ -11,6 +11,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
@@ -47,7 +48,6 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     if (!chart) return;
@@ -106,27 +106,39 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
             >
               <motion.div 
                 initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                className="relative w-full max-w-6xl max-h-full bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
+                className="relative w-full max-w-6xl h-[85vh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
                 onClick={e => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0">
-                  <h3 className="text-sm font-medium text-slate-200">Visual Diagram</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
-                      <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
-                      <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">{Math.round(zoom * 100)}%</button>
-                      <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
-                    </div>
-                    <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-8 bg-[#0a0a0a] flex items-center justify-center min-h-[50vh] cursor-grab active:cursor-grabbing custom-scrollbar">
-                   <div style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', transition: 'transform 0.2s ease-out' }}>
-                      <div dangerouslySetInnerHTML={{ __html: svgContent }} className="mermaid-wrapper-large" />
-                   </div>
-                </div>
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.1}
+                  maxScale={8}
+                  centerOnInit={true}
+                  wheel={{ step: 0.1 }}
+                >
+                  {({ zoomIn, zoomOut, resetTransform }) => (
+                    <>
+                      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0 relative z-10">
+                        <h3 className="text-sm font-medium text-slate-200">Visual Diagram</h3>
+                        <div className="flex items-center gap-4">
+                          <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
+                            <button onClick={() => zoomIn()} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
+                            <button onClick={() => resetTransform()} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">RESET</button>
+                            <button onClick={() => zoomOut()} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
+                          </div>
+                          <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex-1 overflow-hidden bg-[#0a0a0a] relative cursor-grab active:cursor-grabbing flex items-center justify-center">
+                        <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center p-4 md:p-8">
+                          <div dangerouslySetInnerHTML={{ __html: svgContent }} className="mermaid-wrapper-large w-full flex items-center justify-center" />
+                        </TransformComponent>
+                      </div>
+                    </>
+                  )}
+                </TransformWrapper>
               </motion.div>
             </motion.div>
           )}
@@ -139,7 +151,6 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
 
 const ModernTable = ({ children, isTyping, ...props }: any) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [zoom, setZoom] = useState(1);
 
   const TableContent = () => (
     <table className="w-full text-left border-collapse text-sm whitespace-nowrap md:whitespace-normal" {...props}>
@@ -173,27 +184,41 @@ const ModernTable = ({ children, isTyping, ...props }: any) => {
             >
               <motion.div 
                 initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                className="relative w-full max-w-6xl max-h-full bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
+                className="relative w-full max-w-6xl h-[85vh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" 
                 onClick={e => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0">
-                  <h3 className="text-sm font-medium text-slate-200">Data Table</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
-                      <button onClick={() => setZoom(z => z + 0.2)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
-                      <button onClick={() => setZoom(1)} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">{Math.round(zoom * 100)}%</button>
-                      <button onClick={() => setZoom(z => Math.max(0.2, z - 0.2))} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
-                    </div>
-                    <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-8 bg-[#0a0a0a] flex items-start justify-center min-h-[50vh] custom-scrollbar">
-                   <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }} className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-4 shadow-lg min-w-max">
-                      <TableContent />
-                   </div>
-                </div>
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.1}
+                  maxScale={8}
+                  centerOnInit={true}
+                  wheel={{ step: 0.1 }}
+                >
+                  {({ zoomIn, zoomOut, resetTransform }) => (
+                    <>
+                      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900 shrink-0 relative z-10">
+                        <h3 className="text-sm font-medium text-slate-200">Data Table</h3>
+                        <div className="flex items-center gap-4">
+                          <div className="flex bg-slate-800 border border-white/10 rounded-lg overflow-hidden">
+                            <button onClick={() => zoomIn()} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomIn className="w-4 h-4" /></button>
+                            <button onClick={() => resetTransform()} className="px-2 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 text-[10px] font-bold border-x border-white/5">RESET</button>
+                            <button onClick={() => zoomOut()} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-slate-300 font-bold"><ZoomOut className="w-4 h-4" /></button>
+                          </div>
+                          <button onClick={() => setIsModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-md text-slate-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex-1 overflow-hidden bg-[#0a0a0a] relative cursor-grab active:cursor-grabbing flex items-center justify-center">
+                        <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full flex items-center justify-center p-4 md:p-8">
+                           <div className="bg-slate-900/50 border border-white/10 rounded-xl p-4 shadow-lg min-w-max">
+                              <TableContent />
+                           </div>
+                        </TransformComponent>
+                      </div>
+                    </>
+                  )}
+                </TransformWrapper>
               </motion.div>
             </motion.div>
           )}
@@ -282,7 +307,7 @@ export const ChatMessages = ({
               </div>
             ) : null}
 
-            <div className={`max-w-[95%] md:max-w-[85%] ${msg.role === 'user' ? 'order-first' : ''}`}>
+            <div className={`${msg.role === 'user' ? 'max-w-[95%] md:max-w-[85%] order-first' : 'flex-1 min-w-0'}`}>
               <div
                 className={`rounded-2xl px-3 py-2 md:px-4 md:py-3 font-poppins ${
                   msg.role === 'user'

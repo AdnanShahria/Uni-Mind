@@ -25,7 +25,7 @@ export const AITutorSidebar = ({
 }: SidebarProps) => {
   return (
     <div 
-      className={`shrink-0 flex flex-col border-r border-white/[0.06] bg-[#0A0A0A] transition-all duration-300 ease-in-out
+      className={`shrink-0 flex flex-col border-r border-white/[0.08] bg-gradient-to-b from-slate-900/95 to-[#0A0A0A] backdrop-blur-xl transition-all duration-300 ease-in-out
         absolute md:relative inset-y-0 left-0 z-20
         ${isOpen 
           ? 'translate-x-0 w-64' 
@@ -50,13 +50,13 @@ export const AITutorSidebar = ({
             onClick={() => onSelect(conv.id)}
             className={`group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
               activeConvId === conv.id
-                ? 'bg-white/[0.08] text-white'
-                : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                ? 'bg-primary/15 border border-primary/20 text-primary-glow shadow-[0_0_12px_rgba(59,130,246,0.1)]'
+                : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200 border border-transparent'
             }`}
           >
             <div className="flex items-center gap-3 overflow-hidden">
-              <MessageSquare className="w-4 h-4 shrink-0 opacity-70" />
-              <span className="text-sm font-poppins truncate">
+              <MessageSquare className={`w-4 h-4 shrink-0 ${activeConvId === conv.id ? 'text-primary-glow' : 'opacity-70'}`} />
+              <span className={`text-sm font-poppins truncate ${activeConvId === conv.id ? 'font-medium' : ''}`}>
                 {conv.title || 'New Conversation'}
               </span>
             </div>

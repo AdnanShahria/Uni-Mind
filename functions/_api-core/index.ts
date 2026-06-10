@@ -9,6 +9,7 @@ import { handleDynamicRoute } from "./api/dynamicHandler";
 import { handleLlamaParseRoutes } from "./routes/llamaparse";
 import { handleAiProxyRoutes } from "./routes/aiProxy";
 import { handleWebSearchRoutes } from "./routes/webSearch";
+import { handleImgbbProxyRoutes } from "./routes/imgbbProxy";
 
 export interface Env {
   TURSO_DATABASE_URL: string;
@@ -18,6 +19,9 @@ export interface Env {
   LLAMAPARSE_API_KEY: string;
   VITE_IMGBB_API_KEY: string;
   VITE_AGENT_ROUTER_API_KEY?: string;
+  GROQ_API_KEY?: string;
+  JWT_SECRET?: string;
+  RATE_LIMITER?: any; // KVNamespace
 }
 
 export default {
@@ -61,28 +65,31 @@ export default {
     let response = await handleAiProxyRoutes(url, request, env);
     if (response) return response;
 
-    response = await handleWebSearchRoutes(url, request);
+    response = await handleImgbbProxyRoutes(url, request, env);
     if (response) return response;
 
-    response = await handleAuthRoutes(url, request, db);
+    response = await handleWebSearchRoutes(url, request, env);
     if (response) return response;
 
-    response = await handleApiRoutes(url, request, db);
+    response = await handleAuthRoutes(url, request, db, env);
+    if (response) return response;
+
+    response = await handleApiRoutes(url, request, db, env);
     if (response) return response;
 
     response = await handleLlamaParseRoutes(url, request, env);
     if (response) return response;
 
-    response = await handleMetadataRoutes(url, request, db);
+    response = await handleMetadataRoutes(url, request, db, env);
     if (response) return response;
 
-    response = await handleCompressRoutes(url, request, db);
+    response = await handleCompressRoutes(url, request, db, env);
     if (response) return response;
 
-    response = await handleDynamicRoute(url, request, db);
+    response = await handleDynamicRoute(url, request, db, env);
     if (response) return response;
 
-    response = await handleAllPagesRoutes(url, request, db);
+    response = await handleAllPagesRoutes(url, request, db, env);
     if (response) return response;
 
     return new Response(

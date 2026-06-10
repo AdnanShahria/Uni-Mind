@@ -1,6 +1,8 @@
 import { generateUUID, verifyToken, corsHeaders } from '../utils';
 
-export async function handleApiRoutes(url: URL, request: Request, db: any): Promise<Response | null> {
+import type { Env } from '../index';
+
+export async function handleApiRoutes(url: URL, request: Request, db: any, env: Env): Promise<Response | null> {
   if (url.pathname === "/api/feed" && request.method === "GET") {
     try {
       if (db) {
@@ -44,7 +46,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any): Prom
   }
 
   if (url.pathname.startsWith("/api/folders")) {
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     if (!payload) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
@@ -85,7 +87,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any): Prom
   }
 
   if (url.pathname.startsWith("/api/notes")) {
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     if (!payload) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
@@ -145,7 +147,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any): Prom
   }
 
   if (url.pathname.startsWith("/api/tasks")) {
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     if (!payload) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
@@ -204,7 +206,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any): Prom
   }
 
   if (url.pathname.startsWith("/api/flashcards")) {
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     if (!payload) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }

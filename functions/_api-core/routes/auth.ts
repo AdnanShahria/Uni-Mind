@@ -1,6 +1,9 @@
-import { hashPassword, generateUUID, mockUsers, corsHeaders } from '../utils';
+import { hashPassword, generateSalt, signToken, generateUUID, mockUsers, corsHeaders } from '../utils';
+import type { Env } from '../index';
 
-export async function handleAuthRoutes(url: URL, request: Request, db: any): Promise<Response | null> {
+export async function handleAuthRoutes(url: URL, request: Request, db: any, env: Env): Promise<Response | null> {
+  const JWT_SECRET = env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod';
+  
   if (url.pathname === "/auth/register" && request.method === "POST") {
     try {
       const body: any = await request.json();
@@ -14,7 +17,9 @@ export async function handleAuthRoutes(url: URL, request: Request, db: any): Pro
         });
       }
 
-      const hashedPassword = await hashPassword(password);
+      const salt = generateSalt();
+      const hashedPassword = await hashPassword(password, salt);
+      const combinedPasswordData = `${salt}:${hashedPassword}`;
       const userId = generateUUID();
 
       if (db) {
@@ -37,7 +42,7 @@ export async function handleAuthRoutes(url: URL, request: Request, db: any): Pro
               id, email, password_hash, name, institution, district, country, major, session, role
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
-              userId, email, hashedPassword, name, institution || '', 
+              userId, email, combinedPasswordData, name, institution || '', 
               district || '', country || '', major || '', session || '', role || ''
             ]
           });
@@ -57,25 +62,8 @@ export async function handleAuthRoutes(url: URL, request: Request, db: any): Pro
         }
       }
 
-      console.log(`Registering ${email} in local offline database fallback...`);
-      if (mockUsers.has(email)) {
-        return new Response(JSON.stringify({ error: "User already exists in database." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-      }
-
-      const newUser = {
-        id: userId, email, name, institution, district, country, major, session, role, password: hashedPassword
-      };
-      mockUsers.set(email, newUser);
-
-      return new Response(JSON.stringify({
-        success: true,
-        message: "Registered successfully in local fallback database (Offline Mode)!",
-        user: { id: newUser.id, email: newUser.email, name: newUser.name, institution: newUser.institution, major: newUser.major, session: newUser.session, role: newUser.role }
-      }), {
-        status: 200,
+      return new Response(JSON.stringify({ error: "Failed to register. Please try again later." }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
 
@@ -100,63 +88,61 @@ export async function handleAuthRoutes(url: URL, request: Request, db: any): Pro
         });
       }
 
-      const hashedPassword = await hashPassword(password);
-
       if (db) {
         console.log(`Attempting Turso authorization for ${email}...`);
         try {
           const result = await db.execute({
-            sql: "SELECT * FROM users WHERE email = ? AND password_hash = ?",
-            args: [email, hashedPassword]
+            sql: "SELECT * FROM users WHERE email = ?",
+            args: [email]
           });
 
           if (result.rows.length > 0) {
             const userRow = result.rows[0];
-            console.log("Turso authorization successful!");
-            const mockToken = btoa(JSON.stringify({ userId: userRow.id, email }));
+            const storedPasswordData = userRow.password_hash as string;
+            
+            // Check if it's the new format salt:hash
+            let isValid = false;
+            if (storedPasswordData.includes(':')) {
+              const [salt, storedHash] = storedPasswordData.split(':');
+              const computedHash = await hashPassword(password, salt);
+              isValid = (computedHash === storedHash);
+            } else {
+              // Legacy fallback
+              const msgUint8 = new TextEncoder().encode(password);
+              const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+              const hashArray = Array.from(new Uint8Array(hashBuffer));
+              const legacyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+              isValid = (legacyHash === storedPasswordData);
+            }
 
-            return new Response(JSON.stringify({
-              success: true,
-              message: "Authorized in Turso DB!",
-              token: mockToken,
-              user: { id: userRow.id, email: userRow.email, name: userRow.name, institution: userRow.institution, major: userRow.major, session: userRow.session, role: userRow.role }
-            }), {
-              status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" }
-            });
-          } else {
-            if (!mockUsers.has(email)) {
+            if (isValid) {
+              console.log("Turso authorization successful!");
+              const token = await signToken({ userId: userRow.id, email }, JWT_SECRET);
+
+              return new Response(JSON.stringify({
+                success: true,
+                message: "Authorized in Turso DB!",
+                token: token,
+                user: { id: userRow.id, email: userRow.email, name: userRow.name, institution: userRow.institution, major: userRow.major, session: userRow.session, role: userRow.role }
+              }), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+              });
+            } else {
               return new Response(JSON.stringify({ error: "Invalid email or password" }), {
                 status: 401,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
               });
             }
+          } else {
+            return new Response(JSON.stringify({ error: "Invalid email or password" }), {
+              status: 401,
+              headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
           }
         } catch (dbErr: any) {
-          console.error("Turso connection failed (offline mode fallback activated):", dbErr.message || dbErr);
+          console.error("Turso connection failed:", dbErr.message || dbErr);
         }
-      }
-
-      console.log(`Authorizing ${email} in local offline database fallback...`);
-      let user = mockUsers.get(email);
-      
-      // Fallback for offline dev mode where isolate might have restarted and cleared mockUsers
-      if (!user && !db) {
-         user = { id: generateUUID(), email, name: 'Developer (Offline)', institution: 'Local', major: 'CS', role: 'Dev', password: hashedPassword };
-         mockUsers.set(email, user);
-      }
-      
-      if (user && user.password === hashedPassword) {
-        const mockToken = btoa(JSON.stringify({ userId: user.id, email }));
-        return new Response(JSON.stringify({
-          success: true,
-          message: "Authorized in local fallback database (Offline Mode)!",
-          token: mockToken,
-          user: { id: user.id, email: user.email, name: user.name, institution: user.institution, major: user.major, session: user.session, role: user.role }
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
       }
 
       return new Response(JSON.stringify({ error: "Invalid email or password" }), {

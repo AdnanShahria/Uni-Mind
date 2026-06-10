@@ -1,16 +1,18 @@
 /**
  * IMGBB Image Upload Utility
- * Replaces all Supabase/R2 storage usage with IMGBB API.
+ * Replaces all Supabase/R2 storage usage with IMGBB API via Backend Proxy.
  * Supports image files only. For PDFs/notes, file_url is stored as base64 in Turso.
  */
-
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 export interface ImgbbUploadResult {
   success: boolean;
   url: string | null;
   deleteUrl?: string;
   error?: string;
+}
+
+function getToken() {
+  return localStorage.getItem('unimind_token') || '';
 }
 
 /**
@@ -20,11 +22,6 @@ export interface ImgbbUploadResult {
  * @returns ImgbbUploadResult with the public URL or error
  */
 export async function uploadImageToImgbb(file: File, name?: string): Promise<ImgbbUploadResult> {
-  if (!IMGBB_API_KEY) {
-    console.error('IMGBB API key not configured');
-    return { success: false, url: null, error: 'IMGBB API key not configured' };
-  }
-
   try {
     const formData = new FormData();
     formData.append('image', file);
@@ -32,10 +29,22 @@ export async function uploadImageToImgbb(file: File, name?: string): Promise<Img
       formData.append('name', name);
     }
 
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    const response = await fetch(`/api/imgbb-proxy`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`
+      },
       body: formData,
     });
+
+    if (!response.ok) {
+      const errTxt = await response.text();
+      return {
+        success: false,
+        url: null,
+        error: `Proxy upload failed: ${response.status} - ${errTxt}`
+      };
+    }
 
     const result = await response.json();
 
@@ -53,7 +62,7 @@ export async function uploadImageToImgbb(file: File, name?: string): Promise<Img
       };
     }
   } catch (err: any) {
-    console.error('IMGBB upload error:', err);
+    console.error('IMGBB proxy upload error:', err);
     return {
       success: false,
       url: null,

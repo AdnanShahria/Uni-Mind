@@ -88,7 +88,7 @@ import { handleProfileSettingsPageRoute as handleProfileSettingsPageRoute_xr7rf 
 import { handleStorageUsagePageRoute as handleStorageUsagePageRoute_f3c3y } from "./api/settings/StorageUsagePage";
 import { handleSettingsPageRoute as handleSettingsPageRoute_waysn } from "./api/SettingsPage";
 
-export const handleAllPagesRoutes = async (url: URL, request: Request, db: Client | null): Promise<Response | null> => {
+export const handleAllPagesRoutes = async (url: URL, request: Request, db: Client | null, env?: any): Promise<Response | null> => {
   let res: Response | null = null;
   
   res = await handleAdminPanelRoute_f6ry6(url, request, db); if (res) return res;
@@ -104,7 +104,7 @@ export const handleAllPagesRoutes = async (url: URL, request: Request, db: Clien
   res = await handleCommunitiesPageRoute_lsbt3(url, request, db); if (res) return res;
   res = await handleCreateCommunityModalRoute_tks0c(url, request, db); if (res) return res;
   res = await handleAISuggestionsRoute_sf8we(url, request, db); if (res) return res;
-  res = await handleDashboardPageRoute_n2219(url, request, db); if (res) return res;
+  res = await handleDashboardPageRoute_n2219(url, request, db, env); if (res) return res;
   res = await handleQuickActionsRoute_16szu(url, request, db); if (res) return res;
   res = await handleRecentActivityRoute_js47j(url, request, db); if (res) return res;
   res = await handleStatsGridRoute_sodgb(url, request, db); if (res) return res;

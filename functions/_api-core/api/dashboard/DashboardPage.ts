@@ -2,9 +2,9 @@
 import { Client } from "@libsql/client/web";
 import { corsHeaders, verifyToken } from "../../utils";
 
-export const handleDashboardPageRoute = async (url: URL, request: Request, db: Client | null): Promise<Response | null> => {
+export const handleDashboardPageRoute = async (url: URL, request: Request, db: Client | null, env: any): Promise<Response | null> => {
   if (url.pathname === '/api/dashboard/data' && request.method === 'GET') {
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     if (!payload) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }

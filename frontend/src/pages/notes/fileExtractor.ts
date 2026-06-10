@@ -65,20 +65,52 @@ async function extractPdfWithLlamaParse(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
   
-  const res = await fetch('/api/llamaparse/extract-full', {
+  const token = localStorage.getItem('unimind_token') || '';
+  const res = await fetch('/api/llamaparse/extract-start', {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
     body: formData
   });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || `LlamaParse extract-full failed: ${res.status}`);
+    throw new Error(errData.error || `LlamaParse extract-start failed: ${res.status}`);
   }
 
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'LlamaParse extraction unsuccessful');
+  const startData = await res.json();
+  if (!startData.success) throw new Error(startData.error || 'LlamaParse upload unsuccessful');
 
-  return data.markdown || '';
+  const jobId = startData.jobId;
+  let attempts = 0;
+  
+  while (attempts < 60) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const statusRes = await fetch(`/api/llamaparse/extract-status?jobId=${jobId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!statusRes.ok) {
+      console.warn(`[LlamaParse] Status check failed: ${statusRes.status}`);
+      attempts++;
+      continue;
+    }
+
+    const statusData = await statusRes.json();
+    if (statusData.success && statusData.status === 'SUCCESS') {
+      return statusData.markdown || '';
+    } else if (!statusData.success || (statusData.status && statusData.status !== 'PENDING')) {
+      throw new Error(statusData.error || `LlamaParse extraction unsuccessful (${statusData.status})`);
+    }
+
+    attempts++;
+  }
+
+  throw new Error('LlamaParse extraction timed out');
 }
 
 async function extractPdf(file: File): Promise<{ text: string; pageCount: number }> {

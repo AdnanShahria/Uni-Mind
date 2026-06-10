@@ -1,11 +1,12 @@
 import { verifyToken, corsHeaders } from '../utils';
+import type { Env } from '../index';
 
-export async function handleDynamicRoute(url: URL, request: Request, db: any): Promise<Response | null> {
+export async function handleDynamicRoute(url: URL, request: Request, db: any, env: Env): Promise<Response | null> {
   console.log("DYNAMIC HANDLER CALLED for URL:", url.pathname);
   const pathParts = url.pathname.split('/');
   if (pathParts.length === 4 && pathParts[1] === 'api' && pathParts[2] === 'dynamic') {
     const table = pathParts[3];
-    const payload = verifyToken(request);
+    const payload = await verifyToken(request, env.JWT_SECRET || 'fallback_secret_do_not_use_in_prod');
     
     // These tables allow public read (GET) without authentication
     const publicReadTables = ['post_likes', 'post_comments', 'post_shares', 'ai_prompts', 'ai_suggestions', 'users'];
@@ -108,9 +109,26 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
             const args = updateKeys.map(k => body[k]);
             args.push(primaryKeyValue);
             
+            // RLS
+            let rlsClause = '';
+            if (table === 'posts' || table === 'notes' || table === 'comments') {
+                rlsClause = ` AND author_id = ?`;
+                args.push(payload.userId);
+            } else if (table === 'communities') {
+                rlsClause = ` AND created_by = ?`;
+                args.push(payload.userId);
+            } else if (table === 'users') {
+                rlsClause = ` AND id = ?`;
+                args.push(payload.userId);
+            } else if (!isUserPrefs && table !== 'ai_prompts' && table !== 'metadata_approved') {
+                // Generic fallback for tables with user_id
+                rlsClause = ` AND user_id = ?`;
+                args.push(payload.userId);
+            }
+
             if (db) {
                 await db.execute({
-                    sql: `UPDATE ${table} SET ${setClause} WHERE ${primaryKeyCol} = ?`,
+                    sql: `UPDATE ${table} SET ${setClause} WHERE ${primaryKeyCol} = ?${rlsClause}`,
                     args: args
                 });
             }
@@ -200,9 +218,26 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any): P
             return new Response(JSON.stringify({ error: "Missing delete conditions" }), { status: 400, headers: corsHeaders });
         }
 
+        // RLS
+        let rlsClause = '';
+        if (table === 'posts' || table === 'notes' || table === 'comments') {
+            rlsClause = ` AND author_id = ?`;
+            args.push(payload.userId);
+        } else if (table === 'communities') {
+            rlsClause = ` AND created_by = ?`;
+            args.push(payload.userId);
+        } else if (table === 'users') {
+            rlsClause = ` AND id = ?`;
+            args.push(payload.userId);
+        } else if (table !== 'ai_prompts' && table !== 'metadata_approved') {
+            // Generic fallback for tables with user_id
+            rlsClause = ` AND user_id = ?`;
+            args.push(payload.userId);
+        }
+
         if (db) {
             await db.execute({
-                sql: `DELETE FROM ${table} WHERE ` + whereClauses.join(' AND '),
+                sql: `DELETE FROM ${table} WHERE ` + whereClauses.join(' AND ') + rlsClause,
                 args: args
             });
         }
