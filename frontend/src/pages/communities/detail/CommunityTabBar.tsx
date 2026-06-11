@@ -20,25 +20,25 @@ export const CommunityTabBar = ({ activeTab, setActiveTab, membersCount, userRol
   const isMod = userRole === 'owner' || userRole === 'admin' || userRole === 'moderator' || userRole === 'elder';
 
   const tabs: TabConfig[] = [
-    { id: 'feed', label: 'Feed', icon: <MessageSquare className="w-3.5 h-3.5" />, show: true },
-    { id: 'members', label: 'Members', icon: <Users className="w-3.5 h-3.5" />, count: membersCount, show: true },
-    { id: 'resources', label: 'Resources', icon: <Library className="w-3.5 h-3.5" />, show: true },
-    { id: 'events', label: 'Events', icon: <Calendar className="w-3.5 h-3.5" />, show: true },
-    { id: 'analytics', label: 'Analytics', icon: <Activity className="w-3.5 h-3.5" />, show: isMod },
-    { id: 'settings', label: 'Management', icon: <Settings className="w-3.5 h-3.5" />, show: isMod },
+    { id: 'feed', label: 'Feed', icon: <MessageSquare className="w-3.5 h-3.5 md:w-4 md:h-4" />, show: true },
+    { id: 'members', label: 'Members', icon: <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />, count: membersCount, show: true },
+    { id: 'resources', label: 'Resources', icon: <Library className="w-3.5 h-3.5 md:w-4 md:h-4" />, show: true },
+    { id: 'events', label: 'Events', icon: <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4" />, show: true },
+    { id: 'analytics', label: 'Analytics', icon: <Activity className="w-3.5 h-3.5 md:w-4 md:h-4" />, show: isMod },
+    { id: 'settings', label: 'Management', icon: <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />, show: isMod },
   ];
 
   return (
     <div className="w-full -mx-4 px-4 md:mx-0 md:px-0">
       {/* Scrollable pill tabs container */}
-      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none snap-x pb-0.5 md:pb-0">
+      <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto scrollbar-none snap-x pb-0.5 md:pb-0">
         {tabs.filter(t => t.show).map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`snap-start shrink-0 relative px-3.5 md:px-5 py-2 md:py-2.5 text-[12px] md:text-[13px] font-semibold font-poppins transition-all flex items-center gap-1.5 rounded-xl whitespace-nowrap ${
+              className={`snap-start shrink-0 relative px-3 md:px-5 py-1.5 md:py-2.5 text-[11px] md:text-[13px] font-semibold font-poppins transition-all flex items-center gap-1.5 rounded-lg md:rounded-xl whitespace-nowrap ${
                 isActive
                   ? 'bg-primary/15 text-primary-glow border border-primary/25'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] border border-transparent'
@@ -63,7 +63,7 @@ export const CommunityTabBar = ({ activeTab, setActiveTab, membersCount, userRol
       </div>
 
       {/* Divider */}
-      <div className="mt-1.5 h-px bg-white/[0.06]" />
+      <div className="mt-1.5 md:mt-2 h-px bg-white/[0.06]" />
     </div>
   );
 };

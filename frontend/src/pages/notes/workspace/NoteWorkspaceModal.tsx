@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, Trash2, Loader2, BrainCircuit, Globe, Lock, Users, Share2, Maximize2, Minimize2, Edit3 } from 'lucide-react';
+import { X, Star, Trash2, Loader2, BrainCircuit, Globe, Lock, Users, Share2, Maximize2, Minimize2, Edit3, FileText, MessageSquare, Sparkles, MoreHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { turso } from '../../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
@@ -136,11 +136,18 @@ export const NoteWorkspaceModal = ({
   const [communityRole, setCommunityRole] = useState<string | null>(null);
   const [canUpdateCommunityNote, setCanUpdateCommunityNote] = useState<boolean>(true);
   const [isSavingToMyNotes, setIsSavingToMyNotes] = useState(false);
+  const [activeMobilePanel, setActiveMobilePanel] = useState<'editor' | 'sources' | 'studio' | 'chat'>('editor');
+  const [showMobileActions, setShowMobileActions] = useState(false);
   const { isAppFullScreen, setIsAppFullScreen } = useTopBarContext();
 
+  // On mobile, auto-enable full screen to hide global nav and maximize workspace
   useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isOpen && isMobile) {
+      setIsAppFullScreen(true);
+    }
     return () => setIsAppFullScreen(false);
-  }, [setIsAppFullScreen]);
+  }, [isOpen, setIsAppFullScreen]);
 
    
   useEffect(() => {
@@ -407,7 +414,7 @@ export const NoteWorkspaceModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-all duration-300 ${isAppFullScreen ? 'p-0' : 'p-2 sm:p-4'}`}
+            className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm transition-all duration-300 ${isAppFullScreen ? 'p-0' : 'p-0 sm:p-2 md:p-4'}`}
             onClick={onClose}
           >
             <motion.div
@@ -415,27 +422,28 @@ export const NoteWorkspaceModal = ({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.98, opacity: 0, y: 10 }}
               onClick={e => e.stopPropagation()}
-              className={`w-full h-full bg-[#0a0c10] shadow-2xl flex flex-col overflow-hidden text-white transition-all duration-300 ${isAppFullScreen ? 'max-w-none rounded-none border-0' : 'max-w-[1800px] border border-white/[0.06] rounded-2xl'}`}
+              className={`w-full h-full bg-[#0a0c10] shadow-2xl flex flex-col overflow-hidden text-white transition-all duration-300 ${isAppFullScreen ? 'max-w-none rounded-none border-0' : 'max-w-[1800px] border-0 sm:border sm:border-white/[0.06] rounded-none sm:rounded-2xl'}`}
             >
               {/* Top Navigation Bar */}
-              <div className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-[#111418] border-b border-white/[0.06]">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <BrainCircuit className="w-3.5 h-3.5 text-primary" />
+              <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 bg-[#111418] border-b border-white/[0.06]">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                    <BrainCircuit className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                   </div>
                   {isEditing ? (
                     <input
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
-                      className="flex-1 max-w-md bg-white/[0.04] border border-primary/30 rounded-lg px-3 py-1 text-sm font-semibold text-white font-outfit outline-none"
+                      className="flex-1 max-w-[180px] sm:max-w-md bg-white/[0.04] border border-primary/30 rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-white font-outfit outline-none"
                       autoFocus
                     />
                   ) : (
-                    <h2 className="text-sm font-semibold font-outfit truncate">{note.title}</h2>
+                    <h2 className="text-xs sm:text-sm font-semibold font-outfit truncate">{note.title}</h2>
                   )}
                 </div>
                 
-                <div className="flex items-center gap-2 shrink-0 ml-4">
+                {/* Desktop action buttons */}
+                <div className="hidden sm:flex items-center gap-2 shrink-0 ml-4">
                   <div className="relative group hidden sm:block z-[70]">
                      <button className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] transition-colors rounded-lg px-2.5 py-1.5 border border-white/[0.06] text-[11px] text-slate-400">
                         {visibility === 'private' && <><Lock className="w-3 h-3"/> Private</>}
@@ -486,6 +494,49 @@ export const NoteWorkspaceModal = ({
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* Mobile action buttons — compact */}
+                <div className="flex sm:hidden items-center gap-1 shrink-0 ml-2">
+                  <button onClick={() => onStarToggled(note.id)} className={`p-1.5 rounded-lg transition-colors ${note.starred ? 'text-amber-400 bg-amber-500/10' : 'text-slate-500'}`}>
+                    <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                  </button>
+                  {/* Mobile "more" menu */}
+                  <div className="relative">
+                    <button onClick={() => setShowMobileActions(!showMobileActions)} className="p-1.5 rounded-lg text-slate-500 hover:text-white transition-colors">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                    <AnimatePresence>
+                      {showMobileActions && (
+                        <>
+                          <div className="fixed inset-0 z-[80]" onClick={() => setShowMobileActions(false)} />
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                            className="absolute top-full right-0 mt-1 w-44 bg-[#1c1f26] border border-white/10 rounded-xl shadow-2xl z-[90] flex flex-col p-1.5"
+                          >
+                            <button onClick={() => { handleVisibilityChange(visibility === 'private' ? 'public' : visibility === 'public' ? 'class' : 'private'); setShowMobileActions(false); }} className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-300 hover:text-white hover:bg-white/5 rounded-lg">
+                              {visibility === 'private' ? <Lock className="w-3.5 h-3.5" /> : visibility === 'class' ? <Users className="w-3.5 h-3.5 text-blue-400" /> : <Globe className="w-3.5 h-3.5 text-emerald-400" />}
+                              {visibility === 'private' ? 'Private' : visibility === 'class' ? 'Class' : 'Public'} — Tap to change
+                            </button>
+                            {shareLinkToken && visibility !== 'private' && (
+                              <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/notes/share/${shareLinkToken}`); toast.success('Share link copied!'); setShowMobileActions(false); }} className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-primary hover:bg-primary/10 rounded-lg">
+                                <Share2 className="w-3.5 h-3.5" /> Copy Share Link
+                              </button>
+                            )}
+                            <div className="h-px bg-white/[0.06] my-1" />
+                            <button onClick={() => { setShowDeleteConfirm(true); setShowMobileActions(false); }} className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg">
+                              <Trash2 className="w-3.5 h-3.5" /> Delete Note
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <button onClick={onClose} className="p-1.5 rounded-lg text-slate-500 hover:text-white transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Delete Confirm Bar */}
@@ -504,61 +555,161 @@ export const NoteWorkspaceModal = ({
               </AnimatePresence>
 
               {/* 4-Panel Workspace Layout */}
-              <div className="flex flex-1 overflow-hidden">
-                {/* Panel 1: Sources (Collapsible) */}
-                <SourcesPane 
-                  note={note} 
-                  isCollapsed={isSourcesCollapsed} 
-                  onToggleCollapse={() => setIsSourcesCollapsed(!isSourcesCollapsed)} 
-                />
+              <div className="flex flex-1 overflow-hidden relative">
+                {/* Panel 1: Sources (Collapsible) — hidden on mobile, shown via bottom tab */}
+                <div className={`${activeMobilePanel === 'sources' ? 'flex absolute inset-0 z-20 md:relative md:inset-auto' : 'hidden md:flex'}`}>
+                  <SourcesPane 
+                    note={note} 
+                    isCollapsed={isSourcesCollapsed} 
+                    onToggleCollapse={() => setIsSourcesCollapsed(!isSourcesCollapsed)}
+                    isMobileFullScreen={activeMobilePanel === 'sources'}
+                  />
+                </div>
                 
                 {/* Panel 2: Main Editor / Document area */}
-                <EditorPane 
-                  note={note}
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                  editContent={editContent}
-                  setEditContent={setEditContent}
-                  dbContent={dbContent}
-                  aiSummary={aiSummary}
-                  isSaving={isSaving}
-                  handleSave={handleSave}
-                  copied={copied}
-                  handleCopy={handleCopy}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  studioData={studioData}
-                  hasFlashcards={hasFlashcards}
-                  canUpdateCommunityNote={canUpdateCommunityNote}
-                  isCommunityNote={!!note.community_id}
-                  isSavingToMyNotes={isSavingToMyNotes}
-                  handleSaveToMyNotes={handleSaveToMyNotes}
-                />
+                <div className={`flex-1 min-w-0 ${activeMobilePanel !== 'editor' ? 'hidden md:flex' : 'flex'}`}>
+                  <EditorPane 
+                    note={note}
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                    editContent={editContent}
+                    setEditContent={setEditContent}
+                    dbContent={dbContent}
+                    aiSummary={aiSummary}
+                    isSaving={isSaving}
+                    handleSave={handleSave}
+                    copied={copied}
+                    handleCopy={handleCopy}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    studioData={studioData}
+                    hasFlashcards={hasFlashcards}
+                    canUpdateCommunityNote={canUpdateCommunityNote}
+                    isCommunityNote={!!note.community_id}
+                    isSavingToMyNotes={isSavingToMyNotes}
+                    handleSaveToMyNotes={handleSaveToMyNotes}
+                  />
+                </div>
                 
-                {/* Right Panel: Studio Tools + AI Chat */}
-                <ChatPane 
-                  note={note}
-                  noteTitle={note.title}
-                  noteContent={stripHtml(dbContent)}
-                  hasFlashcards={hasFlashcards}
-                  setIsStudyModalOpen={setIsStudyModalOpen}
-                  handleGenerateFlashcards={handleGenerateFlashcards}
-                  isGeneratingFlashcards={isGeneratingFlashcards}
-                  handleGenerateSummary={handleGenerateSummary}
-                  isGenerating={isGenerating}
-                  updateStudioData={updateStudioData}
-                  setActiveTab={setActiveTab}
-                  isGeneratingStudyGuide={isGeneratingStudyGuide}
-                  setIsGeneratingStudyGuide={setIsGeneratingStudyGuide}
-                  isGeneratingMindMap={isGeneratingMindMap}
-                  setIsGeneratingMindMap={setIsGeneratingMindMap}
-                  isGeneratingSlides={isGeneratingSlides}
-                  setIsGeneratingSlides={setIsGeneratingSlides}
-                  isGeneratingReport={isGeneratingReport}
-                  setIsGeneratingReport={setIsGeneratingReport}
-                  isGeneratingAudio={isGeneratingAudio}
-                  setIsGeneratingAudio={setIsGeneratingAudio}
-                />
+                {/* Studio Tools Panel — mobile only, full screen */}
+                {activeMobilePanel === 'studio' && (
+                  <div className="flex md:hidden absolute inset-0 z-20 bg-[#0d1017]">
+                    <ChatPane 
+                      note={note}
+                      noteTitle={note.title}
+                      noteContent={stripHtml(dbContent)}
+                      hasFlashcards={hasFlashcards}
+                      setIsStudyModalOpen={setIsStudyModalOpen}
+                      handleGenerateFlashcards={handleGenerateFlashcards}
+                      isGeneratingFlashcards={isGeneratingFlashcards}
+                      handleGenerateSummary={handleGenerateSummary}
+                      isGenerating={isGenerating}
+                      updateStudioData={updateStudioData}
+                      setActiveTab={(tab: any) => { setActiveTab(tab); setActiveMobilePanel('editor'); }}
+                      isGeneratingStudyGuide={isGeneratingStudyGuide}
+                      setIsGeneratingStudyGuide={setIsGeneratingStudyGuide}
+                      isGeneratingMindMap={isGeneratingMindMap}
+                      setIsGeneratingMindMap={setIsGeneratingMindMap}
+                      isGeneratingSlides={isGeneratingSlides}
+                      setIsGeneratingSlides={setIsGeneratingSlides}
+                      isGeneratingReport={isGeneratingReport}
+                      setIsGeneratingReport={setIsGeneratingReport}
+                      isGeneratingAudio={isGeneratingAudio}
+                      setIsGeneratingAudio={setIsGeneratingAudio}
+                      mobileMode="studio"
+                    />
+                  </div>
+                )}
+
+                {/* Chat Panel — mobile only, full screen */}
+                {activeMobilePanel === 'chat' && (
+                  <div className="flex md:hidden absolute inset-0 z-20 bg-[#0d1017]">
+                    <ChatPane 
+                      note={note}
+                      noteTitle={note.title}
+                      noteContent={stripHtml(dbContent)}
+                      hasFlashcards={hasFlashcards}
+                      setIsStudyModalOpen={setIsStudyModalOpen}
+                      handleGenerateFlashcards={handleGenerateFlashcards}
+                      isGeneratingFlashcards={isGeneratingFlashcards}
+                      handleGenerateSummary={handleGenerateSummary}
+                      isGenerating={isGenerating}
+                      updateStudioData={updateStudioData}
+                      setActiveTab={setActiveTab}
+                      isGeneratingStudyGuide={isGeneratingStudyGuide}
+                      setIsGeneratingStudyGuide={setIsGeneratingStudyGuide}
+                      isGeneratingMindMap={isGeneratingMindMap}
+                      setIsGeneratingMindMap={setIsGeneratingMindMap}
+                      isGeneratingSlides={isGeneratingSlides}
+                      setIsGeneratingSlides={setIsGeneratingSlides}
+                      isGeneratingReport={isGeneratingReport}
+                      setIsGeneratingReport={setIsGeneratingReport}
+                      isGeneratingAudio={isGeneratingAudio}
+                      setIsGeneratingAudio={setIsGeneratingAudio}
+                      mobileMode="chat"
+                    />
+                  </div>
+                )}
+
+                {/* Right Panel: Studio Tools + AI Chat — Desktop only */}
+                <div className="hidden lg:flex">
+                  <ChatPane 
+                    note={note}
+                    noteTitle={note.title}
+                    noteContent={stripHtml(dbContent)}
+                    hasFlashcards={hasFlashcards}
+                    setIsStudyModalOpen={setIsStudyModalOpen}
+                    handleGenerateFlashcards={handleGenerateFlashcards}
+                    isGeneratingFlashcards={isGeneratingFlashcards}
+                    handleGenerateSummary={handleGenerateSummary}
+                    isGenerating={isGenerating}
+                    updateStudioData={updateStudioData}
+                    setActiveTab={setActiveTab}
+                    isGeneratingStudyGuide={isGeneratingStudyGuide}
+                    setIsGeneratingStudyGuide={setIsGeneratingStudyGuide}
+                    isGeneratingMindMap={isGeneratingMindMap}
+                    setIsGeneratingMindMap={setIsGeneratingMindMap}
+                    isGeneratingSlides={isGeneratingSlides}
+                    setIsGeneratingSlides={setIsGeneratingSlides}
+                    isGeneratingReport={isGeneratingReport}
+                    setIsGeneratingReport={setIsGeneratingReport}
+                    isGeneratingAudio={isGeneratingAudio}
+                    setIsGeneratingAudio={setIsGeneratingAudio}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Bottom Navigation — only on small screens */}
+              <div className="flex md:hidden items-center justify-around bg-[#111418] border-t border-white/[0.06] px-2 py-1.5 shrink-0">
+                {[
+                  { id: 'editor' as const, icon: FileText, label: 'Notes', color: 'text-blue-400' },
+                  { id: 'sources' as const, icon: Globe, label: 'Sources', color: 'text-emerald-400' },
+                  { id: 'studio' as const, icon: Sparkles, label: 'Studio', color: 'text-amber-400' },
+                  { id: 'chat' as const, icon: MessageSquare, label: 'AI Chat', color: 'text-purple-400' },
+                ].map(tab => {
+                  const isActive = activeMobilePanel === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveMobilePanel(tab.id)}
+                      className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-200 relative ${
+                        isActive
+                          ? `${tab.color} bg-white/[0.06]`
+                          : 'text-slate-600 hover:text-slate-400'
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="mobileTabGlow"
+                          className="absolute inset-0 rounded-xl bg-white/[0.04] border border-white/[0.08]"
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <tab.icon className="w-4 h-4 relative z-10" />
+                      <span className="text-[9px] font-semibold relative z-10">{tab.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           </motion.div>

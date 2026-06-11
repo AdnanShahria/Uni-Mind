@@ -489,7 +489,7 @@ export const CommunityDetailPage = () => {
 
               {activeTab === 'resources' && <ResourcesTab communityId={id as string} />}
               
-              {activeTab === 'events' && <EventsTab />}
+              {activeTab === 'events' && <EventsTab communityId={id as string} userRole={userRole} />}
 
               {activeTab === 'analytics' && (userRole === 'owner' || userRole === 'admin' || userRole === 'moderator') && (
                 <AnalyticsTab 

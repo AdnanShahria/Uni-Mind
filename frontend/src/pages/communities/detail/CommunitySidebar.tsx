@@ -81,10 +81,10 @@ export const CommunitySidebar = ({ members, onViewAllMembers }: CommunitySidebar
       {/* Mobile toggle */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="md:hidden w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#090d16] border border-white/[0.06] text-[11px] font-semibold text-white font-poppins"
+        className="md:hidden w-full flex items-center justify-between py-2.5 text-[11px] font-bold text-white font-poppins border-b border-white/[0.06] mb-1"
       >
-        <span className="flex items-center gap-1.5 uppercase tracking-widest text-[10px]">
-          <Users className="w-3 h-3 text-primary-glow" /> Community Info
+        <span className="flex items-center gap-2">
+          <Users className="w-3.5 h-3.5 text-primary-glow" /> Community Info
         </span>
         <motion.div animate={{ rotate: isMobileOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -99,7 +99,9 @@ export const CommunitySidebar = ({ members, onViewAllMembers }: CommunitySidebar
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden overflow-hidden"
           >
-            {sidebarContent}
+            <div className="pt-2 pb-1">
+              {sidebarContent}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

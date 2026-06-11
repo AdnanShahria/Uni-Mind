@@ -153,7 +153,7 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
             
             // RLS
             let rlsClause = '';
-            if (table === 'posts' || table === 'comments') {
+            if (table === 'posts' || table === 'post_comments') {
                 rlsClause = ` AND author_id = ?`;
                 args.push(payload.userId);
             } else if (table === 'notes') {
@@ -164,6 +164,12 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
                 args.push(payload.userId);
             } else if (table === 'users') {
                 rlsClause = ` AND id = ?`;
+                args.push(payload.userId);
+            } else if (table === 'messages') {
+                rlsClause = ` AND sender_id = ?`;
+                args.push(payload.userId);
+            } else if (table === 'conversations') {
+                rlsClause = ` AND id IN (SELECT conversation_id FROM conversation_members WHERE user_id = ?)`;
                 args.push(payload.userId);
             } else if (!isUserPrefs && table !== 'ai_prompts' && table !== 'metadata_approved') {
                 // Generic fallback for tables with user_id
@@ -182,12 +188,14 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
             // It's an INSERT
             // Inject author_id or user_id for security
             // Tables that use author_id
-            if (table === 'posts' || table === 'notes' || table === 'comments') {
+            if (table === 'posts' || table === 'notes' || table === 'post_comments') {
                  if (!body.author_id) body.author_id = payload.userId;
             } else if (table === 'communities') {
                  if (!body.created_by) body.created_by = payload.userId;
-            } else if (table === 'ai_messages' || table === 'ai_prompts') {
+            } else if (table === 'ai_messages' || table === 'ai_prompts' || table === 'conversations') {
                  // These tables don't have a user_id column — skip injection
+            } else if (table === 'messages') {
+                 if (!body.sender_id) body.sender_id = payload.userId;
             } else {
                  if (!body.user_id) body.user_id = payload.userId;
             }
@@ -265,7 +273,7 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
 
         // RLS
         let rlsClause = '';
-        if (table === 'posts' || table === 'notes' || table === 'comments') {
+        if (table === 'posts' || table === 'notes' || table === 'post_comments') {
             rlsClause = ` AND author_id = ?`;
             args.push(payload.userId);
         } else if (table === 'communities') {
@@ -273,6 +281,12 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
             args.push(payload.userId);
         } else if (table === 'users') {
             rlsClause = ` AND id = ?`;
+            args.push(payload.userId);
+        } else if (table === 'messages') {
+            rlsClause = ` AND sender_id = ?`;
+            args.push(payload.userId);
+        } else if (table === 'conversations') {
+            rlsClause = ` AND id IN (SELECT conversation_id FROM conversation_members WHERE user_id = ?)`;
             args.push(payload.userId);
         } else if (table !== 'ai_prompts' && table !== 'metadata_approved') {
             // Generic fallback for tables with user_id
