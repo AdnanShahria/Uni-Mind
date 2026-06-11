@@ -6,19 +6,28 @@ const getStoredUser = () => {
   const token = localStorage.getItem('unimind_token');
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token));
     const storedUser = localStorage.getItem('unimind_user');
     if (storedUser) {
       return JSON.parse(storedUser);
     }
-    return {
-      id: payload.userId,
-      email: payload.email,
-      name: 'Scholar',
-      institution: 'UniMind Cloud',
-      major: 'Deep Work',
-      role: 'Researcher'
-    };
+    
+    // Fallback if unimind_user is missing but token exists
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padLen = (4 - (base64.length % 4)) % 4;
+      const padded = base64 + '='.repeat(padLen);
+      const payload = JSON.parse(atob(padded));
+      return {
+        id: payload.userId,
+        email: payload.email,
+        name: 'Scholar',
+        institution: 'UniMind Cloud',
+        major: 'Deep Work',
+        role: 'Researcher'
+      };
+    }
+    return null;
   } catch (e) {
     return null;
   }
@@ -185,6 +194,11 @@ export const turso: any = {
         if (!builder._eqs) builder._eqs = [];
         builder._eqs.push({ column, value });
         builder._eq = { column, value }; // backward compat
+        return builder;
+      },
+      neq: (column: string, value: any) => {
+        if (!builder._neqs) builder._neqs = [];
+        builder._neqs.push({ column, value });
         return builder;
       },
       ilike: (column: string, value: string) => {
@@ -417,6 +431,9 @@ export const turso: any = {
                      urlObj.searchParams.append('eqColumn', builder._eq.column);
                      urlObj.searchParams.append('eqValue', builder._eq.value);
                  }
+                 if (builder._neqs) {
+                     builder._neqs.forEach((neq: any) => urlObj.searchParams.append(`neq_${neq.column}`, neq.value));
+                 }
                  if (builder._ilikes) {
                      builder._ilikes.forEach((il: any) => urlObj.searchParams.append(`ilike_${il.column}`, il.value.replace(/%/g, '')));
                  }
@@ -462,6 +479,11 @@ export const turso: any = {
               });
             } else if (builder._eq) {
               result.data = result.data.filter((item: any) => item[builder._eq.column] === builder._eq.value);
+            }
+            if (builder._neqs) {
+              builder._neqs.forEach((neq: any) => {
+                 result.data = result.data.filter((item: any) => item[neq.column] !== neq.value);
+              });
             }
             if (builder._single) {
               result.data = result.data.length > 0 ? result.data[0] : null;

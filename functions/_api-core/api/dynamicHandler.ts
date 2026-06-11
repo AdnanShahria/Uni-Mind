@@ -48,6 +48,12 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
               whereClauses.push(`${col} = ?`);
               args.push(val);
             }
+          } else if (key.startsWith('neq_')) {
+            const col = key.replace('neq_', '');
+            if (/^[a-zA-Z0-9_]+$/.test(col)) {
+              whereClauses.push(`${col} != ?`);
+              args.push(val);
+            }
           } else if (key.startsWith('ilike_')) {
             const col = key.replace('ilike_', '');
             if (/^[a-zA-Z0-9_]+$/.test(col)) {
