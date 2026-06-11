@@ -30,9 +30,9 @@ export const AISuggestions = ({ suggestions }: { suggestions: any[] }) => {
           Smart
         </span>
       </div>
-      <div className="p-4 space-y-3">
+      <div className="p-3 space-y-2">
         {suggestions.length === 0 ? (
-          <div className="py-8 text-center text-slate-500 text-xs font-poppins">No suggestions available.</div>
+          <div className="py-6 text-center text-slate-500 text-xs font-poppins">No suggestions available.</div>
         ) : (
           suggestions.map((item, i) => {
             const Icon = iconMap[item.icon] || Sparkles;
@@ -43,22 +43,20 @@ export const AISuggestions = ({ suggestions }: { suggestions: any[] }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
                 onClick={() => navigate(item.path)}
-                className="p-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] hover:border-primary/25 transition-all cursor-pointer group"
+                className="p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] hover:border-primary/25 transition-all cursor-pointer group flex items-center justify-between gap-3"
               >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <Icon className="w-4 h-4 text-primary-glow" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-slate-200 font-poppins leading-snug group-hover:text-white transition-colors">{item.title}</p>
-                    <p className="text-[11px] text-slate-500 font-poppins mt-1 leading-relaxed">{item.reason}</p>
+                    <p className="text-[12px] font-semibold text-slate-200 font-poppins leading-snug group-hover:text-white transition-colors truncate">{item.title}</p>
+                    <p className="text-[10px] text-slate-500 font-poppins mt-0.5 leading-tight truncate">{item.reason}</p>
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <button className="text-[11px] font-semibold text-primary-glow hover:text-white bg-primary/10 hover:bg-primary/25 px-3 py-1.5 rounded-lg transition-all font-poppins border border-primary/10 hover:border-primary/30">
-                    {item.action}
-                  </button>
-                </div>
+                <button className="shrink-0 text-[10px] font-semibold text-primary-glow hover:text-white bg-primary/10 hover:bg-primary/25 px-2.5 py-1.5 rounded-lg transition-all font-poppins border border-primary/10 hover:border-primary/30">
+                  {item.action}
+                </button>
               </motion.div>
             );
           })

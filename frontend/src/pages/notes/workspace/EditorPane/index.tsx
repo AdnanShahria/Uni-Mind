@@ -7,8 +7,8 @@ import { NoteType } from '../../types';
 import { MermaidViewer } from './MermaidViewer';
 import { SlideCarousel } from './SlideCarousel';
 import { FlashcardsTab } from './FlashcardsTab';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 interface EditorPaneProps {
   note: NoteType;
   isEditing: boolean;

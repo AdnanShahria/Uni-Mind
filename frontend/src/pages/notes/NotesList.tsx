@@ -149,8 +149,8 @@ export const NotesList = ({
                 transition={{ delay: 0.1 + (i % 10) * 0.05 }}
                 className={
                   viewMode === 'list'
-                    ? `flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative first:rounded-t-2xl last:rounded-b-2xl ${openMenuId === note.id ? 'z-50' : 'z-0'}`
-                    : `flex flex-col p-4 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-2 sm:gap-3 relative ${openMenuId === note.id ? 'z-50' : 'z-0'}`
+                    ? `flex items-center gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-4 hover:bg-white/[0.03] transition-colors cursor-pointer group relative first:rounded-t-2xl last:rounded-b-2xl ${openMenuId === note.id ? 'z-50' : 'z-0'}`
+                    : `flex flex-col p-3 sm:p-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer group gap-2 sm:gap-3 relative ${openMenuId === note.id ? 'z-50' : 'z-0'}`
                 }
               >
                 <div
@@ -160,110 +160,277 @@ export const NotesList = ({
                       : 'w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center'
                   }
                 >
-                  <FileText className={`${viewMode === 'list' ? 'w-5 h-5' : 'w-6 h-6'} ${note.color}`} />
+                  <FileText className={`${viewMode === 'list' ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'} ${note.color}`} />
                 </div>
 
-                <div className={viewMode === 'list' ? 'flex-1 min-w-0' : 'flex-1 mt-1'}>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p
-                      className={`text-[13px] font-medium text-slate-200 font-poppins truncate group-hover:text-white transition-colors ${
-                        viewMode === 'grid' ? 'text-[15px]' : ''
-                      }`}
-                    >
-                      {note.title}
-                    </p>
-                    {note.aiSummary && (
-                      <span className="flex items-center gap-1 text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0">
-                        <Sparkles className="w-2.5 h-2.5" /> AI
-                      </span>
-                    )}
-                    {note.fileUrl && (
-                      <span className="flex items-center gap-1 text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={note.fileUrl}>
-                        <FileText className="w-2.5 h-2.5" /> PDF/Image
-                      </span>
-                    )}
-                    {note.community_name && (
-                      <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={`From Community: ${note.community_name}`}>
-                        <Users className="w-2.5 h-2.5" /> {note.community_name}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-poppins mt-1">
-                    {note.course} · {note.pages} page{note.pages !== 1 ? 's' : ''}
-                  </p>
-                </div>
+                {viewMode === 'list' ? (
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+                    <div className="flex-1 min-w-0 flex flex-col gap-1">
+                      {/* Row 1: Title/Pills + Clock (on mobile) */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <p className="text-[13px] font-medium text-slate-200 font-poppins truncate group-hover:text-white transition-colors">
+                            {note.title}
+                          </p>
+                          {note.aiSummary && (
+                            <span className="flex items-center gap-1 text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0">
+                              <Sparkles className="w-2.5 h-2.5" /> AI
+                            </span>
+                          )}
+                          {note.fileUrl && (
+                            <span className="flex items-center gap-1 text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={note.fileUrl}>
+                              <FileText className="w-2.5 h-2.5" /> PDF/Image
+                            </span>
+                          )}
+                          {note.community_name && (
+                            <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={`From Community: ${note.community_name}`}>
+                              <Users className="w-2.5 h-2.5" /> {note.community_name}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Mobile Clock */}
+                        <span className="text-[10px] text-slate-500 font-poppins flex items-center gap-1 shrink-0 mt-0.5 sm:hidden">
+                          <Clock className="w-3 h-3" />
+                          {note.lastEdited}
+                        </span>
+                      </div>
 
-                <div
-                  className={`flex items-center gap-2 shrink-0 ${
-                    viewMode === 'grid' ? 'mt-2 pt-3 border-t border-white/[0.04] w-full justify-between' : ''
-                  }`}
-                >
-                  <span className="text-[10px] text-slate-500 font-poppins flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {note.lastEdited}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={e => { e.stopPropagation(); toggleStar(e, note.id); }}
-                      className={`w-7 h-7 rounded-lg hover:bg-amber-500/10 flex items-center justify-center transition-colors ${
-                        note.starred ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'
-                      }`}
-                    >
-                      <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
-                    </button>
-                    <button
-                      onClick={e => handleShareClick(e, note.title)}
-                      className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                    </button>
+                      {/* Row 2: Course/Pages + Action Buttons (on mobile) */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[11px] text-slate-500 font-poppins">
+                          {note.course} · {note.pages} page{note.pages !== 1 ? 's' : ''}
+                        </p>
 
-                    {/* Options menu */}
-                    <div className="relative" ref={openMenuId === note.id ? menuRef : undefined}>
-                      <button
-                        onClick={e => handleOptionsClick(e, note.id)}
-                        className={`w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-all ${
-                          viewMode === 'list' ? 'sm:opacity-0 sm:group-hover:opacity-100 opacity-100' : ''
-                        }`}
-                      >
-                        <MoreHorizontal className="w-3.5 h-3.5" />
-                      </button>
-
-                      <AnimatePresence>
-                        {openMenuId === note.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-0 top-full mt-1 w-40 bg-[#0d1526] border border-white/[0.10] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+                        {/* Mobile Actions */}
+                        <div className="flex items-center gap-1 sm:hidden">
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleStar(e, note.id); }}
+                            className={`w-7 h-7 rounded-lg hover:bg-amber-500/10 flex items-center justify-center transition-colors ${
+                              note.starred ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'
+                            }`}
                           >
+                            <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                          </button>
+                          <button
+                            onClick={e => handleShareClick(e, note.title)}
+                            className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Options menu */}
+                          <div className="relative" ref={openMenuId === note.id ? menuRef : undefined}>
                             <button
-                              onClick={e => handleMenuEdit(e, note)}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                              onClick={e => handleOptionsClick(e, note.id)}
+                              className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-all"
                             >
-                              <Edit3 className="w-3.5 h-3.5" /> Open & Edit
+                              <MoreHorizontal className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); toggleStar(e, note.id); setOpenMenuId(null); }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
-                            >
-                              <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
-                              {note.starred ? 'Unstar' : 'Star'}
-                            </button>
-                            <div className="h-px bg-white/[0.06] my-1" />
-                            <button
-                              onClick={e => handleMenuDelete(e, note)}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-rose-400 hover:bg-rose-500/10 transition-colors font-poppins"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Delete
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+
+                            <AnimatePresence>
+                              {openMenuId === note.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute right-0 top-full mt-1 w-40 bg-[#0d1526] border border-white/[0.10] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+                                >
+                                  <button
+                                    onClick={e => handleMenuEdit(e, note)}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" /> Open & Edit
+                                  </button>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); toggleStar(e, note.id); setOpenMenuId(null); }}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                  >
+                                    <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                                    {note.starred ? 'Unstar' : 'Star'}
+                                  </button>
+                                  <div className="h-px bg-white/[0.06] my-1" />
+                                  <button
+                                    onClick={e => handleMenuDelete(e, note)}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-rose-400 hover:bg-rose-500/10 transition-colors font-poppins"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                  </button>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Actions (Hidden on Mobile) */}
+                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-slate-500 font-poppins flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {note.lastEdited}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleStar(e, note.id); }}
+                          className={`w-7 h-7 rounded-lg hover:bg-amber-500/10 flex items-center justify-center transition-colors ${
+                            note.starred ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'
+                          }`}
+                        >
+                          <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                        </button>
+                        <button
+                          onClick={e => handleShareClick(e, note.title)}
+                          className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Options menu */}
+                        <div className="relative" ref={openMenuId === note.id ? menuRef : undefined}>
+                          <button
+                            onClick={e => handleOptionsClick(e, note.id)}
+                            className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-all sm:opacity-0 sm:group-hover:opacity-100 opacity-100"
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </button>
+
+                          <AnimatePresence>
+                            {openMenuId === note.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-full mt-1 w-40 bg-[#0d1526] border border-white/[0.10] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+                              >
+                                <button
+                                  onClick={e => handleMenuEdit(e, note)}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Open & Edit
+                                </button>
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleStar(e, note.id); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                >
+                                  <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                                  {note.starred ? 'Unstar' : 'Star'}
+                                </button>
+                                <div className="h-px bg-white/[0.06] my-1" />
+                                <button
+                                  onClick={e => handleMenuDelete(e, note)}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-rose-400 hover:bg-rose-500/10 transition-colors font-poppins"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex-1 mt-0 sm:mt-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p
+                          className="text-[13px] font-medium text-slate-200 font-poppins truncate group-hover:text-white transition-colors text-[15px]"
+                        >
+                          {note.title}
+                        </p>
+                        {note.aiSummary && (
+                          <span className="flex items-center gap-1 text-[9px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0">
+                            <Sparkles className="w-2.5 h-2.5" /> AI
+                          </span>
+                        )}
+                        {note.fileUrl && (
+                          <span className="flex items-center gap-1 text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={note.fileUrl}>
+                            <FileText className="w-2.5 h-2.5" /> PDF/Image
+                          </span>
+                        )}
+                        {note.community_name && (
+                          <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={`From Community: ${note.community_name}`}>
+                            <Users className="w-2.5 h-2.5" /> {note.community_name}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-poppins mt-1">
+                        {note.course} · {note.pages} page{note.pages !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+
+                    <div
+                      className="flex items-center gap-2 shrink-0 mt-2 pt-3 border-t border-white/[0.04] w-full justify-between"
+                    >
+                      <span className="text-[10px] text-slate-500 font-poppins flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {note.lastEdited}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={e => { e.stopPropagation(); toggleStar(e, note.id); }}
+                          className={`w-7 h-7 rounded-lg hover:bg-amber-500/10 flex items-center justify-center transition-colors ${
+                            note.starred ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'
+                          }`}
+                        >
+                          <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                        </button>
+                        <button
+                          onClick={e => handleShareClick(e, note.title)}
+                          className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Options menu */}
+                        <div className="relative" ref={openMenuId === note.id ? menuRef : undefined}>
+                          <button
+                            onClick={e => handleOptionsClick(e, note.id)}
+                            className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-slate-500 hover:text-white transition-all"
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </button>
+
+                          <AnimatePresence>
+                            {openMenuId === note.id && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-full mt-1 w-40 bg-[#0d1526] border border-white/[0.10] rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+                              >
+                                <button
+                                  onClick={e => handleMenuEdit(e, note)}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" /> Open & Edit
+                                </button>
+                                <button
+                                  onClick={e => { e.stopPropagation(); toggleStar(e, note.id); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors font-poppins"
+                                >
+                                  <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
+                                  {note.starred ? 'Unstar' : 'Star'}
+                                </button>
+                                <div className="h-px bg-white/[0.06] my-1" />
+                                <button
+                                  onClick={e => handleMenuDelete(e, note)}
+                                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[12px] text-rose-400 hover:bg-rose-500/10 transition-colors font-poppins"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ))}
           </div>
