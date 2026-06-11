@@ -9,9 +9,10 @@ interface CreateFolderModalProps {
   onClose: () => void;
   onCreated: () => void;
   parentFolderId: string | null;
+  communityId?: string;
 }
 
-export const CreateFolderModal = ({ isOpen, onClose, onCreated, parentFolderId }: CreateFolderModalProps) => {
+export const CreateFolderModal = ({ isOpen, onClose, onCreated, parentFolderId, communityId }: CreateFolderModalProps) => {
   const [folderName, setFolderName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,7 +28,8 @@ export const CreateFolderModal = ({ isOpen, onClose, onCreated, parentFolderId }
       const { error } = await turso.from('folders').insert([{
         user_id: user.id,
         name: folderName.trim(),
-        parent_id: parentFolderId || null
+        parent_id: parentFolderId || null,
+        community_id: communityId || null
       }]);
 
       if (error) throw error;

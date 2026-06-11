@@ -22,8 +22,8 @@ export const CommunitiesFilter = ({
     <>
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap sm:flex-nowrap">
         {/* Desktop Search */}
-        <div className="hidden sm:flex flex-1 max-w-md items-center gap-2.5 h-10 px-4 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/10 transition-all focus-within:border-primary/50 focus-within:bg-white/[0.06]">
-          <Search className="w-4 h-4 text-slate-500" />
+        <div className="hidden sm:flex flex-1 max-w-sm items-center gap-2.5 h-10 px-4 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/10 transition-all focus-within:border-primary/50 focus-within:bg-white/[0.06]">
+          <Search className="w-4 h-4 text-slate-500 shrink-0" />
           <input 
             type="text" 
             placeholder="Search communities..." 
@@ -34,19 +34,13 @@ export const CommunitiesFilter = ({
         </div>
         
         {/* Filters and Create Button Wrapper */}
-        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
-          <div 
-            className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto scrollbar-none pr-4"
-            style={{ 
-              WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent 100%)', 
-              maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent 100%)' 
-            }}
-          >
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:flex-initial min-w-0 justify-end">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             {['All', 'Department', 'Batch', 'Research Group', 'Interest Group'].map((f) => (
               <button 
                 key={f} 
                 onClick={() => setFilter(f)}
-                className={`whitespace-nowrap px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-medium font-poppins transition-colors ${
+                className={`whitespace-nowrap px-3 py-2 rounded-xl text-xs font-medium font-poppins transition-all ${
                   filter === f ? 'bg-primary/10 border border-primary/20 text-primary-glow' : 'bg-white/[0.02] sm:bg-transparent hover:bg-white/[0.04] text-slate-400 hover:text-white border border-white/[0.04] sm:border-transparent'
                 }`}
               >

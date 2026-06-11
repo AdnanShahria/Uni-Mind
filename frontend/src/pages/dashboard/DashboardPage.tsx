@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { turso } from '../../utils/tursoClient';
 import { WelcomeHeader } from './WelcomeHeader';
 import { StatsGrid } from './StatsGrid';
-import { RecentActivity } from './RecentActivity';
+import { PinnedResources } from './PinnedResources';
 import { AISuggestions } from './AISuggestions';
 import { UpcomingSchedule } from './UpcomingSchedule';
 import { QuickActions } from './QuickActions';
@@ -16,7 +16,7 @@ const stagger = {
 export const DashboardPage = () => {
   const [userName, setUserName] = useState('Scholar');
   const [stats, setStats] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [pinnedResources, setPinnedResources] = useState<any[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +40,7 @@ export const DashboardPage = () => {
         const response = await fetch('/api/dashboard/data', { headers });
         const json = await response.json();
         if (json.success && json.data) {
-          const { stats: rawStats, upcomingTasks: rawTasks, recentActivity: rawActivity, aiSuggestions: rawSuggestions } = json.data;
+          const { stats: rawStats, upcomingTasks: rawTasks, pinnedResources: rawResources, aiSuggestions: rawSuggestions } = json.data;
 
           const iconMap: Record<string, any> = {
             StickyNote,
@@ -62,11 +62,8 @@ export const DashboardPage = () => {
             setUpcomingTasks(rawTasks);
           }
 
-          if (rawActivity) {
-            setRecentActivity(rawActivity.map((act: any) => ({
-              ...act,
-              icon: iconMap[act.icon] || FileText
-            })));
+          if (rawResources) {
+            setPinnedResources(rawResources);
           }
 
           if (rawSuggestions) {
@@ -88,20 +85,25 @@ export const DashboardPage = () => {
       initial="initial"
       animate="animate"
       variants={stagger}
-      className="px-3 pt-3 pb-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto"
+      className="px-4 pt-4 pb-8 md:px-6 md:pt-6 lg:px-10 lg:pt-8 xl:px-12 max-w-[1600px] mx-auto"
     >
       <WelcomeHeader userName={userName} />
       <StatsGrid stats={stats} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <RecentActivity displayActivity={recentActivity} isLoading={isLoading} />
-        <div className="space-y-6">
+      {/* Main content: 3-column on large screens */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left column: Pinned Resources (takes 2/3 width on xl) */}
+        <div className="xl:col-span-2 flex flex-col gap-6">
+          <PinnedResources resources={pinnedResources} isLoading={isLoading} />
+          <QuickActions />
+        </div>
+
+        {/* Right sidebar: AI Suggestions + Upcoming (takes 1/3 width on xl) */}
+        <div className="flex flex-col gap-6">
           <AISuggestions suggestions={aiSuggestions} />
           <UpcomingSchedule upcomingTasks={upcomingTasks} />
         </div>
       </div>
-
-      <QuickActions />
     </motion.div>
   );
 };

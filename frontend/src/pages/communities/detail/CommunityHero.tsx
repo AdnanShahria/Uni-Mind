@@ -1,5 +1,6 @@
-
-import { Users, MessageSquare, Shield, Lock, Globe, ArrowLeft, LogOut } from 'lucide-react';
+import { Users, MessageSquare, Globe, Lock, LogOut, Sparkles, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ROLE_HIERARCHY, type CommunityRole } from '../../../utils/communityRoles';
 
 interface CommunityHeroProps {
   community: any;
@@ -18,90 +19,104 @@ export const CommunityHero = ({
   userRole,
   onJoin,
   onLeave,
-  onBack
+  onBack,
 }: CommunityHeroProps) => {
-  const bgGradient = community.color || 'from-purple-500 to-indigo-500';
+  const roleMeta = userRole ? ROLE_HIERARCHY[userRole as CommunityRole] : null;
+  const isOwner = userRole === 'owner';
 
   return (
-    <div className={`relative rounded-b-3xl md:rounded-3xl bg-gradient-to-br ${bgGradient} p-6 pt-12 md:p-10 overflow-hidden border-b md:border border-white/[0.08] shadow-[0_10px_30px_rgba(0,0,0,0.3)] w-full -mx-4 md:mx-0 px-4 md:px-10`}>
-      {/* Abstract blur effects */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-[80px] pointer-events-none" />
-
-      {/* Overlay Back Button & Visibility Badge (Mobile First) */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
+    <div className="pt-3 pb-0 px-4 md:px-0">
+      {/* ── Breadcrumb row ── */}
+      <div className="flex items-center gap-1.5 mb-2.5">
         <button
           onClick={onBack}
-          className="w-8 h-8 md:w-auto md:px-4 md:py-2 flex items-center justify-center md:justify-start gap-2 text-white/80 hover:text-white transition-colors text-sm font-semibold font-poppins bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full md:rounded-xl border border-white/[0.1]"
+          className="text-[11px] text-slate-500 hover:text-slate-300 font-poppins transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> <span className="hidden md:inline">Back to Communities</span>
+          Communities
         </button>
-        <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/[0.1]">
-          {community.visibility === 'private' ? (
-            <span className="text-[10px] text-rose-300 font-bold uppercase tracking-wider font-poppins flex items-center gap-1">
-              <Lock className="w-3 h-3" /> Private
-            </span>
-          ) : (
-            <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider font-poppins flex items-center gap-1">
-              <Globe className="w-3 h-3" /> Public
-            </span>
-          )}
-        </div>
+        <ChevronRight className="w-3 h-3 text-slate-600" />
+        <span className="text-[11px] text-slate-300 font-poppins font-medium truncate max-w-[180px]">
+          {community.name}
+        </span>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10 mt-8 md:mt-4">
-        <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left gap-4 md:gap-6 w-full md:w-auto">
-          <div className="w-20 h-20 md:w-20 md:h-20 rounded-2xl bg-white/[0.1] border border-white/[0.15] backdrop-blur-md flex items-center justify-center text-4xl shadow-xl shrink-0">
+      {/* ── Compact hero strip ── */}
+      <div className={`relative rounded-xl overflow-hidden border border-white/[0.07] bg-gradient-to-r ${community.color || 'from-violet-600/20 to-indigo-600/20'}`}>
+        {/* Subtle noise/grain overlay */}
+        <div className="absolute inset-0 bg-[#090d16]/60 pointer-events-none" />
+
+        {/* Left colored accent bar */}
+        <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${community.color || 'from-violet-500 to-indigo-500'} opacity-70`} />
+
+        {/* Content */}
+        <div className="relative flex items-center gap-3 md:gap-4 px-4 py-3 md:py-3.5 pr-3">
+          {/* Community Icon */}
+          <div className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center text-xl md:text-2xl shadow-inner">
             {community.icon || '📚'}
           </div>
-          <div className="flex flex-col items-center md:items-start">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-              <span className="text-[10px] text-white/90 bg-white/[0.15] px-2.5 py-0.5 rounded-lg font-poppins font-medium uppercase tracking-wider backdrop-blur-sm border border-white/[0.05]">
+
+          {/* Name + meta */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center flex-wrap gap-1.5 mb-0.5">
+              <h1 className="text-[15px] md:text-[17px] font-bold font-outfit text-white leading-none truncate">
+                {community.name}
+              </h1>
+              {/* Type badge */}
+              <span className="hidden sm:inline text-[9px] text-white/60 bg-white/[0.07] px-1.5 py-0.5 rounded font-poppins uppercase tracking-wider border border-white/[0.07]">
                 {community.type}
               </span>
-              {userRole && (
-                <span className="text-[10px] text-yellow-300 bg-yellow-500/20 border border-yellow-500/30 px-2.5 py-0.5 rounded-lg font-poppins font-medium uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm">
-                  <Shield className="w-3 h-3" /> {userRole}
+              {/* Visibility */}
+              {community.visibility === 'private' ? (
+                <span className="flex items-center gap-0.5 text-[9px] text-rose-300/80 font-poppins">
+                  <Lock className="w-2.5 h-2.5" /> Private
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[9px] text-emerald-400/70 font-poppins">
+                  <Globe className="w-2.5 h-2.5" /> Public
                 </span>
               )}
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold font-outfit text-white leading-tight mt-3 shadow-sm">
-              {community.name}
-            </h1>
-            <p className="text-white/80 text-xs md:text-sm font-poppins mt-2 max-w-2xl leading-relaxed">
-              {community.description || 'Welcome to this prestigious academic community. Connect, collaborate, and excel.'}
-            </p>
-            
-            {/* Mobile inline stats */}
-            <div className="flex md:hidden items-center justify-center gap-3 mt-4 text-xs font-semibold text-white/90 font-poppins bg-black/15 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/[0.06] w-fit mx-auto">
-              <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {membersCount}</span>
-              <span className="flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> {postsCount}</span>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-[10px] text-slate-400 font-poppins">
+                <Users className="w-3 h-3" /> {membersCount}
+              </span>
+              <span className="flex items-center gap-1 text-[10px] text-slate-400 font-poppins">
+                <MessageSquare className="w-3 h-3" /> {postsCount}
+              </span>
+              {/* Role badge */}
+              {roleMeta && (
+                <span className={`flex items-center gap-1 text-[9px] font-bold font-poppins px-1.5 py-0.5 rounded border ${roleMeta.badgeClass}`}>
+                  {roleMeta.emoji} {roleMeta.label}
+                </span>
+              )}
             </div>
           </div>
-        </div>
 
-        <div className="shrink-0 flex flex-col items-stretch md:items-end gap-3 w-full md:w-auto mt-4 md:mt-0">
-          <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-white/90 font-poppins bg-black/15 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/[0.06]">
-            <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> {membersCount} members</span>
-            <span className="flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> {postsCount} posts</span>
-          </div>
-
-          {userRole ? (
-            userRole !== 'owner' && (
-              <button
-                onClick={onLeave}
-                className="w-full md:w-auto flex items-center justify-center gap-1.5 px-4 py-3 md:py-2 bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-white hover:bg-rose-500 rounded-xl text-sm md:text-xs font-semibold font-poppins transition-all backdrop-blur-sm"
+          {/* Action button */}
+          <div className="shrink-0">
+            {userRole ? (
+              !isOwner && (
+                <motion.button
+                  onClick={onLeave}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 text-[10px] font-semibold font-poppins rounded-lg transition-all"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span className="hidden sm:inline">Leave</span>
+                </motion.button>
+              )
+            ) : (
+              <motion.button
+                onClick={onJoin}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-glow text-white text-[11px] font-bold font-poppins rounded-lg transition-all shadow-[0_0_14px_rgba(59,130,246,0.3)]"
               >
-                <LogOut className="w-4 h-4" /> Leave Community
-              </button>
-            )
-          ) : (
-            <button
-              onClick={onJoin}
-              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 md:py-3 bg-white text-slate-900 hover:bg-slate-100 active:scale-[0.98] md:hover:scale-105 md:active:scale-95 text-sm md:text-xs font-bold font-poppins rounded-xl transition-all shadow-[0_4px_15px_rgba(255,255,255,0.2)]"
-            >
-              Join Community
-            </button>
-          )}
+                <Sparkles className="w-3 h-3" /> Join
+              </motion.button>
+            )}
+          </div>
         </div>
       </div>
     </div>

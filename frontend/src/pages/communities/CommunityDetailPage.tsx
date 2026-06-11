@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
 import { turso } from '../../utils/tursoClient';
 import toast from 'react-hot-toast';
+import { type CommunityRole } from '../../utils/communityRoles';
 
 // Import components
 import { CommunityHero } from './detail/CommunityHero';
@@ -11,8 +11,8 @@ import { CommunityTabBar } from './detail/CommunityTabBar';
 import { CommunitySidebar } from './detail/CommunitySidebar';
 import { FeedTab } from './detail/tabs/FeedTab';
 import { MembersTab } from './detail/tabs/MembersTab';
-import { LiveRoomsTab } from './detail/tabs/LiveRoomsTab';
-import { CodeSpacesTab } from './detail/tabs/CodeSpacesTab';
+import { ResourcesTab } from './detail/tabs/ResourcesTab';
+import { EventsTab } from './detail/tabs/EventsTab';
 import { AnalyticsTab } from './detail/tabs/AnalyticsTab';
 import { SettingsTab } from './detail/tabs/SettingsTab';
 
@@ -21,7 +21,7 @@ export const CommunityDetailPage = () => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'settings' | 'live-rooms' | 'code-spaces' | 'analytics'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'settings' | 'resources' | 'events' | 'analytics'>('feed');
   const [community, setCommunity] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
@@ -44,6 +44,7 @@ export const CommunityDetailPage = () => {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editVisibility, setEditVisibility] = useState('public');
+  const [editIcon, setEditIcon] = useState('📚');
   const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchCommunityData = async () => {
@@ -80,6 +81,7 @@ export const CommunityDetailPage = () => {
       setEditName(c.name);
       setEditDesc(c.description || '');
       setEditVisibility(c.visibility || 'public');
+      setEditIcon(c.icon || '📚');
 
       // 2. Fetch user role/membership
       const { data: membership } = await turso
@@ -347,17 +349,46 @@ export const CommunityDetailPage = () => {
         .update({
           name: editName.trim(),
           description: editDesc.trim(),
-          visibility: editVisibility
+          visibility: editVisibility,
+          icon: editIcon,
         })
         .eq('id', id);
 
-      toast.success('Community settings updated successfully!');
+      // Optimistically update local community state so hero refreshes immediately
+      setCommunity((prev: any) => ({ ...prev, name: editName.trim(), description: editDesc.trim(), visibility: editVisibility, icon: editIcon }));
+      toast.success('Community settings updated!');
       fetchCommunityData();
     } catch (err) {
       console.error(err);
       toast.error('Failed to update community details');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  // Update Member Role (hierarchy enforced in UI + here as safety)
+  const handleUpdateMemberRole = async (targetUserId: string, newRole: CommunityRole) => {
+    try {
+      const { getRoleLevel } = await import('../../utils/communityRoles');
+      const actorLevel = getRoleLevel(userRole);
+      const newLevel = getRoleLevel(newRole);
+
+      if (newLevel > actorLevel || newRole === 'owner') {
+        toast.error('You cannot assign a role higher than your own.');
+        return;
+      }
+
+      await turso
+        .from('community_members')
+        .update({ role: newRole, role_level: newLevel })
+        .eq('community_id', id)
+        .eq('user_id', targetUserId);
+
+      toast.success(`Role updated to ${newRole}!`);
+      fetchCommunityData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update member role');
     }
   };
 
@@ -378,9 +409,12 @@ export const CommunityDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="text-sm font-poppins text-slate-400">Opening community dashboard...</span>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="relative w-12 h-12">
+          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+          <div className="absolute inset-2 rounded-full border border-primary/10 border-b-primary/50 animate-spin-reverse" />
+        </div>
+        <span className="text-sm font-poppins text-slate-400 tracking-wide">Opening community dashboard...</span>
       </div>
     );
   }
@@ -389,19 +423,22 @@ export const CommunityDetailPage = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="max-w-[1400px] mx-auto pb-10"
+      className="p-4 md:p-6 lg:p-8 xl:px-10 w-full pb-12"
     >
-      <CommunityHero 
-        community={community}
-        membersCount={members.length}
-        postsCount={posts.length}
-        userRole={userRole}
-        onJoin={handleJoinCommunity}
-        onLeave={handleLeaveCommunity}
-        onBack={() => navigate('/app/communities')}
-      />
+      {/* Hero — full-bleed on mobile, rounded on desktop */}
+      <div className="-mx-4 md:mx-0">
+        <CommunityHero 
+          community={community}
+          membersCount={members.length}
+          postsCount={posts.length}
+          userRole={userRole}
+          onJoin={handleJoinCommunity}
+          onLeave={handleLeaveCommunity}
+          onBack={() => navigate('/app/communities')}
+        />
+      </div>
 
-      <div className="px-4 md:px-6 lg:px-8 mt-6 space-y-6">
+      <div className="mt-5 md:mt-7 space-y-5 md:space-y-6">
         <CommunityTabBar 
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -409,16 +446,16 @@ export const CommunityDetailPage = () => {
           userRole={userRole}
         />
 
-        {/* Main Tab Panels */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
 
-          {/* Mobile Sidebar (Shows above tabs on mobile, hidden on desktop here) */}
+          {/* Mobile-only sidebar (accordion) */}
           <div className="lg:hidden">
             <CommunitySidebar members={members} onViewAllMembers={() => setActiveTab('members')} />
           </div>
 
-          {/* Left Columns: Main Content */}
-          <div className="lg:col-span-2 min-w-0 space-y-6">
+          {/* Main content */}
+          <div className="lg:col-span-2 min-w-0">
             <AnimatePresence mode="wait">
               {activeTab === 'feed' && (
                 <FeedTab 
@@ -450,11 +487,11 @@ export const CommunityDetailPage = () => {
                 />
               )}
 
-              {activeTab === 'live-rooms' && <LiveRoomsTab />}
+              {activeTab === 'resources' && <ResourcesTab communityId={id as string} />}
               
-              {activeTab === 'code-spaces' && <CodeSpacesTab />}
+              {activeTab === 'events' && <EventsTab />}
 
-              {activeTab === 'analytics' && (userRole === 'owner' || userRole === 'moderator') && (
+              {activeTab === 'analytics' && (userRole === 'owner' || userRole === 'admin' || userRole === 'moderator') && (
                 <AnalyticsTab 
                   membersCount={members.length}
                   postsCount={posts.length}
@@ -463,7 +500,7 @@ export const CommunityDetailPage = () => {
                 />
               )}
 
-              {activeTab === 'settings' && (userRole === 'owner' || userRole === 'moderator') && (
+              {activeTab === 'settings' && (userRole === 'owner' || userRole === 'admin' || userRole === 'moderator' || userRole === 'elder') && (
                 <SettingsTab 
                   editName={editName}
                   setEditName={setEditName}
@@ -471,19 +508,23 @@ export const CommunityDetailPage = () => {
                   setEditDesc={setEditDesc}
                   editVisibility={editVisibility}
                   setEditVisibility={setEditVisibility}
+                  editIcon={editIcon}
+                  setEditIcon={setEditIcon}
                   autoModEnabled={autoModEnabled}
                   setAutoModEnabled={setAutoModEnabled}
                   isUpdating={isUpdating}
                   handleUpdateSettings={handleUpdateSettings}
                   userRole={userRole}
                   handleDisbandCommunity={handleDisbandCommunity}
+                  members={members}
+                  handleUpdateMemberRole={handleUpdateMemberRole}
                 />
               )}
             </AnimatePresence>
           </div>
 
-          {/* Desktop Sidebar */}
-          <div className="hidden lg:block space-y-6">
+          {/* Desktop sidebar */}
+          <div className="hidden lg:block">
             <CommunitySidebar members={members} onViewAllMembers={() => setActiveTab('members')} />
           </div>
 

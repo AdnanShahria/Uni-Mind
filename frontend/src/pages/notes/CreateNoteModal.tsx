@@ -21,6 +21,7 @@ interface CreateNoteModalProps {
   initialContent?: string;
   initialTitle?: string;
   currentFolderId: string | null;
+  communityId?: string;
 }
 
 export const CreateNoteModal = ({
@@ -30,6 +31,7 @@ export const CreateNoteModal = ({
   initialContent = '',
   initialTitle = '',
   currentFolderId,
+  communityId,
 }: CreateNoteModalProps) => {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -58,7 +60,10 @@ export const CreateNoteModal = ({
   const fetchFolders = async () => {
     const { data: { user } } = await turso.auth.getUser();
     if (!user) return;
-    const { data } = await turso.from('folders').select('id, name').eq('user_id', user.id);
+    let query = turso.from('folders').select('id, name').eq('user_id', user.id);
+    if (communityId) query = query.eq('community_id', communityId);
+    else query = query.is('community_id', null);
+    const { data } = await query;
     if (data) setFolders(data);
   };
 
@@ -124,6 +129,7 @@ export const CreateNoteModal = ({
         title: title.trim(),
         content: content.trim(),
         folder_id: folderId,
+        community_id: communityId || null,
         file_url: fileBlobUrl || (uploadedFile ? uploadedFile.name : null),
         is_starred: false,
         is_ai_summarized: false,

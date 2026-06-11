@@ -130,29 +130,27 @@ export const handleDashboardPageRoute = async (url: URL, request: Request, db: C
         };
       });
 
-      // 3. Fetch Recent Activity
-      const activityRes = await db.execute(`
-        SELECT p.*, u.name as author_name, u.role as author_role, u.avatar_url as author_avatar_url 
-        FROM posts p
-        JOIN users u ON p.author_id = u.id
-        ORDER BY p.created_at DESC
-        LIMIT 5
-      `);
-      const recentActivity = activityRes.rows.map((post: any) => {
-        const diff = Date.now() - new Date(post.created_at).getTime();
-        const mins = Math.floor(diff / 60000);
-        let timeStr = 'Just now';
-        if (mins > 0) {
-          timeStr = mins < 60 ? `${mins}m ago` : `${Math.floor(mins/60)}h ago`;
+      // 3. Fetch Pinned Resources
+      const notesRes = await db.execute({
+        sql: "SELECT id, title, content, type, created_at FROM notes WHERE author_id = ? ORDER BY created_at DESC LIMIT 4",
+        args: [userId]
+      });
+      const pinnedResources = notesRes.rows.map((n: any) => {
+        let snippet = '';
+        if (typeof n.content === 'string') {
+           snippet = n.content.replace(/<[^>]+>/g, '').substring(0, 60);
+           if (n.content.length > 60) snippet += '...';
+        } else {
+           snippet = 'Study Document';
         }
+        
         return {
-          icon: post.type === 'document' ? 'FileText' : 'MessageCircle',
-          title: post.content.substring(0, 40) + (post.content.length > 40 ? '...' : ''),
-          subtitle: 'Academic Feed Post',
-          time: timeStr,
-          color: 'text-cyan-400',
-          bgColor: 'bg-cyan-500/10',
-          path: post.type === 'document' ? '/app/notes' : '/app/feed',
+          id: n.id,
+          title: n.title || 'Untitled Note',
+          type: n.type || 'document',
+          snippet: snippet,
+          time: new Date(n.created_at).toLocaleDateString(),
+          path: '/app/notes'
         };
       });
 
@@ -276,7 +274,7 @@ export const handleDashboardPageRoute = async (url: URL, request: Request, db: C
         data: {
           stats,
           upcomingTasks,
-          recentActivity,
+          pinnedResources,
           aiSuggestions
         }
       }), {

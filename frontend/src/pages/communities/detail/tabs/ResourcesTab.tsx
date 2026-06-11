@@ -1,16 +1,16 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { turso } from '../../utils/tursoClient';
+import { turso } from '../../../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
 
-import { FolderType, NoteType } from './types';
-import { NotesHeader } from './NotesHeader';
-import { FolderGrid } from './FolderGrid';
-import { NotesList } from './NotesList';
-import { BreadcrumbItem } from './FolderBreadcrumbs';
-import { useTopBarContext } from '../../contexts/TopBarContext';
+import { FolderType, NoteType } from '../../../notes/types';
+import { NotesHeader } from '../../../notes/NotesHeader';
+import { FolderGrid } from '../../../notes/FolderGrid';
+import { NotesList } from '../../../notes/NotesList';
+import { BreadcrumbItem } from '../../../notes/FolderBreadcrumbs';
+import { useTopBarContext } from '../../../../contexts/TopBarContext';
 
-export const NotesPage = () => {
+export const ResourcesTab = ({ communityId }: { communityId: string }) => {
   const [dbNotes, setDbNotes] = useState<NoteType[]>([]);
   const [dbFolders, setDbFolders] = useState<FolderType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,9 +25,9 @@ export const NotesPage = () => {
 
   const fetchNotes = useCallback(async (background = false) => {
     if (!background) {
-      const cachedNotes = localStorage.getItem('unimind_notes');
-      const cachedFolders = localStorage.getItem('unimind_folders');
-      const cachedAllFolders = localStorage.getItem('unimind_allFolders');
+      const cachedNotes = localStorage.getItem('unimind_community_notes_' + communityId);
+      const cachedFolders = localStorage.getItem('unimind_community_folders_' + communityId);
+      const cachedAllFolders = localStorage.getItem('unimind_community_allFolders_' + communityId);
       
       if (cachedNotes) setDbNotes(JSON.parse(cachedNotes));
       if (cachedFolders) setDbFolders(JSON.parse(cachedFolders));
@@ -51,8 +51,7 @@ export const NotesPage = () => {
       const { data: folderData, error: folderError } = await turso
         .from('folders')
         .select('*')
-        .eq('user_id', user.id)
-        .is('community_id', null);
+        .eq('community_id', communityId);
 
       if (folderError) throw folderError;
 
@@ -60,8 +59,7 @@ export const NotesPage = () => {
       const { data: notesData, error: notesError } = await turso
         .from('notes')
         .select('*, folders(name)')
-        .eq('author_id', user.id)
-        .is('community_id', null)
+        .eq('community_id', communityId)
         .order('created_at', { ascending: false });
 
       if (notesError) throw notesError;
@@ -93,13 +91,13 @@ export const NotesPage = () => {
       }));
 
       setDbFolders(parsedFolders);
-      localStorage.setItem('unimind_allFolders', JSON.stringify(folderData));
-      localStorage.setItem('unimind_folders', JSON.stringify(parsedFolders));
+      localStorage.setItem('unimind_community_allFolders_' + communityId, JSON.stringify(folderData));
+      localStorage.setItem('unimind_community_folders_' + communityId, JSON.stringify(parsedFolders));
     } else {
       setDbFolders([]);
       setAllFolders([]);
-      localStorage.removeItem('unimind_allFolders');
-      localStorage.removeItem('unimind_folders');
+      localStorage.removeItem('unimind_community_allFolders_' + communityId);
+      localStorage.removeItem('unimind_community_folders_' + communityId);
     }
 
     if (notesData && notesData.length > 0) {
@@ -135,10 +133,10 @@ export const NotesPage = () => {
           };
         });
         setDbNotes(parsedNotes);
-        localStorage.setItem('unimind_notes', JSON.stringify(parsedNotes));
+        localStorage.setItem('unimind_community_notes_' + communityId, JSON.stringify(parsedNotes));
       } else {
         setDbNotes([]);
-        localStorage.removeItem('unimind_notes');
+        localStorage.removeItem('unimind_community_notes_' + communityId);
       }
     } catch (error) {
       console.error('Error fetching notes:', error);
@@ -150,7 +148,7 @@ export const NotesPage = () => {
 
   useEffect(() => {
     fetchNotes();
-  }, [fetchNotes]);
+  }, [fetchNotes, communityId]);
 
   // ── Derived display data ──────────────────────────────────────────────────
   let displayNotes = [...dbNotes];
@@ -237,6 +235,8 @@ export const NotesPage = () => {
         setViewMode={setViewMode}
         sortBy={sortBy}
         setSortBy={setSortBy}
+        communityId={communityId}
+        hideTopBarContext={true}
       />
 
       {currentChildrenFolders.length > 0 && (

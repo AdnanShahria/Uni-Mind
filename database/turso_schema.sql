@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS communities (
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     description TEXT,
+    icon TEXT DEFAULT '📚',          -- Emoji icon for the community
     created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
     visibility TEXT DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -48,10 +49,12 @@ CREATE TABLE IF NOT EXISTS communities (
 CREATE INDEX IF NOT EXISTS idx_communities_type ON communities(type);
 
 -- Table: community_members
+-- role hierarchy: owner(5) > admin(4) > moderator(3) > elder(2) > member(1)
 CREATE TABLE IF NOT EXISTS community_members (
     community_id TEXT REFERENCES communities(id) ON DELETE CASCADE,
     user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-    role TEXT DEFAULT 'member' NOT NULL,
+    role TEXT DEFAULT 'member' NOT NULL CHECK (role IN ('owner','admin','moderator','elder','member')),
+    role_level INTEGER DEFAULT 1 NOT NULL, -- numeric level for hierarchy enforcement
     joined_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (community_id, user_id)
 );

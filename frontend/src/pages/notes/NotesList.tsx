@@ -121,7 +121,7 @@ export const NotesList = ({
             className={
               viewMode === 'list'
                 ? 'rounded-2xl bg-white/[0.02] border border-white/[0.06] divide-y divide-white/[0.04]'
-                : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+                : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
             }
           >
             {notes.map((note, i) => (
