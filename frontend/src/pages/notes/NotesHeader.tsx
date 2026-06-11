@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StickyNote, Plus, FolderPlus, Filter, Grid3X3, List, ArrowDownUp } from 'lucide-react';
+import { StickyNote, Plus, FolderPlus } from 'lucide-react';
 import { CreateNoteModal } from './CreateNoteModal';
 import { CreateFolderModal } from './CreateFolderModal';
 import { FolderBreadcrumbs, BreadcrumbItem } from './FolderBreadcrumbs';
@@ -7,7 +7,7 @@ import { NotesFilter } from './NotesFilter';
 import { useTopBarContext } from '../../contexts/TopBarContext';
 
 interface NotesHeaderProps {
-  onNoteCreated: () => void;
+  onNoteCreated: (newNoteId?: string | number) => void;
   currentFolderId: string | null;
   breadcrumbs: BreadcrumbItem[];
   onNavigate: (id: string | null) => void;

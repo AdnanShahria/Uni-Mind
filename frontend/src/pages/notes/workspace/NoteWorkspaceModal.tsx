@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, Trash2, Loader2, BrainCircuit, Globe, Lock, Users, Share2, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Star, Trash2, Loader2, BrainCircuit, Globe, Lock, Users, Share2, Maximize2, Minimize2, Edit3 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { turso } from '../../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
@@ -12,6 +12,12 @@ import { EditorPane } from './EditorPane';
 import { ChatPane } from './ChatPane';
 
 import { callAI, AGENT_ROUTER_API_KEY, GROQ_API_KEY } from '../../../utils/aiClient';
+
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
 
 async function generateSummary(title: string, content: string): Promise<string> {
   const prompt = `You are an academic note summarizer. Summarize the following note concisely for a university student. Use bullet points for key facts, bold important terms, and keep it under 150 words.\n\nTitle: ${title}\nContent: ${content || 'No content provided — base summary on the title.'}`;
@@ -126,6 +132,10 @@ export const NoteWorkspaceModal = ({
   const [hasFlashcards, setHasFlashcards] = useState(false);
   const [isStudyModalOpen, setIsStudyModalOpen] = useState(false);
   const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [communityRole, setCommunityRole] = useState<string | null>(null);
+  const [canUpdateCommunityNote, setCanUpdateCommunityNote] = useState<boolean>(true);
+  const [isSavingToMyNotes, setIsSavingToMyNotes] = useState(false);
   const { isAppFullScreen, setIsAppFullScreen } = useTopBarContext();
 
   useEffect(() => {
@@ -143,9 +153,40 @@ export const NoteWorkspaceModal = ({
       setShareLinkToken(note.sharedLinkToken);
       fetchContent(note.id);
       checkFlashcards(note.id);
+      
+      // Fetch user role for permissions
+      turso.auth.getUser().then(({ data: { user } }: any) => {
+        if (user) {
+          setCurrentUserId(user.id);
+          if (note.community_id) {
+            turso.from('community_members').select('role').eq('community_id', note.community_id).eq('user_id', user.id).single().then(({ data }: any) => {
+              if (data) setCommunityRole(data.role);
+            });
+          }
+        }
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note, isOpen]);
+
+  useEffect(() => {
+    if (!note) return;
+    if (note.community_id) {
+      const isAuthor = note.author_id === currentUserId;
+      const isAdmin = communityRole === 'admin' || communityRole === 'owner';
+      const editPerm = studioData?.edit_permission || 'author';
+      
+      if (editPerm === 'all') {
+        setCanUpdateCommunityNote(true);
+      } else if (editPerm === 'admins') {
+        setCanUpdateCommunityNote(isAuthor || isAdmin);
+      } else {
+        setCanUpdateCommunityNote(isAuthor || isAdmin);
+      }
+    } else {
+      setCanUpdateCommunityNote(true);
+    }
+  }, [note, currentUserId, communityRole, studioData]);
 
   const fetchContent = async (noteId: string | number) => {
     const { data } = await turso
@@ -202,6 +243,32 @@ export const NoteWorkspaceModal = ({
     setIsSaving(false);
   };
 
+  const handleSaveToMyNotes = async () => {
+    if (!note || !currentUserId) return;
+    setIsSavingToMyNotes(true);
+    
+    const newNoteData = {
+      title: editTitle + ' (Copy)',
+      content: editContent,
+      author_id: currentUserId,
+      community_id: null,
+      folder_id: null,
+      visibility: 'private',
+      ai_summary: aiSummary,
+      studio_data: Object.keys(studioData).length > 0 ? JSON.stringify(studioData) : null
+    };
+
+    const { error } = await turso.from('notes').insert(newNoteData);
+
+    if (error) {
+      toast.error('Failed to save to your notes');
+    } else {
+      toast.success('Saved a copy to your notes!');
+      onUpdated();
+    }
+    setIsSavingToMyNotes(false);
+  };
+
   const handleDelete = async () => {
     if (!note) return;
     setIsDeleting(true);
@@ -226,7 +293,8 @@ export const NoteWorkspaceModal = ({
     if (!note) return;
     setIsGenerating(true);
     try {
-      const summary = await generateSummary(note.title, dbContent);
+      const cleanContent = stripHtml(dbContent);
+      const summary = await generateSummary(note.title, cleanContent);
       setAiSummary(summary);
       await turso.from('notes').update({ ai_summary: summary, is_ai_summarized: true }).eq('id', note.id);
       setActiveTab('summary');
@@ -246,7 +314,8 @@ export const NoteWorkspaceModal = ({
       const { data: { user } } = await turso.auth.getUser();
       if (!user) throw new Error('Not logged in');
 
-      const flashcards = await generateFlashcardsWithGroq(note.title, dbContent);
+      const cleanContent = stripHtml(dbContent);
+      const flashcards = await generateFlashcardsWithGroq(note.title, cleanContent);
       
       if (flashcards.length === 0) {
         toast.error('No flashcards could be generated.');
@@ -315,6 +384,19 @@ export const NoteWorkspaceModal = ({
     }
   };
 
+  const handleEditPermissionChange = async (perm: 'author' | 'admins' | 'all') => {
+    if (!note) return;
+    const newData = { ...studioData, edit_permission: perm };
+    setStudioData(newData);
+    const { error } = await turso.from('notes').update({ studio_data: JSON.stringify(newData) }).eq('id', note.id);
+    if (error) {
+      toast.error('Failed to update edit permissions');
+    } else {
+      toast.success(`Edit permissions updated`);
+      onUpdated();
+    }
+  };
+
   if (!isOpen || !note) return null;
 
   return (
@@ -366,6 +448,19 @@ export const NoteWorkspaceModal = ({
                         <button onClick={() => handleVisibilityChange('public')} className="text-left px-3 py-2 text-xs text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10 rounded-lg flex items-center gap-2"><Globe className="w-3.5 h-3.5"/> Public</button>
                      </div>
                   </div>
+
+                  {note.community_id && (note.author_id === currentUserId || communityRole === 'admin' || communityRole === 'owner') && (
+                    <div className="relative group hidden sm:block z-[70]">
+                       <button className="flex items-center gap-1.5 bg-white/[0.04] hover:bg-white/[0.08] transition-colors rounded-lg px-2.5 py-1.5 border border-white/[0.06] text-[11px] text-slate-400">
+                          <Edit3 className="w-3 h-3"/> {studioData?.edit_permission === 'all' ? 'All Members' : studioData?.edit_permission === 'admins' ? 'Admins Only' : 'Only Me'}
+                       </button>
+                       <div className="absolute top-full left-0 mt-1 w-36 bg-[#1c1f26] border border-white/10 rounded-xl shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all flex flex-col p-1">
+                          <button onClick={() => handleEditPermissionChange('author')} className="text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/5 rounded-lg">Only Me</button>
+                          <button onClick={() => handleEditPermissionChange('admins')} className="text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/5 rounded-lg">Admins Only</button>
+                          <button onClick={() => handleEditPermissionChange('all')} className="text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-white/5 rounded-lg">All Members</button>
+                       </div>
+                    </div>
+                  )}
 
                   {shareLinkToken && visibility !== 'private' && (
                     <button 
@@ -434,13 +529,17 @@ export const NoteWorkspaceModal = ({
                   setActiveTab={setActiveTab}
                   studioData={studioData}
                   hasFlashcards={hasFlashcards}
+                  canUpdateCommunityNote={canUpdateCommunityNote}
+                  isCommunityNote={!!note.community_id}
+                  isSavingToMyNotes={isSavingToMyNotes}
+                  handleSaveToMyNotes={handleSaveToMyNotes}
                 />
                 
                 {/* Right Panel: Studio Tools + AI Chat */}
                 <ChatPane 
                   note={note}
                   noteTitle={note.title}
-                  noteContent={dbContent}
+                  noteContent={stripHtml(dbContent)}
                   hasFlashcards={hasFlashcards}
                   setIsStudyModalOpen={setIsStudyModalOpen}
                   handleGenerateFlashcards={handleGenerateFlashcards}

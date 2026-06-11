@@ -22,6 +22,7 @@ export const NotesPage = () => {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [filterActive, setFilterActive] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'pages'>('date');
+  const [newNoteIdToOpen, setNewNoteIdToOpen] = useState<string | number | null>(null);
 
   const fetchNotes = useCallback(async (background = false) => {
     if (!background) {
@@ -56,15 +57,44 @@ export const NotesPage = () => {
 
       if (folderError) throw folderError;
 
-      // Fetch notes with folder name join
-      const { data: notesData, error: notesError } = await turso
+      // Fetch personal notes
+      const { data: personalNotes, error: notesError } = await turso
         .from('notes')
-        .select('*, folders(name)')
+        .select('*')
         .eq('author_id', user.id)
-        .is('community_id', null)
-        .order('created_at', { ascending: false });
+        .is('community_id', null);
 
       if (notesError) throw notesError;
+
+      // Fetch joined communities
+      const { data: memberData } = await turso
+        .from('community_members')
+        .select('*')
+        .eq('user_id', user.id);
+
+      const communityNotes: any[] = [];
+      const communitiesCache: Record<string, string> = {};
+
+      if (memberData && memberData.length > 0) {
+         // Fetch all communities to get their names
+         const { data: commData } = await turso.from('communities').select('*');
+         if (commData) {
+            commData.forEach((c: any) => communitiesCache[c.id] = c.name);
+         }
+
+         for (const m of memberData) {
+            const { data: cNotes } = await turso
+              .from('notes')
+              .select('*')
+              .eq('community_id', m.community_id);
+            if (cNotes) {
+               communityNotes.push(...cNotes);
+            }
+         }
+      }
+
+      // Combine and sort
+      const notesData = [...(personalNotes || []), ...communityNotes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     if (folderData && folderData.length > 0) {
       setAllFolders(folderData);
@@ -120,9 +150,9 @@ export const NotesPage = () => {
 
           return {
             id: n.id,
-            folder_id: n.folder_id,
+            folder_id: n.community_id ? null : n.folder_id,
             title: n.title,
-            course: n.folders?.name || 'General',
+            course: n.folder_id && folderData ? (folderData.find((f: any) => f.id === n.folder_id)?.name || 'General') : 'General',
             pages,
             lastEdited: timeStr,
             createdAt: n.created_at,
@@ -132,6 +162,9 @@ export const NotesPage = () => {
             visibility: n.visibility || 'private',
             sharedLinkToken: n.shared_link_token || undefined,
             fileUrl: n.file_url || null,
+            author_id: n.author_id,
+            community_id: n.community_id,
+            community_name: communitiesCache[n.community_id] || null,
           };
         });
         setDbNotes(parsedNotes);
@@ -216,7 +249,10 @@ export const NotesPage = () => {
     setDbNotes(prev => prev.filter(n => n.id !== id));
   };
 
-  const handleNoteCreated = useCallback(() => {
+  const handleNoteCreated = useCallback((newNoteId?: string | number) => {
+    if (newNoteId) {
+      setNewNoteIdToOpen(newNoteId);
+    }
     fetchNotes(true);
   }, [fetchNotes]);
 
@@ -255,6 +291,8 @@ export const NotesPage = () => {
         toggleStar={toggleStar}
         onNoteDeleted={handleNoteDeleted}
         onNoteUpdated={() => fetchNotes(true)}
+        newNoteIdToOpen={newNoteIdToOpen}
+        setNewNoteIdToOpen={setNewNoteIdToOpen}
       />
     </motion.div>
   );

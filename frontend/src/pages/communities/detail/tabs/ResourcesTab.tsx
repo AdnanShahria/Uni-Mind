@@ -130,6 +130,9 @@ export const ResourcesTab = ({ communityId }: { communityId: string }) => {
             visibility: n.visibility || 'private',
             sharedLinkToken: n.shared_link_token || undefined,
             fileUrl: n.file_url || null,
+            author_id: n.author_id,
+            community_id: n.community_id,
+            community_name: n.communities?.name || null,
           };
         });
         setDbNotes(parsedNotes);

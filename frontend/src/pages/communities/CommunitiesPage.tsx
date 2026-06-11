@@ -23,13 +23,14 @@ export const CommunitiesPage = () => {
     
     const { data } = await turso
       .from('communities')
-      .select(`
-        *,
-        community_members (count),
-        posts (count),
-        my_membership:community_members(role, user_id)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
+
+    // Fetch user's memberships
+    const { data: memberData } = user ? await turso
+      .from('community_members')
+      .select('community_id, role')
+      .eq('user_id', user.id) : { data: null };
 
     if (data) {
       setDbCommunities(data.map((c: any, i: number) => {
@@ -41,9 +42,9 @@ export const CommunitiesPage = () => {
         ];
         const style = colors[i % colors.length];
 
-        const membersCount = c.community_members?.[0]?.count || 1;
-        const postsCount = c.posts?.[0]?.count || 0;
-        const myMembership = c.my_membership?.find((m: any) => m.user_id === user?.id);
+        const membersCount = 1; // Fallback since dynamic backend doesn't aggregate
+        const postsCount = 0;
+        const myMembership = memberData?.find((m: any) => m.community_id === c.id);
 
         return {
           id: c.id,

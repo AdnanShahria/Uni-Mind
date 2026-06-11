@@ -7,7 +7,8 @@ import { NoteType } from '../../types';
 import { MermaidViewer } from './MermaidViewer';
 import { SlideCarousel } from './SlideCarousel';
 import { FlashcardsTab } from './FlashcardsTab';
-
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 interface EditorPaneProps {
   note: NoteType;
   isEditing: boolean;
@@ -24,6 +25,10 @@ interface EditorPaneProps {
   setActiveTab: (t: any) => void;
   studioData: any;
   hasFlashcards?: boolean;
+  canUpdateCommunityNote?: boolean;
+  isCommunityNote?: boolean;
+  isSavingToMyNotes?: boolean;
+  handleSaveToMyNotes?: () => void;
 }
 
 export const EditorPane = ({
@@ -41,7 +46,11 @@ export const EditorPane = ({
   activeTab,
   setActiveTab,
   studioData,
-  hasFlashcards
+  hasFlashcards,
+  canUpdateCommunityNote = true,
+  isCommunityNote = false,
+  isSavingToMyNotes = false,
+  handleSaveToMyNotes
 }: EditorPaneProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -207,9 +216,22 @@ export const EditorPane = ({
                 <Edit3 className="w-3.5 h-3.5" /> Edit Mode
               </button>
             ) : activeTab === 'notes' && isEditing ? (
-              <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-medium transition-colors">
-                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
-              </button>
+              isCommunityNote ? (
+                <>
+                  <button onClick={handleSaveToMyNotes} disabled={isSavingToMyNotes || isSaving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-xs font-medium transition-colors">
+                    {isSavingToMyNotes ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save to My Notes
+                  </button>
+                  {canUpdateCommunityNote && (
+                    <button onClick={handleSave} disabled={isSaving || isSavingToMyNotes} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-medium transition-colors">
+                      {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Update in Community
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-medium transition-colors">
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
+                </button>
+              )
             ) : null}
             <button onClick={handleCopy} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -221,16 +243,31 @@ export const EditorPane = ({
           {activeTab === 'notes' && (
             <>
               {isEditing ? (
-                <textarea
-                  value={editContent}
-                  onChange={e => setEditContent(e.target.value)}
-                  className="w-full min-h-[300px] h-full bg-transparent border-none text-sm text-slate-300 font-poppins resize-none outline-none leading-relaxed"
-                  placeholder="Start taking notes..."
-                />
+                <div className="bg-[#171920] rounded-xl overflow-hidden border border-white/10 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-white/10 [&_.ql-toolbar]:bg-white/5 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[300px] [&_.ql-editor]:text-slate-300 [&_.ql-editor]:font-poppins [&_.ql-editor]:text-sm [&_.ql-editor]:leading-relaxed [&_.ql-editor.ql-blank::before]:text-slate-500 [&_.ql-picker]:text-slate-300 [&_.ql-stroke]:stroke-slate-300 [&_.ql-fill]:fill-slate-300 [&_.ql-picker-options]:bg-[#1c1f26] [&_.ql-picker-options]:border-white/10 [&_.ql-picker-item:hover]:text-white [&_button:hover_.ql-stroke]:stroke-white [&_button:hover_.ql-fill]:fill-white">
+                  <ReactQuill 
+                    theme="snow"
+                    value={editContent}
+                    onChange={setEditContent}
+                    modules={{
+                      toolbar: [
+                        [{ 'font': [] }],
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+                        ['clean']
+                      ]
+                    }}
+                    placeholder="Start taking notes..."
+                  />
+                </div>
               ) : (
                 <div className="prose prose-invert max-w-none">
                   {dbContent ? (
-                    <div className="text-sm text-slate-300 font-poppins leading-relaxed whitespace-pre-wrap">{dbContent}</div>
+                    <div 
+                      className="text-sm text-slate-300 font-poppins leading-relaxed whitespace-pre-wrap [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_.ql-font-serif]:font-serif [&_.ql-font-monospace]:font-mono"
+                      dangerouslySetInnerHTML={{ __html: dbContent }}
+                    />
                   ) : (
                     <div className="flex flex-col items-center justify-center h-40 text-slate-500 italic space-y-3">
                       <FileText className="w-8 h-8 opacity-20" />

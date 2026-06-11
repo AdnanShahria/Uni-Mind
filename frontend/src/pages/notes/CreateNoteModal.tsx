@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, FolderOpen, Sparkles, Loader2, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { X, Send, FolderOpen, Sparkles, Loader2, UploadCloud, CheckCircle2, PenLine } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { turso } from '../../utils/tursoClient';
 import { toast } from 'react-hot-toast';
@@ -17,7 +17,7 @@ const NOTE_COLORS = [
 interface CreateNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (newNoteId?: string | number) => void;
   initialContent?: string;
   initialTitle?: string;
   currentFolderId: string | null;
@@ -39,6 +39,7 @@ export const CreateNoteModal = ({
   const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
   const [color, setColor] = useState('text-blue-400');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [creationMode, setCreationMode] = useState<'upload' | 'manual'>('upload');
 
   // File Upload States
   const [isDragging, setIsDragging] = useState(false);
@@ -53,6 +54,7 @@ export const CreateNoteModal = ({
       setUploadedFile(null);
       setIsExtracting(false);
       setSelectedFolder(currentFolderId || '');
+      setCreationMode(initialContent ? 'manual' : 'upload');
       fetchFolders();
     }
   }, [isOpen, initialTitle, initialContent, currentFolderId]);
@@ -124,7 +126,7 @@ export const CreateNoteModal = ({
 
       const folderId: string | null = selectedFolder || currentFolderId;
 
-      const { error } = await turso.from('notes').insert([{
+      const { error, data } = await turso.from('notes').insert([{
         author_id: user.id,
         title: title.trim(),
         content: content.trim(),
@@ -142,7 +144,8 @@ export const CreateNoteModal = ({
       setContent('');
       setSelectedFolder(currentFolderId || '');
       setUploadedFile(null);
-      onCreated();
+      const newId = data?.id || (Array.isArray(data) && data[0]?.id);
+      onCreated(newId);
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create note');
@@ -183,16 +186,35 @@ export const CreateNoteModal = ({
           {/* Body */}
           <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
             
+            {/* Mode Toggle */}
+            <div className="flex bg-[#0A0D1A] p-1 rounded-xl w-full max-w-[400px] mx-auto border border-white/[0.08]">
+              <button 
+                onClick={() => setCreationMode('upload')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${creationMode === 'upload' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]'}`}
+              >
+                <UploadCloud className="w-4 h-4" />
+                Upload Document
+              </button>
+              <button 
+                onClick={() => setCreationMode('manual')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${creationMode === 'manual' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.02]'}`}
+              >
+                <PenLine className="w-4 h-4" />
+                Write Manually
+              </button>
+            </div>
+
             {/* Drag and Drop Zone */}
-            <div 
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => !isExtracting && fileInputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer overflow-hidden ${
-                isDragging ? 'border-primary bg-primary/10' : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
-              }`}
-            >
+            {creationMode === 'upload' && (
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !isExtracting && fileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer overflow-hidden ${
+                  isDragging ? 'border-primary bg-primary/10' : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04]'
+                }`}
+              >
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -243,8 +265,9 @@ export const CreateNoteModal = ({
                 </div>
               )}
             </div>
+            )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className={`grid gap-5 ${creationMode === 'upload' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
               {/* Left Column */}
               <div className="space-y-5">
                 {/* Title */}
@@ -294,15 +317,29 @@ export const CreateNoteModal = ({
               </div>
 
               {/* Right Column (Content) */}
-              <div className="flex flex-col h-full">
-                <label className="text-[10px] text-slate-500 font-poppins uppercase tracking-wider font-semibold mb-1.5 block">Extracted Content</label>
-                <textarea
-                  placeholder="Content will appear here after AI parsing..."
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  className="w-full h-full min-h-[250px] bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-slate-300 font-poppins placeholder-slate-600 resize-none outline-none focus:border-primary/40 transition-colors"
-                />
-              </div>
+              {creationMode === 'upload' ? (
+                <div className="flex flex-col h-full">
+                  <label className="text-[10px] text-slate-500 font-poppins uppercase tracking-wider font-semibold mb-1.5 block">
+                    Extracted Content
+                  </label>
+                  <textarea
+                    placeholder="Content will appear here after AI parsing..."
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    className="w-full h-full min-h-[250px] bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-slate-300 font-poppins placeholder-slate-600 resize-none outline-none focus:border-primary/40 transition-colors"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full min-h-[200px] bg-white/[0.02] border border-white/[0.05] rounded-xl p-6 text-center border-dashed">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white mb-1">Ready for Deep Work</h3>
+                  <p className="text-xs text-slate-400">
+                    Your note will be created empty. Click "Create & Enter Workspace" below to open the rich text editor and start writing.
+                  </p>
+                </div>
+              )}
             </div>
 
           </div>
@@ -329,7 +366,7 @@ export const CreateNoteModal = ({
                 ) : (
                   <Send className="w-4 h-4" />
                 )}
-                {isSubmitting ? 'Saving...' : 'Save Document'}
+                {isSubmitting ? 'Saving...' : (creationMode === 'manual' ? 'Create & Enter Workspace' : 'Save Document')}
               </button>
             </div>
           </div>

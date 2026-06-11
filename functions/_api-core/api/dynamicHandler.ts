@@ -31,6 +31,34 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
         }
         let args: any[] = [];
         let whereClauses: string[] = [];
+
+        // RLS for GET
+        if (payload) {
+          if (table === 'notes') {
+            whereClauses.push(`(author_id = ? OR community_id IS NOT NULL)`);
+            args.push(payload.userId);
+          } else if (table === 'folders') {
+            whereClauses.push(`(user_id = ? OR community_id IS NOT NULL)`);
+            args.push(payload.userId);
+          } else if ([
+            'tasks', 'weekly_goals', 'long_term_goals', 'user_preferences', 
+            'flashcards', 'notifications', 'api_keys', 'research_papers', 
+            'research_collaborators', 'ai_suggestions', 'ai_conversations'
+          ].includes(table)) {
+            whereClauses.push(`user_id = ?`);
+            args.push(payload.userId);
+          } else if (table === 'connections') {
+            whereClauses.push(`(user_id = ? OR friend_id = ?)`);
+            args.push(payload.userId);
+            args.push(payload.userId);
+          } else if (table === 'conversations') {
+            whereClauses.push(`id IN (SELECT conversation_id FROM conversation_members WHERE user_id = ?)`);
+            args.push(payload.userId);
+          } else if (table === 'ai_messages') {
+            whereClauses.push(`conversation_id IN (SELECT id FROM ai_conversations WHERE user_id = ?)`);
+            args.push(payload.userId);
+          }
+        }
         
         // Backward compatibility
         const eqColumn = urlObj.searchParams.get("eqColumn");
@@ -45,14 +73,22 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
           if (key.startsWith('eq_')) {
             const col = key.replace('eq_', '');
             if (/^[a-zA-Z0-9_]+$/.test(col)) {
-              whereClauses.push(`${col} = ?`);
-              args.push(val);
+              if (val === 'null') {
+                whereClauses.push(`${col} IS NULL`);
+              } else {
+                whereClauses.push(`${col} = ?`);
+                args.push(val);
+              }
             }
           } else if (key.startsWith('neq_')) {
             const col = key.replace('neq_', '');
             if (/^[a-zA-Z0-9_]+$/.test(col)) {
-              whereClauses.push(`${col} != ?`);
-              args.push(val);
+              if (val === 'null') {
+                whereClauses.push(`${col} IS NOT NULL`);
+              } else {
+                whereClauses.push(`${col} != ?`);
+                args.push(val);
+              }
             }
           } else if (key.startsWith('ilike_')) {
             const col = key.replace('ilike_', '');
@@ -117,8 +153,11 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
             
             // RLS
             let rlsClause = '';
-            if (table === 'posts' || table === 'notes' || table === 'comments') {
+            if (table === 'posts' || table === 'comments') {
                 rlsClause = ` AND author_id = ?`;
+                args.push(payload.userId);
+            } else if (table === 'notes') {
+                rlsClause = ` AND (author_id = ? OR community_id IS NOT NULL)`;
                 args.push(payload.userId);
             } else if (table === 'communities') {
                 rlsClause = ` AND created_by = ?`;

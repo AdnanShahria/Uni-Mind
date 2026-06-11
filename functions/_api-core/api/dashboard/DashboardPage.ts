@@ -132,7 +132,7 @@ export const handleDashboardPageRoute = async (url: URL, request: Request, db: C
 
       // 3. Fetch Pinned Resources
       const notesRes = await db.execute({
-        sql: "SELECT id, title, content, type, created_at FROM notes WHERE author_id = ? ORDER BY created_at DESC LIMIT 4",
+        sql: "SELECT id, title, content, created_at FROM notes WHERE author_id = ? ORDER BY created_at DESC LIMIT 4",
         args: [userId]
       });
       const pinnedResources = notesRes.rows.map((n: any) => {
@@ -147,7 +147,7 @@ export const handleDashboardPageRoute = async (url: URL, request: Request, db: C
         return {
           id: n.id,
           title: n.title || 'Untitled Note',
-          type: n.type || 'document',
+          type: 'document',
           snippet: snippet,
           time: new Date(n.created_at).toLocaleDateString(),
           path: '/app/notes'

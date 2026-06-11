@@ -21,6 +21,9 @@ export interface NoteType {
   visibility?: 'private' | 'class' | 'public';
   sharedLinkToken?: string;
   fileUrl?: string | null;
+  community_id?: string | null;
+  community_name?: string | null;
+  author_id?: string;
 }
 
 export interface FlashcardType {

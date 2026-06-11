@@ -196,6 +196,11 @@ export const turso: any = {
         builder._eq = { column, value }; // backward compat
         return builder;
       },
+      is: (column: string, value: any) => {
+        if (!builder._eqs) builder._eqs = [];
+        builder._eqs.push({ column, value });
+        return builder;
+      },
       neq: (column: string, value: any) => {
         if (!builder._neqs) builder._neqs = [];
         builder._neqs.push({ column, value });
@@ -248,56 +253,7 @@ export const turso: any = {
             } else {
               result.error = { message: json.error || 'Failed to fetch feed' };
             }
-          } else if (table === 'folders') {
-            if (builder._action === 'select') {
-              const res = await fetch(`${API_URL}/api/folders`, { headers });
-              const json = await res.json();
-              result.data = json.data || [];
-            } else if (builder._action === 'insert' || builder._action === 'upsert') {
-              const payload = Array.isArray(builder._data) ? builder._data[0] : builder._data;
-              const res = await fetch(`${API_URL}/api/folders`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
-              });
-              const json = await res.json();
-              result.data = json.data;
-            }
-          } else if (table === 'notes') {
-            if (builder._action === 'select') {
-              const res = await fetch(`${API_URL}/api/notes`, { headers });
-              const json = await res.json();
-              result.data = json.data || [];
-            } else if (builder._action === 'insert') {
-              const payload = Array.isArray(builder._data) ? builder._data[0] : builder._data;
-              const res = await fetch(`${API_URL}/api/notes`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload)
-              });
-              const json = await res.json();
-              result.data = json.data;
-            } else if (builder._action === 'upsert' || builder._action === 'update') {
-              const payload = Array.isArray(builder._data) ? builder._data[0] : builder._data;
-              if (builder._eq && builder._eq.column === 'id' && !payload.id) {
-                 payload.id = builder._eq.value;
-              }
-              const res = await fetch(`${API_URL}/api/dynamic/notes`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify(payload)
-              });
-              const json = await res.json();
-              result.data = json.data;
-            } else if (builder._action === 'delete') {
-              const id = builder._eq?.value;
-              const res = await fetch(`${API_URL}/api/notes?id=${id}`, {
-                method: 'DELETE',
-                headers
-              });
-              const json = await res.json();
-              result.error = json.error ? { message: json.error } : null;
-            }
+
           } else if (table === 'tasks') {
             if (builder._action === 'select') {
               const res = await fetch(`${API_URL}/api/tasks`, { headers });
@@ -475,14 +431,20 @@ export const turso: any = {
             // Keep local filtering as a fallback for non-dynamic tables
             if (builder._eqs) {
               builder._eqs.forEach((eq: any) => {
-                 result.data = result.data.filter((item: any) => item[eq.column] === eq.value);
+                 result.data = result.data.filter((item: any) => 
+                   item[eq.column] === eq.value || (eq.value === null && item[eq.column] === undefined)
+                 );
               });
             } else if (builder._eq) {
-              result.data = result.data.filter((item: any) => item[builder._eq.column] === builder._eq.value);
+              result.data = result.data.filter((item: any) => 
+                item[builder._eq.column] === builder._eq.value || (builder._eq.value === null && item[builder._eq.column] === undefined)
+              );
             }
             if (builder._neqs) {
               builder._neqs.forEach((neq: any) => {
-                 result.data = result.data.filter((item: any) => item[neq.column] !== neq.value);
+                 result.data = result.data.filter((item: any) => 
+                   item[neq.column] !== neq.value && !(neq.value === null && item[neq.column] === undefined)
+                 );
               });
             }
             if (builder._single) {

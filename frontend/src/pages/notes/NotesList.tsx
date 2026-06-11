@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import { FileText, Sparkles, Clock, Star, Share2, MoreHorizontal, Search, Trash2, Edit3 } from 'lucide-react';
+import { FileText, Sparkles, Clock, Star, Share2, MoreHorizontal, Search, Trash2, Edit3, Users } from 'lucide-react';
 import { NoteType } from './types';
 import { fadeIn } from './data';
 import { NoteWorkspaceModal } from './workspace';
@@ -15,6 +15,8 @@ interface NotesListProps {
   toggleStar: (e: React.MouseEvent, noteId: string | number) => void;
   onNoteDeleted: (id: string | number) => void;
   onNoteUpdated: () => void;
+  newNoteIdToOpen?: string | number | null;
+  setNewNoteIdToOpen?: (val: null) => void;
 }
 
 export const NotesList = ({
@@ -26,6 +28,8 @@ export const NotesList = ({
   toggleStar,
   onNoteDeleted,
   onNoteUpdated,
+  newNoteIdToOpen,
+  setNewNoteIdToOpen,
 }: NotesListProps) => {
   const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
   const [modalAction, setModalAction] = useState<'view' | 'edit' | 'delete'>('view');
@@ -42,6 +46,18 @@ export const NotesList = ({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Open workspace automatically if a new note was created
+  useEffect(() => {
+    if (newNoteIdToOpen && notes.length > 0) {
+      const foundNote = notes.find(n => n.id === newNoteIdToOpen);
+      if (foundNote) {
+        setSelectedNote(foundNote);
+        setModalAction('edit'); // Open directly into edit mode
+        if (setNewNoteIdToOpen) setNewNoteIdToOpen(null);
+      }
+    }
+  }, [newNoteIdToOpen, notes, setNewNoteIdToOpen]);
 
   const handleNoteClick = (note: NoteType) => {
     setModalAction('view');
@@ -164,6 +180,11 @@ export const NotesList = ({
                     {note.fileUrl && (
                       <span className="flex items-center gap-1 text-[9px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={note.fileUrl}>
                         <FileText className="w-2.5 h-2.5" /> PDF/Image
+                      </span>
+                    )}
+                    {note.community_name && (
+                      <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-semibold font-poppins shrink-0" title={`From Community: ${note.community_name}`}>
+                        <Users className="w-2.5 h-2.5" /> {note.community_name}
                       </span>
                     )}
                   </div>
