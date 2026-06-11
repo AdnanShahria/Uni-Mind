@@ -61,69 +61,63 @@ async function extractText(file: File): Promise<string> {
   return await file.text();
 }
 
-async function extractPdfWithLlamaParse(file: File): Promise<string> {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  const token = localStorage.getItem('unimind_token') || '';
-  const res = await fetch('/api/llamaparse/extract-start', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
-    body: formData
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || `LlamaParse extract-start failed: ${res.status}`);
-  }
-
-  const startData = await res.json();
-  if (!startData.success) throw new Error(startData.error || 'LlamaParse upload unsuccessful');
-
-  const jobId = startData.jobId;
-  let attempts = 0;
-  
-  while (attempts < 60) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const statusRes = await fetch(`/api/llamaparse/extract-status?jobId=${jobId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!statusRes.ok) {
-      console.warn(`[LlamaParse] Status check failed: ${statusRes.status}`);
-      attempts++;
-      continue;
-    }
-
-    const statusData = await statusRes.json();
-    if (statusData.success && statusData.status === 'SUCCESS') {
-      return statusData.markdown || '';
-    } else if (!statusData.success || (statusData.status && statusData.status !== 'PENDING')) {
-      throw new Error(statusData.error || `LlamaParse extraction unsuccessful (${statusData.status})`);
-    }
-
-    attempts++;
-  }
-
-  throw new Error('LlamaParse extraction timed out');
-}
+// Disable automatic LlamaParse by commenting out the unused extraction function to resolve TS warning
+// async function extractPdfWithLlamaParse(file: File): Promise<string> {
+//   const formData = new FormData();
+//   formData.append('file', file);
+//   
+//   const token = localStorage.getItem('unimind_token') || '';
+//   const res = await fetch('/api/llamaparse/extract-start', {
+//     method: 'POST',
+//     headers: {
+//       'Authorization': `Bearer ${token}`
+//     },
+//     body: formData
+//   });
+// 
+//   if (!res.ok) {
+//     const errData = await res.json().catch(() => ({}));
+//     throw new Error(errData.error || `LlamaParse extract-start failed: ${res.status}`);
+//   }
+// 
+//   const startData = await res.json();
+//   if (!startData.success) throw new Error(startData.error || 'LlamaParse upload unsuccessful');
+// 
+//   const jobId = startData.jobId;
+//   let attempts = 0;
+//   
+//   while (attempts < 60) {
+//     await new Promise(resolve => setTimeout(resolve, 2000));
+//     
+//     const statusRes = await fetch(`/api/llamaparse/extract-status?jobId=${jobId}`, {
+//       headers: {
+//         'Authorization': `Bearer ${token}`
+//       }
+//     });
+// 
+//     if (!statusRes.ok) {
+//       console.warn(`[LlamaParse] Status check failed: ${statusRes.status}`);
+//       attempts++;
+//       continue;
+//     }
+// 
+//     const statusData = await statusRes.json();
+//     if (statusData.success && statusData.status === 'SUCCESS') {
+//       return statusData.markdown || '';
+//     } else if (!statusData.success || (statusData.status && statusData.status !== 'PENDING')) {
+//       throw new Error(statusData.error || `LlamaParse extraction unsuccessful (${statusData.status})`);
+//     }
+// 
+//     attempts++;
+//   }
+// 
+//   throw new Error('LlamaParse extraction timed out');
+// }
 
 async function extractPdf(file: File): Promise<{ text: string; pageCount: number }> {
   try {
-    console.log('Attempting LlamaParse for PDF extraction via backend...');
-    try {
-      const text = await extractPdfWithLlamaParse(file);
-      if (text && text.trim().length > 0) {
-        return { text, pageCount: 0 };
-      }
-    } catch (err) {
-      console.error('LlamaParse backend failed, falling back to local basic PDF extractor:', err);
-    }
+    // Note: Automatic LlamaParse API call has been disabled to prevent unwanted costs.
+    // Falls back directly to the local basic PDF extractor.
 
     const pdfjsLib = await import('pdfjs-dist');
     // Use Vite's worker URL import to bundle the worker properly

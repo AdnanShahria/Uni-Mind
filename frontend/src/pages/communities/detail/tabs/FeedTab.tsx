@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Users, Trash2, MessageSquare, Send, ChevronDown, ChevronUp, PenLine } from 'lucide-react';
+import { Loader2, Users, Trash2, MessageSquare, Send, ChevronDown, ChevronUp, PenLine, Image as ImageIcon, Link, Calendar, X, Plus } from 'lucide-react';
+import { turso } from '../../../../utils/tursoClient';
+import { uploadImageToImgbb } from '../../../../utils/imgbbUpload';
 
 interface FeedTabProps {
   posts: any[];
@@ -11,7 +13,7 @@ interface FeedTabProps {
   newPostContent: string;
   setNewPostContent: (c: string) => void;
   isPosting: boolean;
-  handleCreatePost: () => void;
+  handleCreatePost: (mediaUrls?: string[], eventId?: string | null, resourceId?: string | null) => Promise<void> | void;
   handleJoinCommunity: () => void;
   handleDeletePost: (id: string) => void;
   activeCommentsPostId: string | null;
@@ -20,6 +22,7 @@ interface FeedTabProps {
   commentInputs: Record<string, string>;
   setCommentInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   handleSubmitComment: (id: string) => void;
+  setActiveTab: (tab: any) => void;
 }
 
 const timeAgo = (dateStr: string) => {
@@ -58,8 +61,58 @@ export const FeedTab = ({
   postComments,
   commentInputs,
   setCommentInputs,
-  handleSubmitComment
+  handleSubmitComment,
+  setActiveTab
 }: FeedTabProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [showEventDropdown, setShowEventDropdown] = useState(false);
+  const [showResourceDropdown, setShowResourceDropdown] = useState(false);
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // Close modal when posting finishes successfully (content is cleared)
+  useEffect(() => {
+    if (!isPosting && newPostContent === '') {
+      setIsModalOpen(false);
+    }
+  }, [isPosting, newPostContent]);
+
+  useEffect(() => {
+    turso.from('events').select().then((res: any) => {
+       if (res.data) setEvents(res.data);
+    });
+    turso.from('notes').select().then((res: any) => {
+       if (res.data) setNotes(res.data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      setSelectedPhoto(null);
+      setSelectedEventId(null);
+      setSelectedResourceId(null);
+      setShowEventDropdown(false);
+      setShowResourceDropdown(false);
+    }
+  }, [isModalOpen]);
+
+  const onPublish = async () => {
+    let mediaUrls: string[] = [];
+    if (selectedPhoto) {
+      const imgName = `post-${userId}-${Date.now()}`;
+      const result = await uploadImageToImgbb(selectedPhoto, imgName);
+      if (result.success && result.url) {
+        mediaUrls.push(result.url);
+      }
+    }
+    await handleCreatePost(mediaUrls, selectedEventId, selectedResourceId);
+  };
 
   return (
     <motion.div
@@ -70,54 +123,22 @@ export const FeedTab = ({
       transition={{ duration: 0.25 }}
       className="space-y-4 md:space-y-5"
     >
-      {/* ── Create Post Composer ── */}
+      {/* ── Create Post Button ── */}
       {userRole ? (
-        <div className="rounded-2xl border border-white/[0.06] bg-[#090d16]/90 backdrop-blur-xl p-4 md:p-5 shadow-xl space-y-3">
-          {/* Composer Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-              <PenLine className="w-4 h-4 text-primary-glow" />
-            </div>
-            <input
-              type="text"
-              placeholder="Post title (optional)..."
-              value={newPostTitle}
-              onChange={(e) => setNewPostTitle(e.target.value)}
-              className="flex-1 bg-transparent border-none text-sm text-white placeholder-slate-500 outline-none font-poppins font-semibold"
-            />
-          </div>
-
-          {/* Divider */}
-          <div className="h-px bg-white/[0.04]" />
-
-          {/* Textarea */}
-          <textarea
-            placeholder="Share your thoughts, research findings, or ask for guidance..."
-            value={newPostContent}
-            onChange={(e) => setNewPostContent(e.target.value)}
-            rows={3}
-            className="w-full bg-black/20 border border-white/[0.05] focus:border-primary/25 rounded-xl p-3.5 text-[13px] text-slate-300 placeholder-slate-500 outline-none transition-all font-poppins resize-none leading-relaxed"
-          />
-
-          {/* Footer */}
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-poppins">
-              {newPostContent.length > 0 ? `${newPostContent.length} chars` : 'Markdown supported'}
-            </span>
-            <motion.button
-              onClick={handleCreatePost}
-              disabled={isPosting || !newPostContent.trim()}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary hover:bg-primary-glow text-white text-xs font-bold font-poppins transition-all shadow-[0_0_20px_rgba(59,130,246,0.25)] disabled:opacity-40 disabled:pointer-events-none"
-            >
-              {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-              {isPosting ? 'Publishing...' : '✦ Publish'}
-            </motion.button>
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[15px] font-semibold text-white font-outfit">Community Feed</h2>
+          <motion.button 
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-glow text-white text-[11px] font-bold font-poppins rounded-xl transition-all shadow-[0_0_14px_rgba(59,130,246,0.3)]"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Post
+          </motion.button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-white/[0.06] bg-[#090d16] p-8 text-center space-y-3">
+        <div className="rounded-2xl border border-white/[0.06] bg-[#090d16] p-8 text-center space-y-3 mb-4">
           <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-white/[0.06] flex items-center justify-center mx-auto">
             <Users className="w-5 h-5 text-slate-500" />
           </div>
@@ -130,6 +151,152 @@ export const FeedTab = ({
           </button>
         </div>
       )}
+
+      {/* ── Create Post Modal ── */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="w-full max-w-lg bg-[#0f172a] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            >
+               {/* Modal Header */}
+               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                 <h2 className="text-[15px] font-semibold text-white font-outfit flex items-center gap-2">
+                   <PenLine className="w-4 h-4 text-primary-glow" />
+                   Create Post
+                 </h2>
+                 <button onClick={() => setIsModalOpen(false)} className="p-1.5 rounded-xl hover:bg-white/[0.06] transition-colors text-slate-400 hover:text-white">
+                   <X className="w-4 h-4" />
+                 </button>
+               </div>
+               
+               {/* Modal Body */}
+               <div className="p-5 flex flex-col gap-4">
+                 <div>
+                   <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 font-poppins">Title (Optional)</label>
+                   <input
+                      type="text"
+                      placeholder="e.g. Interesting finding..."
+                      value={newPostTitle}
+                      onChange={(e) => setNewPostTitle(e.target.value)}
+                      className="w-full bg-white/[0.02] border border-white/[0.06] focus:border-primary/50 rounded-xl px-4 py-3 text-[13px] font-semibold text-white placeholder-slate-500 outline-none font-poppins transition-colors"
+                    />
+                 </div>
+                 <div>
+                   <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 font-poppins">Post Details</label>
+                   <textarea
+                      placeholder="Share your thoughts, research findings, or ask for guidance..."
+                      value={newPostContent}
+                      onChange={(e) => setNewPostContent(e.target.value)}
+                      rows={5}
+                      className="w-full bg-white/[0.02] border border-white/[0.06] focus:border-primary/50 rounded-xl px-4 py-3 text-[13px] text-slate-300 placeholder-slate-500 outline-none font-poppins resize-none leading-relaxed custom-scrollbar transition-colors"
+                    />
+                 </div>
+
+                 {/* Previews */}
+                 {(selectedPhoto || selectedEventId || selectedResourceId) && (
+                   <div className="flex flex-wrap gap-2 pt-2 border-t border-white/[0.04]">
+                     {selectedPhoto && (
+                       <div className="relative rounded-lg overflow-hidden border border-white/10 shrink-0 group">
+                         <img src={URL.createObjectURL(selectedPhoto)} alt="preview" className="h-16 w-auto object-cover" />
+                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <button onClick={() => setSelectedPhoto(null)} className="p-1 bg-black/60 hover:bg-rose-500/80 rounded-full text-white">
+                             <X className="w-3 h-3" />
+                           </button>
+                         </div>
+                       </div>
+                     )}
+                     {selectedEventId && (
+                       <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-lg text-primary-glow text-xs font-poppins">
+                         <Calendar className="w-3.5 h-3.5" />
+                         <span className="truncate max-w-[150px]">{events.find(e => e.id === selectedEventId)?.title || 'Linked Event'}</span>
+                         <button onClick={() => setSelectedEventId(null)} className="hover:text-rose-400 ml-1"><X className="w-3.5 h-3.5" /></button>
+                       </div>
+                     )}
+                     {selectedResourceId && (
+                       <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-xs font-poppins">
+                         <Link className="w-3.5 h-3.5" />
+                         <span className="truncate max-w-[150px]">{notes.find(n => n.id === selectedResourceId)?.title || 'Linked Resource'}</span>
+                         <button onClick={() => setSelectedResourceId(null)} className="hover:text-rose-400 ml-1"><X className="w-3.5 h-3.5" /></button>
+                       </div>
+                     )}
+                   </div>
+                 )}
+               </div>
+
+               {/* Modal Footer */}
+               <div className="px-5 py-4 border-t border-white/[0.06] bg-white/[0.01] flex items-center justify-between relative">
+                  <div className="flex items-center gap-1.5 relative">
+                    <input type="file" accept="image/*" className="hidden" ref={photoInputRef} onChange={(e) => e.target.files && setSelectedPhoto(e.target.files[0])} />
+                    
+                    <button onClick={() => photoInputRef.current?.click()} className="p-2 text-slate-400 hover:text-primary-glow hover:bg-primary/10 rounded-xl transition-all flex items-center justify-center" title="Upload Image">
+                      <ImageIcon className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="relative">
+                      <button onClick={() => { setShowResourceDropdown(!showResourceDropdown); setShowEventDropdown(false); }} className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all flex items-center justify-center" title="Link Resource">
+                        <Link className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {showResourceDropdown && (
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full left-0 mb-2 w-48 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+                            <div className="p-2 border-b border-white/10 text-[10px] font-semibold text-slate-400 uppercase">My Notes</div>
+                            <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                              {notes.length === 0 ? <div className="p-3 text-xs text-slate-500 text-center">No notes found</div> : notes.map(n => (
+                                <button key={n.id} onClick={() => { setSelectedResourceId(n.id); setShowResourceDropdown(false); }} className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 truncate transition-colors">
+                                  {n.title}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="relative">
+                      <button onClick={() => { setShowEventDropdown(!showEventDropdown); setShowResourceDropdown(false); }} className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all flex items-center justify-center" title="Link Event">
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                      <AnimatePresence>
+                        {showEventDropdown && (
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute bottom-full left-0 mb-2 w-48 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+                            <div className="p-2 border-b border-white/10 text-[10px] font-semibold text-slate-400 uppercase">Events</div>
+                            <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                              {events.length === 0 ? <div className="p-3 text-xs text-slate-500 text-center">No events found</div> : events.map(e => (
+                                <button key={e.id} onClick={() => { setSelectedEventId(e.id); setShowEventDropdown(false); }} className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-white/5 truncate transition-colors">
+                                  {e.title}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    onClick={onPublish}
+                    disabled={isPosting || !newPostContent.trim()}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary hover:bg-primary-glow text-white text-[11px] font-bold font-poppins transition-all shadow-[0_0_14px_rgba(59,130,246,0.3)] disabled:opacity-40 disabled:pointer-events-none"
+                  >
+                    {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    {isPosting ? 'Posting...' : 'Publish Post'}
+                  </motion.button>
+               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Posts Feed ── */}
       <div className="space-y-3 md:space-y-4">
@@ -182,6 +349,59 @@ export const FeedTab = ({
                     )}
                     <p className="text-[12.5px] md:text-[13px] text-slate-300 font-poppins leading-relaxed whitespace-pre-wrap">{post.content}</p>
                   </div>
+
+                  {/* Attachments rendering */}
+                  {(() => {
+                    let parsedMedia = [];
+                    try { if (post.media_urls) parsedMedia = JSON.parse(post.media_urls); } catch (e) {}
+                    return (
+                      <div className="mt-3 flex flex-col gap-2">
+                        {parsedMedia.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {parsedMedia.map((url: string, idx: number) => (
+                              <img key={idx} src={url} alt="attached" className="rounded-xl border border-white/10 max-h-48 w-auto object-cover" />
+                            ))}
+                          </div>
+                        )}
+                        {(post.linked_event_id || post.linked_resource_id) && (
+                          <div className="flex flex-col md:flex-row flex-wrap gap-2">
+                            {post.linked_event_id && (() => {
+                              const event = events.find(e => e.id === post.linked_event_id);
+                              return (
+                                <button
+                                  onClick={() => setActiveTab('events')}
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20 rounded-xl text-primary-glow text-xs font-poppins self-start"
+                                >
+                                  {event?.image_url ? (
+                                    <img src={event.image_url} alt="event logo" className="w-4 h-4 rounded object-cover" />
+                                  ) : (
+                                    <Calendar className="w-4 h-4" />
+                                  )}
+                                  <span className="font-semibold">{event?.title || 'Linked Event'}</span>
+                                </button>
+                              );
+                            })()}
+                            {post.linked_resource_id && (() => {
+                              const note = notes.find(n => n.id === post.linked_resource_id);
+                              return (
+                                <button
+                                  onClick={() => setActiveTab('resources')}
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-poppins self-start"
+                                >
+                                  {note?.color ? (
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: note.color }} />
+                                  ) : (
+                                    <Link className="w-4 h-4" />
+                                  )}
+                                  <span className="font-semibold">{note?.title || 'Attached Resource'}</span>
+                                </button>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Footer Actions */}
                   <div className="flex items-center gap-3 mt-4 pt-3.5 border-t border-white/[0.04]">

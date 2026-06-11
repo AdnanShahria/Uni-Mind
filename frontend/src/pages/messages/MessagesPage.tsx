@@ -61,14 +61,15 @@ export const MessagesPage = () => {
 
     if (userConvs && userConvs.length > 0) {
       const convIds = userConvs.map((c: any) => c.conversation_id);
-      const { data: convData } = await turso
-        .from('conversations')
-        .select('*')
-        .in('id', convIds)
-        .order('updated_at', { ascending: false });
+      const convPromises = convIds.map((id: string) =>
+        turso.from('conversations').select('*').eq('id', id).single().then((res: any) => res.data)
+      );
+      const convData = await Promise.all(convPromises);
+      const validConvs = convData.filter(Boolean);
+      validConvs.sort((a: any, b: any) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime());
 
-      if (convData && convData.length > 0) {
-        setDbConversations(convData.map((c: any) => ({
+      if (validConvs.length > 0) {
+        setDbConversations(validConvs.map((c: any) => ({
           id: c.id,
           name: c.name || 'Direct Message',
           avatar: c.name ? c.name.substring(0, 2).toUpperCase() : 'DM',
@@ -158,9 +159,11 @@ export const MessagesPage = () => {
       const unreadIds = data.filter((m: any) => !m.is_read && m.sender_id !== userId).map((m: any) => m.id);
       if (unreadIds.length > 0) {
         try {
-          await turso.from('messages')
-            .update({ is_read: 1 })
-            .in('id', unreadIds);
+          await Promise.all(unreadIds.map((id: string) => 
+            turso.from('messages')
+              .update({ is_read: 1 })
+              .eq('id', id)
+          ));
           
           // Optimistically update local state
           setDbMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m));

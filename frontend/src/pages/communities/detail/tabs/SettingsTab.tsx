@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Shield, Loader2, Smile, Users, ChevronDown, AlertTriangle, Trash2 } from 'lucide-react';
+import { Settings, Shield, Loader2, Smile, Users, ChevronDown, AlertTriangle, Trash2, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { uploadImageToImgbb } from '../../../../utils/imgbbUpload';
 import {
   ROLE_HIERARCHY,
   ROLES_ORDERED,
@@ -92,22 +94,49 @@ export const SettingsTab = ({
         {/* Icon Picker */}
         <div className="space-y-2">
           <label className="text-[11px] text-slate-400 font-semibold font-poppins flex items-center gap-1.5">
-            <Smile className="w-3 h-3" /> Community Icon
+            <Smile className="w-3 h-3" /> Community Icon / Logo
           </label>
-          <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-1.5">
-            {ICON_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => setEditIcon(emoji)}
-                className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all ${
-                  editIcon === emoji
-                    ? 'bg-primary/20 border border-primary/40 scale-110 shadow-[0_0_10px_rgba(59,130,246,0.25)]'
-                    : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:scale-105'
-                }`}
-              >
-                {emoji}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-1.5">
+            <label className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all shrink-0 ${
+                  editIcon.startsWith('http') || editIcon.startsWith('data:') 
+                  ? 'bg-primary/20 border border-primary/40 shadow-[0_0_10px_rgba(59,130,246,0.25)]' 
+                  : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]'
+            }`}>
+              <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                  const file = e.target.files[0];
+                  const loadingToast = toast.loading('Uploading logo...');
+                  const result = await uploadImageToImgbb(file);
+                  if (result.success && result.url) {
+                    setEditIcon(result.url);
+                    toast.success('Logo uploaded!', { id: loadingToast });
+                  } else {
+                    toast.error(result.error || 'Failed to upload logo', { id: loadingToast });
+                  }
+                }
+              }} />
+              {editIcon.startsWith('http') || editIcon.startsWith('data:') ? (
+                <img src={editIcon} alt="logo" className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <Upload className="w-4 h-4 text-slate-400" />
+              )}
+            </label>
+            <div className="w-[1px] bg-white/[0.08] mx-1 h-10" />
+            <div className="flex-1 min-w-0 overflow-x-auto custom-scrollbar pb-1 flex gap-1.5">
+              {ICON_OPTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => setEditIcon(emoji)}
+                  className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center shrink-0 transition-all ${
+                    editIcon === emoji
+                      ? 'bg-primary/20 border border-primary/40 shadow-[0_0_10px_rgba(59,130,246,0.25)]'
+                      : 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]'
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

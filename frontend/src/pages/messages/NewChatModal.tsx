@@ -72,10 +72,8 @@ export const NewChatModal = ({ isOpen, onClose, currentUserId, onChatCreated }: 
       }]);
 
       // Insert Members (Self and Target)
-      await turso.from('conversation_members').insert([
-        { conversation_id: convId, user_id: currentUserId },
-        { conversation_id: convId, user_id: targetUserId }
-      ]);
+      await turso.from('conversation_members').insert({ conversation_id: convId, user_id: currentUserId });
+      await turso.from('conversation_members').insert({ conversation_id: convId, user_id: targetUserId });
 
       const mockConv = {
         id: convId,

@@ -180,7 +180,7 @@ export const NoteWorkspaceModal = ({
     if (!note) return;
     if (note.community_id) {
       const isAuthor = note.author_id === currentUserId;
-      const isAdmin = communityRole === 'admin' || communityRole === 'owner';
+      const isAdmin = communityRole === 'admin' || communityRole === 'owner' || communityRole === 'moderator';
       const editPerm = studioData?.edit_permission || 'author';
       
       if (editPerm === 'all') {
@@ -194,6 +194,8 @@ export const NoteWorkspaceModal = ({
       setCanUpdateCommunityNote(true);
     }
   }, [note, currentUserId, communityRole, studioData]);
+
+  const canDeleteNote = !note?.community_id || note?.author_id === currentUserId || communityRole === 'owner' || communityRole === 'admin' || communityRole === 'moderator';
 
   const fetchContent = async (noteId: string | number) => {
     const { data } = await turso
@@ -278,6 +280,11 @@ export const NoteWorkspaceModal = ({
 
   const handleDelete = async () => {
     if (!note) return;
+    if (!canDeleteNote) {
+      toast.error('You do not have permission to delete this resource.');
+      setShowDeleteConfirm(false);
+      return;
+    }
     setIsDeleting(true);
     try {
       const { error } = await turso.from('notes').delete().eq('id', note.id);
@@ -484,9 +491,11 @@ export const NoteWorkspaceModal = ({
                   <button onClick={() => onStarToggled(note.id)} className={`p-1.5 rounded-lg transition-colors ${note.starred ? 'text-amber-400 bg-amber-500/10' : 'text-slate-500 hover:text-amber-400 hover:bg-white/[0.06]'}`}>
                     <Star className="w-3.5 h-3.5" fill={note.starred ? 'currentColor' : 'none'} />
                   </button>
-                  <button onClick={() => setShowDeleteConfirm(true)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/[0.06] transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {canDeleteNote && (
+                    <button onClick={() => setShowDeleteConfirm(true)} className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-white/[0.06] transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button onClick={() => setIsAppFullScreen(!isAppFullScreen)} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors bg-white/[0.03]">
                     {isAppFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                   </button>
@@ -524,10 +533,14 @@ export const NoteWorkspaceModal = ({
                                 <Share2 className="w-3.5 h-3.5" /> Copy Share Link
                               </button>
                             )}
-                            <div className="h-px bg-white/[0.06] my-1" />
-                            <button onClick={() => { setShowDeleteConfirm(true); setShowMobileActions(false); }} className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg">
-                              <Trash2 className="w-3.5 h-3.5" /> Delete Note
-                            </button>
+                            {canDeleteNote && (
+                              <>
+                                <div className="h-px bg-white/[0.06] my-1" />
+                                <button onClick={() => { setShowDeleteConfirm(true); setShowMobileActions(false); }} className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg">
+                                  <Trash2 className="w-3.5 h-3.5" /> Delete Note
+                                </button>
+                              </>
+                            )}
                           </motion.div>
                         </>
                       )}
@@ -541,7 +554,7 @@ export const NoteWorkspaceModal = ({
 
               {/* Delete Confirm Bar */}
               <AnimatePresence>
-                {showDeleteConfirm && (
+                {showDeleteConfirm && canDeleteNote && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="bg-rose-500/20 border-b border-rose-500/20 px-6 py-3 flex items-center justify-between">
                     <span className="text-sm text-rose-200">Are you sure you want to delete this note permanently?</span>
                     <div className="flex gap-3">

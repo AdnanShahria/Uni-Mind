@@ -53,13 +53,17 @@ export const CommunityHero = ({
         {/* Content */}
         <div className="relative flex items-center gap-2.5 md:gap-4 px-3 py-2.5 md:px-4 md:py-3.5 pr-3">
           {/* Community Icon */}
-          <div className="shrink-0 w-9 h-9 md:w-11 md:h-11 rounded-xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center text-lg md:text-2xl shadow-inner">
-            {community.icon || '📚'}
+          <div className="shrink-0 w-9 h-9 md:w-11 md:h-11 rounded-xl bg-white/[0.08] border border-white/[0.1] flex items-center justify-center text-lg md:text-2xl shadow-inner overflow-hidden">
+            {(community.icon?.startsWith('http') || community.icon?.startsWith('data:')) ? (
+              <img src={community.icon} alt={community.name} className="w-full h-full object-cover" />
+            ) : (
+              community.icon || '📚'
+            )}
           </div>
 
           {/* Name + meta */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center flex-wrap gap-1.5 mb-0.5 md:mb-1">
+          <div className="flex-1 min-w-0 flex flex-col lg:flex-row lg:items-center lg:gap-4">
+            <div className="flex items-center flex-wrap gap-1.5 mb-0.5 md:mb-1 lg:mb-0">
               <h1 className="text-[14px] md:text-[17px] font-bold font-outfit text-white leading-none truncate">
                 {community.name}
               </h1>

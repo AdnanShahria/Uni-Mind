@@ -43,6 +43,8 @@ export const EventsTab = ({ communityId, userRole }: { communityId: string; user
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<EventItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'archived'>('upcoming');
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -100,7 +102,12 @@ export const EventsTab = ({ communityId, userRole }: { communityId: string; user
     return { month: d.toLocaleString('default', { month: 'short' }), day: d.getDate() };
   };
 
-  const canManageEvents = userRole === 'owner' || userRole === 'admin' || userRole === 'moderator' || userRole === 'elder';
+  const canManageEvents = userRole === 'owner' || userRole === 'admin' || userRole === 'moderator';
+
+  const now = new Date();
+  const upcomingEvents = events.filter(e => new Date(e.end_time) >= now);
+  const archivedEvents = events.filter(e => new Date(e.end_time) < now);
+  const displayedEvents = activeTab === 'upcoming' ? upcomingEvents : archivedEvents;
 
   return (
     <motion.div
@@ -111,20 +118,38 @@ export const EventsTab = ({ communityId, userRole }: { communityId: string; user
       className="space-y-6"
     >
       <div className="flex flex-row items-center justify-between gap-3">
-        <div>
-          <h3 className="text-[13px] md:text-base font-bold text-white font-poppins flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 md:w-5 md:h-5 text-amber-400" /> Upcoming Events
-          </h3>
-          <p className="text-[9px] md:text-[11px] text-slate-400 font-poppins mt-0.5">Stay updated with activities</p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setActiveTab('upcoming')}
+            className={`flex items-center gap-1.5 text-[13px] md:text-base font-bold font-poppins transition-colors ${activeTab === 'upcoming' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <Calendar className={`w-3.5 h-3.5 md:w-5 md:h-5 ${activeTab === 'upcoming' ? 'text-amber-400' : 'text-slate-500'}`} /> 
+            Upcoming
+          </button>
+          <button 
+            onClick={() => setActiveTab('archived')}
+            className={`flex items-center gap-1.5 text-[13px] md:text-base font-bold font-poppins transition-colors ${activeTab === 'archived' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+          >
+            <Clock className={`w-3.5 h-3.5 md:w-5 md:h-5 ${activeTab === 'archived' ? 'text-amber-400' : 'text-slate-500'}`} /> 
+            Archived
+          </button>
         </div>
         {canManageEvents && (
-          <button
-            onClick={() => { setEventToEdit(null); setShowCreateModal(true); }}
-            className="shrink-0 flex items-center justify-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-amber-500/20 hover:bg-amber-500 border border-amber-500/30 hover:border-transparent text-amber-300 hover:text-white rounded-lg md:rounded-xl text-[10px] md:text-xs font-semibold font-poppins transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Create Event</span>
-            <span className="sm:hidden">Create</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`shrink-0 flex items-center justify-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 border rounded-lg md:rounded-xl text-[10px] md:text-xs font-semibold font-poppins transition-all ${isEditMode ? 'bg-blue-500 text-white border-blue-500' : 'bg-slate-500/20 text-slate-300 border-slate-500/30 hover:bg-slate-500/30'}`}
+            >
+              <Pencil className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{isEditMode ? 'Done' : 'Manage'}</span>
+            </button>
+            <button
+              onClick={() => { setEventToEdit(null); setShowCreateModal(true); }}
+              className="shrink-0 flex items-center justify-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-amber-500/20 hover:bg-amber-500 border border-amber-500/30 hover:border-transparent text-amber-300 hover:text-white rounded-lg md:rounded-xl text-[10px] md:text-xs font-semibold font-poppins transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Create Event</span>
+              <span className="sm:hidden">Create</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -134,19 +159,19 @@ export const EventsTab = ({ communityId, userRole }: { communityId: string; user
             <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
           </div>
         </div>
-      ) : events.length === 0 ? (
+      ) : displayedEvents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
             <Calendar className="w-7 h-7 text-amber-500/50" />
           </div>
-          <p className="text-sm text-slate-400 font-poppins mb-1">No upcoming events</p>
+          <p className="text-sm text-slate-400 font-poppins mb-1">No {activeTab} events</p>
           <p className="text-xs text-slate-500 font-poppins">
-            {canManageEvents ? 'Click "Create Event" to schedule one!' : 'Check back later for new events.'}
+            {activeTab === 'upcoming' && canManageEvents ? 'Click "Create Event" to schedule one!' : 'Check back later.'}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {events.map((event) => {
+          {displayedEvents.map((event) => {
             const style = TYPE_STYLES[event.event_type] || TYPE_STYLES.general;
             const dateColor = DATE_COLOR[event.event_type] || DATE_COLOR.general;
             const { month, day } = formatDate(event.start_time);
@@ -196,7 +221,7 @@ export const EventsTab = ({ communityId, userRole }: { communityId: string; user
                   </div>
                 </div>
 
-                {canManageEvents && (
+                {isEditMode && canManageEvents && (
                   <div className="shrink-0 flex flex-col gap-2 ml-auto">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEventToEdit(event); setShowCreateModal(true); }}

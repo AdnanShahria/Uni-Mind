@@ -205,7 +205,7 @@ export const CommunityDetailPage = () => {
   };
 
   // Create Post
-  const handleCreatePost = async () => {
+  const handleCreatePost = async (mediaUrls: string[] = [], eventId: string | null = null, resourceId: string | null = null) => {
     if (!newPostContent.trim()) return;
     setIsPosting(true);
     try {
@@ -216,6 +216,9 @@ export const CommunityDetailPage = () => {
         title: newPostTitle.trim() || null,
         content: newPostContent.trim(),
         type: 'text',
+        media_urls: JSON.stringify(mediaUrls),
+        linked_event_id: eventId,
+        linked_resource_id: resourceId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -476,6 +479,7 @@ export const CommunityDetailPage = () => {
                   commentInputs={commentInputs}
                   setCommentInputs={setCommentInputs}
                   handleSubmitComment={handleSubmitComment}
+                  setActiveTab={setActiveTab}
                 />
               )}
 

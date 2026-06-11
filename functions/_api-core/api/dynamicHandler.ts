@@ -129,8 +129,7 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
         const isUserPrefs = table === 'user_preferences';
         const primaryKeyCol = isUserPrefs ? 'user_id' : 'id';
         const primaryKeyValue = body[primaryKeyCol];
-
-        if (request.method === "PUT" || (body && primaryKeyValue && Object.keys(body).length < 4)) {
+        if (request.method === "PUT") {
             // It's a partial update
             if (!primaryKeyValue) {
                 return new Response(JSON.stringify({ error: `Missing ${primaryKeyCol} for update` }), { status: 400, headers: corsHeaders });
