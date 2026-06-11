@@ -1,3 +1,6 @@
+export const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
+export const AGENT_ROUTER_API_KEY = import.meta.env.VITE_AGENT_ROUTER_API_KEY || '';
+
 const AI_PROXY_URL = '/api/ai-proxy';
 const DEFAULT_AGENT_ROUTER_MODEL = 'glm-5.1';
 const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
