@@ -231,8 +231,20 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
     return [];
   };
 
-  const parsedMediaUrls = safeParseArray(post.media_urls);
   const parsedTags = safeParseArray(post.tags);
+
+  let attachments: any[] = [];
+  try {
+    if (post.attachments) {
+      attachments = typeof post.attachments === 'string' ? JSON.parse(post.attachments) : post.attachments;
+    } else if (post.media_urls) {
+      const parsed = typeof post.media_urls === 'string' ? JSON.parse(post.media_urls) : post.media_urls;
+      attachments = Array.isArray(parsed) ? parsed.map(url => ({ url, type: 'image' })) : [];
+    }
+  } catch (e) {}
+
+  const images = attachments.filter(a => a.type === 'image');
+  const documents = attachments.filter(a => a.type === 'document');
 
   return (
     <motion.div
@@ -334,37 +346,48 @@ export const PostCard = ({ post, index, currentUser }: PostCardProps) => {
         </p>
 
         {/* Post Media Attachments */}
-        {parsedMediaUrls.length > 0 && (
-          <div className="mb-4">
-            {post.type === 'image' && (
-              <div className="rounded-xl overflow-hidden border border-white/[0.08] shadow-lg group max-h-[450px] bg-slate-950 flex items-center justify-center">
-                <img 
-                  src={parsedMediaUrls[0]} 
-                  alt="Academic attachment" 
-                  className="max-w-full max-h-[450px] object-contain group-hover:scale-[1.01] transition-transform duration-300 cursor-zoom-in" 
-                  onClick={() => window.open(parsedMediaUrls[0], '_blank')}
-                />
+        {(images.length > 0 || documents.length > 0) && (
+          <div className="mb-4 space-y-3">
+            {images.length > 0 && (
+              <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {images.map((img: any, idx: number) => (
+                  <div key={idx} className="rounded-xl overflow-hidden border border-white/[0.08] shadow-lg group max-h-[450px] bg-slate-950 flex items-center justify-center cursor-zoom-in" onClick={() => window.open(img.url, '_blank')}>
+                    <img 
+                      src={img.url} 
+                      alt="Academic attachment" 
+                      className="max-w-full max-h-[450px] object-contain group-hover:scale-[1.01] transition-transform duration-300" 
+                    />
+                  </div>
+                ))}
               </div>
             )}
-            {post.type === 'document' && (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between max-w-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center font-poppins">
-                    <FileText className="w-5 h-5 text-amber-400" />
+            {documents.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {documents.map((doc: any, idx: number) => (
+                  <div key={idx} className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between max-w-xl hover:bg-amber-500/15 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center font-poppins shrink-0">
+                        <FileText className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-amber-200 font-poppins truncate">{doc.name || 'Academic Attachment'}</p>
+                        {doc.size ? (
+                          <p className="text-[10px] text-amber-400/60 font-poppins uppercase tracking-wider mt-0.5">{(doc.size / 1024).toFixed(1)} KB</p>
+                        ) : (
+                          <p className="text-[10px] text-amber-400/60 font-poppins uppercase tracking-wider mt-0.5">Scholar Note / Resource Document</p>
+                        )}
+                      </div>
+                    </div>
+                    <a 
+                      href={doc.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-colors font-poppins shrink-0"
+                    >
+                      View
+                    </a>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-amber-200 font-poppins">Academic Attachment</p>
-                    <p className="text-[10px] text-amber-400/60 font-poppins uppercase tracking-wider mt-0.5">Scholar Note / Resource Document</p>
-                  </div>
-                </div>
-                <a 
-                  href={parsedMediaUrls[0]} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-colors font-poppins shrink-0"
-                >
-                  View Document
-                </a>
+                ))}
               </div>
             )}
           </div>

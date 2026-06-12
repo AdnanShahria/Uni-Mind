@@ -33,13 +33,14 @@ export async function handleImgbbProxyRoutes(
   }
 
   try {
-    const formData = await request.formData();
-    // ImgBB requires the api key as a query param or in the form data
-    formData.append('key', apiKey);
+    const upstreamUrl = `https://api.imgbb.com/1/upload?key=${apiKey}`;
 
-    const upstreamRes = await fetch('https://api.imgbb.com/1/upload', {
+    const upstreamRes = await fetch(upstreamUrl, {
       method: "POST",
-      body: formData,
+      body: request.body,
+      headers: {
+        "Content-Type": request.headers.get("Content-Type") || "",
+      }
     });
 
     const responseHeaders: Record<string, string> = {

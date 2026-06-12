@@ -35,7 +35,7 @@ const divider    = `${c.dim}  ${'─'.repeat(60)}${c.reset}`;
 const thinLine   = `${c.dim}  ${'·'.repeat(60)}${c.reset}`;
 
 // ── Parse .dev.vars ──────────────────────────────────────────
-const envPath = path.resolve(__dirname, '.dev.vars');
+const envPath = path.resolve(__dirname, '../.dev.vars');
 let tursoUrl = '';
 let tursoToken = '';
 

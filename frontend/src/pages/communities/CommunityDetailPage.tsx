@@ -205,7 +205,7 @@ export const CommunityDetailPage = () => {
   };
 
   // Create Post
-  const handleCreatePost = async (mediaUrls: string[] = [], eventId: string | null = null, resourceId: string | null = null) => {
+  const handleCreatePost = async (attachments: any[] = [], eventId: string | null = null, resourceId: string | null = null) => {
     if (!newPostContent.trim()) return;
     setIsPosting(true);
     try {
@@ -215,8 +215,9 @@ export const CommunityDetailPage = () => {
         community_id: id,
         title: newPostTitle.trim() || null,
         content: newPostContent.trim(),
-        type: 'text',
-        media_urls: JSON.stringify(mediaUrls),
+        type: attachments.length > 0 ? (attachments[0].type === 'document' ? 'document' : 'image') : 'text',
+        media_urls: JSON.stringify(attachments.map(a => a.url)),
+        attachments: JSON.stringify(attachments),
         linked_event_id: eventId,
         linked_resource_id: resourceId,
         created_at: new Date().toISOString(),

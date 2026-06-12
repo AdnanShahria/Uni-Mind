@@ -2,7 +2,7 @@ const { createClient } = require('@libsql/client');
 const fs = require('fs');
 const crypto = require('crypto');
 
-const envPath = './.dev.vars';
+const envPath = '../.dev.vars';
 let tursoUrl='', tursoToken='';
 try {
   fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {

@@ -2,7 +2,7 @@ const { createClient } = require('@libsql/client');
 const fs = require('fs');
 const path = require('path');
 
-const envPath = path.resolve(__dirname, '.dev.vars');
+const envPath = path.resolve(__dirname, '../.dev.vars');
 let tursoUrl = '';
 let tursoToken = '';
 

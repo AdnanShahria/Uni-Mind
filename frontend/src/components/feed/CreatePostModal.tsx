@@ -77,21 +77,26 @@ export const CreatePostModal = ({
     
     setIsPosting(true);
     const mediaUrls: string[] = [];
+    const attachments: any[] = [];
     let postType = 'text';
 
     if (isAnnouncement) {
       postType = 'announcement';
-    } else if (selectedPhoto) {
+    } 
+    
+    if (selectedPhoto && !isAnnouncement) {
       postType = 'image';
       try {
         const imgName = `post-${currentUser.id}-${Date.now()}`;
         const result = await uploadImageToImgbb(selectedPhoto, imgName);
         if (result.success && result.url) {
           mediaUrls.push(result.url);
+          attachments.push({ url: result.url, name: selectedPhoto.name, size: selectedPhoto.size, type: 'image' });
         } else {
           console.warn("IMGBB upload failed, using base64 fallback:", result.error);
           const base64 = await fileToBase64(selectedPhoto);
           mediaUrls.push(base64);
+          attachments.push({ url: base64, name: selectedPhoto.name, size: selectedPhoto.size, type: 'image' });
         }
       } catch (err) {
         console.error("Error uploading photo:", err);
@@ -104,6 +109,7 @@ export const CreatePostModal = ({
         // Documents (PDFs, docs) are stored as base64 in Turso
         const base64 = await fileToBase64(selectedNote);
         mediaUrls.push(base64);
+        attachments.push({ url: base64, name: selectedNote.name, size: selectedNote.size, type: 'document' });
       } catch (err) {
         console.error("Error processing note document:", err);
       }
@@ -115,8 +121,9 @@ export const CreatePostModal = ({
         title: title.trim() || null,
         content: content.trim(),
         type: postType,
-        tags: tags.map(t => `#${t}`), // Format tags nicely
-        media_urls: mediaUrls,
+        tags: JSON.stringify(tags.map(t => `#${t}`)), // Format tags nicely
+        media_urls: JSON.stringify(mediaUrls),
+        attachments: JSON.stringify(attachments),
       }
     ]);
 

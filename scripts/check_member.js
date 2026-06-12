@@ -1,7 +1,7 @@
 const { createClient } = require('@libsql/client');
 const fs = require('fs');
 let u='', t='';
-fs.readFileSync('.dev.vars', 'utf8').split('\n').forEach(l=>{
+fs.readFileSync('../.dev.vars', 'utf8').split('\n').forEach(l=>{
   if(l.startsWith('TURSO_DATABASE_URL=')) u=l.split('=')[1].trim().replace(/^\"|\"$/g,'');
   if(l.startsWith('TURSO_AUTH_TOKEN=')) t=l.split('=')[1].trim().replace(/^\"|\"$/g,'');
 });

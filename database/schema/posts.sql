@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
     content TEXT NOT NULL,
     type VARCHAR(50) DEFAULT 'text' NOT NULL, -- 'text', 'image', 'document', 'poll'
     tags TEXT[], -- array of tags
-    media_urls TEXT[], -- array of attached media URLs
+    media_urls TEXT[], -- array of attached media URLs (legacy)
+    attachments JSONB DEFAULT '[]'::jsonb, -- array of file objects: [{ url, name, size, type }]
     is_pinned BOOLEAN DEFAULT false,
     is_archived BOOLEAN DEFAULT false,
     view_count INTEGER DEFAULT 0,

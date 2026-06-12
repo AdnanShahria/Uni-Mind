@@ -69,7 +69,24 @@ export const MessagesPage = () => {
       validConvs.sort((a: any, b: any) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime());
 
       if (validConvs.length > 0) {
-        setDbConversations(validConvs.map((c: any) => ({
+        const convsWithNames = await Promise.all(validConvs.map(async (c: any) => {
+          if (c.type !== 'group' && !c.name) {
+             const { data: members } = await turso.from('conversation_members')
+               .select('user_id')
+               .eq('conversation_id', c.id)
+               .neq('user_id', userId);
+             if (members && members.length > 0) {
+               const otherUserId = members[0].user_id;
+               const { data: user } = await turso.from('users').select('name').eq('id', otherUserId).single();
+               if (user && user.name) {
+                 return { ...c, name: user.name };
+               }
+             }
+          }
+          return c;
+        }));
+
+        setDbConversations(convsWithNames.map((c: any) => ({
           id: c.id,
           name: c.name || 'Direct Message',
           avatar: c.name ? c.name.substring(0, 2).toUpperCase() : 'DM',
@@ -128,14 +145,24 @@ export const MessagesPage = () => {
   const fetchMessages = async (convId: string, userId: string) => {
     const { data } = await turso
       .from('messages')
-      .select('*, users(name)')
+      .select('*')
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
     
     if (data) {
+      const senderIds = Array.from(new Set(data.map((m: any) => m.sender_id)));
+      const senderNames: Record<string, string> = {};
+      
+      await Promise.all(senderIds.map(async (sid: any) => {
+         const { data: u } = await turso.from('users').select('name').eq('id', sid).single();
+         if (u && u.name) {
+            senderNames[sid] = u.name;
+         }
+      }));
+
       const msgs = data.map((m: any) => ({
         id: m.id,
-        sender: m.users?.name || 'Unknown',
+        sender: m.users?.name || senderNames[m.sender_id] || 'Unknown',
         content: m.content,
         time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         isOwn: m.sender_id === userId,

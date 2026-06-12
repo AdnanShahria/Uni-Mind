@@ -1,6 +1,6 @@
 const { createClient } = require('@libsql/client');
 const fs = require('fs');
-const envPath = './.dev.vars';
+const envPath = '../.dev.vars';
 let tursoUrl='', tursoToken='';
 fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
   if (line.startsWith('TURSO_DATABASE_URL=')) tursoUrl = line.split('=')[1].trim().replace(/^"|"$/g, '');
@@ -9,8 +9,11 @@ fs.readFileSync(envPath, 'utf-8').split('\n').forEach(line => {
 const client = createClient({ url: tursoUrl, authToken: tursoToken });
 
 async function check() {
-  const users = await client.execute("SELECT id, email, name FROM users");
-  console.log("Users:");
-  console.table(users.rows);
+  const ltgs = await client.execute('SELECT id, user_id, goal FROM long_term_goals');
+  console.log("Long-Term Goals:");
+  console.table(ltgs.rows);
+  const wgs = await client.execute('SELECT id, user_id, goal FROM weekly_goals');
+  console.log("Weekly Goals:");
+  console.table(wgs.rows);
 }
 check();

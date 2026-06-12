@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Users, Trash2, MessageSquare, Send, ChevronDown, ChevronUp, PenLine, Image as ImageIcon, Link, Calendar, X, Plus } from 'lucide-react';
+import { Loader2, Users, Trash2, MessageSquare, Send, ChevronDown, ChevronUp, PenLine, Image as ImageIcon, Link, Calendar, X, Plus, FileText } from 'lucide-react';
 import { turso } from '../../../../utils/tursoClient';
 import { uploadImageToImgbb } from '../../../../utils/imgbbUpload';
 
@@ -13,7 +13,7 @@ interface FeedTabProps {
   newPostContent: string;
   setNewPostContent: (c: string) => void;
   isPosting: boolean;
-  handleCreatePost: (mediaUrls?: string[], eventId?: string | null, resourceId?: string | null) => Promise<void> | void;
+  handleCreatePost: (attachments?: any[], eventId?: string | null, resourceId?: string | null) => Promise<void> | void;
   handleJoinCommunity: () => void;
   handleDeletePost: (id: string) => void;
   activeCommentsPostId: string | null;
@@ -103,15 +103,15 @@ export const FeedTab = ({
   }, [isModalOpen]);
 
   const onPublish = async () => {
-    let mediaUrls: string[] = [];
+    let attachments: any[] = [];
     if (selectedPhoto) {
       const imgName = `post-${userId}-${Date.now()}`;
       const result = await uploadImageToImgbb(selectedPhoto, imgName);
       if (result.success && result.url) {
-        mediaUrls.push(result.url);
+        attachments.push({ url: result.url, name: selectedPhoto.name, size: selectedPhoto.size, type: 'image' });
       }
     }
-    await handleCreatePost(mediaUrls, selectedEventId, selectedResourceId);
+    await handleCreatePost(attachments, selectedEventId, selectedResourceId);
   };
 
   return (
@@ -352,14 +352,45 @@ export const FeedTab = ({
 
                   {/* Attachments rendering */}
                   {(() => {
-                    let parsedMedia = [];
-                    try { if (post.media_urls) parsedMedia = JSON.parse(post.media_urls); } catch (e) {}
+                    let attachments: any[] = [];
+                    try { 
+                      if (post.attachments) {
+                        attachments = typeof post.attachments === 'string' ? JSON.parse(post.attachments) : post.attachments;
+                      } else if (post.media_urls) {
+                        const parsed = typeof post.media_urls === 'string' ? JSON.parse(post.media_urls) : post.media_urls;
+                        attachments = Array.isArray(parsed) ? parsed.map(url => ({ url, type: 'image' })) : [];
+                      }
+                    } catch (e) {}
+                    
+                    const images = attachments.filter(a => a.type === 'image');
+                    const documents = attachments.filter(a => a.type === 'document');
+
                     return (
                       <div className="mt-3 flex flex-col gap-2">
-                        {parsedMedia.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {parsedMedia.map((url: string, idx: number) => (
-                              <img key={idx} src={url} alt="attached" className="rounded-xl border border-white/10 max-h-48 w-auto object-cover" />
+                        {images.length > 0 && (
+                          <div className={`grid gap-2 ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {images.map((img: any, idx: number) => (
+                              <div key={idx} className="rounded-xl overflow-hidden border border-white/10 bg-slate-900/50 max-h-[350px] flex items-center justify-center group cursor-zoom-in" onClick={() => window.open(img.url, '_blank')}>
+                                <img src={img.url} alt="attached" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {documents.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            {documents.map((doc: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl hover:bg-amber-500/20 transition-colors">
+                                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+                                  <FileText className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-amber-200 font-poppins truncate">{doc.name || 'Document'}</p>
+                                  {doc.size && <p className="text-[10px] text-amber-400/60 font-poppins uppercase tracking-wider mt-0.5">{(doc.size / 1024).toFixed(1)} KB</p>}
+                                </div>
+                                <a href={doc.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-colors shrink-0">
+                                  View
+                                </a>
+                              </div>
                             ))}
                           </div>
                         )}
