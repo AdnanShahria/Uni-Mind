@@ -28,13 +28,14 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
         let sql = `SELECT * FROM ${table}`;
         if (table === 'users') {
           sql = `SELECT id, name, institution, major, role, session, district, country, avatar_url, knowledge_score, study_streak, badges, created_at FROM ${table}`;
-        } else if (table === 'notes') {
-          const urlObj = new URL(request.url);
-          const isSingleNote = urlObj.searchParams.get("eq_id") || (urlObj.searchParams.get("eqColumn") === "id");
-          if (!isSingleNote) {
-            sql = `SELECT id, author_id, folder_id, community_id, title, course, content, visibility, shared_link_token, created_at, updated_at, is_starred, is_ai_summarized, ai_summary, studio_data FROM ${table}`;
-          }
         }
+        
+        let isSingleNote = false;
+        if (table === 'notes') {
+          const urlObj = new URL(request.url);
+          isSingleNote = !!(urlObj.searchParams.get("eq_id") || urlObj.searchParams.get("eqColumn") === "id");
+        }
+
         let args: any[] = [];
         let whereClauses: string[] = [];
 
@@ -123,6 +124,13 @@ export async function handleDynamicRoute(url: URL, request: Request, db: any, en
         
         if (db) {
           const res = await db.execute({ sql, args });
+          
+          if (table === 'notes' && !isSingleNote) {
+            res.rows.forEach((row: any) => {
+              delete row.file_url;
+            });
+          }
+          
           return new Response(JSON.stringify({ success: true, data: res.rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         return new Response(JSON.stringify({ success: true, data: [] }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
