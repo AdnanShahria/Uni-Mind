@@ -148,7 +148,7 @@ export const FeedPage = () => {
     <motion.div
       initial="initial"
       animate="animate"
-      className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8"
+      className="w-full max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Feed */}
