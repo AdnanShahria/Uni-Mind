@@ -53,10 +53,10 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
     if (!chart) return;
     let isCancelled = false;
     const renderChart = async () => {
+      const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
       try {
-        await mermaid.parse(chart);
-        if (isCancelled) return;
-        const { svg } = await mermaid.render(`mermaid-${Math.random().toString(36).substr(2, 9)}`, chart);
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', suppressErrorRendering: true });
+        const { svg } = await mermaid.render(id, chart.trim());
         if (!isCancelled) {
           setSvgContent(svg);
           setError('');
@@ -66,6 +66,11 @@ const MermaidDiagram = ({ chart, isTyping }: { chart: string, isTyping: boolean 
           setError(e.message || String(e));
           setSvgContent('');
         }
+        const elementsToRemove = [id, `d${id}`, `bind-${id}`];
+        elementsToRemove.forEach(elId => {
+          const el = document.getElementById(elId);
+          if (el) el.remove();
+        });
       }
     };
     renderChart();

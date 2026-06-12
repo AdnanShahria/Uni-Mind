@@ -125,6 +125,23 @@ export const CreateNoteModal = ({
       if (!user) { toast.error('Please sign in first'); return; }
 
       const folderId: string | null = selectedFolder || currentFolderId;
+      
+      let base64FileUrl = fileBlobUrl;
+      if (uploadedFile) {
+        const fileToBase64 = (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+          });
+        };
+        try {
+          base64FileUrl = await fileToBase64(uploadedFile);
+        } catch (e) {
+          console.error("Failed to convert file to base64", e);
+        }
+      }
 
       const { error, data } = await turso.from('notes').insert([{
         author_id: user.id,
@@ -132,7 +149,7 @@ export const CreateNoteModal = ({
         content: content.trim(),
         folder_id: folderId,
         community_id: communityId || null,
-        file_url: fileBlobUrl || (uploadedFile ? uploadedFile.name : null),
+        file_url: base64FileUrl || (uploadedFile ? uploadedFile.name : null),
         is_starred: false,
         is_ai_summarized: false,
       }]);

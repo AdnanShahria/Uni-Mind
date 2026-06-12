@@ -96,7 +96,7 @@ export async function handleApiRoutes(url: URL, request: Request, db: any, env: 
       if (request.method === "GET") {
         if (db) {
           const res = await db.execute({
-            sql: "SELECT * FROM notes WHERE author_id = ? ORDER BY created_at DESC",
+            sql: "SELECT id, author_id, folder_id, community_id, title, course, content, visibility, shared_link_token, created_at, updated_at, is_starred, is_ai_summarized, ai_summary, studio_data FROM notes WHERE author_id = ? ORDER BY created_at DESC",
             args: [payload.userId]
           });
           return new Response(JSON.stringify({ success: true, data: res.rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });

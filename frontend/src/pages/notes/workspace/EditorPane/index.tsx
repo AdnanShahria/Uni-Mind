@@ -109,13 +109,13 @@ export const EditorPane = ({
 
   const tabs = [
     { id: 'notes', label: 'Notes' },
-    ...(aiSummary ? [{ id: 'summary', label: 'Summary' }] : []),
-    ...(studioData?.study_guide ? [{ id: 'study_guide', label: 'Study Guide' }] : []),
-    ...(hasFlashcards ? [{ id: 'flashcards', label: 'Flashcards' }] : []),
-    ...(studioData?.slides ? [{ id: 'slides', label: 'Slides' }] : []),
-    ...(studioData?.mind_map ? [{ id: 'mind_map', label: 'Mind Map' }] : []),
-    ...(studioData?.report ? [{ id: 'report', label: 'Report' }] : []),
-    ...(studioData?.audio ? [{ id: 'audio', label: 'Audio' }] : []),
+    { id: 'summary', label: 'Summary' },
+    { id: 'study_guide', label: 'Study Guide' },
+    { id: 'flashcards', label: 'Flashcards' },
+    { id: 'mind_map', label: 'Mind Map' },
+    { id: 'slides', label: 'Slides' },
+    { id: 'report', label: 'Report' },
+    { id: 'audio', label: 'Audio' },
   ];
 
   const [isUrlAccessible, setIsUrlAccessible] = useState(true);
@@ -280,62 +280,111 @@ export const EditorPane = ({
             </>
           )}
 
-          {activeTab === 'summary' && aiSummary && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-purple-400" />
-                <h4 className="text-base font-semibold text-purple-100 font-outfit">AI Summary</h4>
+          {activeTab === 'summary' && (
+            aiSummary ? (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-purple-500/10 border border-purple-500/20 rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <h4 className="text-base font-semibold text-purple-100 font-outfit">AI Summary</h4>
+                </div>
+                <div className="text-sm text-purple-200/90 font-poppins leading-relaxed whitespace-pre-wrap relative z-10 prose prose-invert prose-p:text-purple-200/90 prose-li:text-purple-200/90 max-w-none">
+                  <ReactMarkdown>{aiSummary}</ReactMarkdown>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Summary not generated yet. Use the Studio to generate it.</p>
               </div>
-              <div className="text-sm text-purple-200/90 font-poppins leading-relaxed whitespace-pre-wrap relative z-10 prose prose-invert prose-p:text-purple-200/90 prose-li:text-purple-200/90 max-w-none">
-                <ReactMarkdown>{aiSummary}</ReactMarkdown>
-              </div>
-            </motion.div>
+            )
           )}
 
-          {activeTab === 'study_guide' && studioData?.study_guide && (
-            <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-300">
-              <ReactMarkdown components={renderers}>{studioData.study_guide}</ReactMarkdown>
-            </div>
+          {activeTab === 'study_guide' && (
+            studioData?.study_guide ? (
+              <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-300">
+                <ReactMarkdown components={renderers}>{studioData.study_guide}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Study Guide not generated yet. Use the Studio to generate it.</p>
+              </div>
+            )
           )}
 
           {activeTab === 'flashcards' && (
-            <FlashcardsTab noteId={note.id} />
+            hasFlashcards ? (
+              <FlashcardsTab noteId={note.id} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Flashcards not generated yet. Use the Studio to generate them.</p>
+              </div>
+            )
           )}
 
-          {activeTab === 'slides' && studioData?.slides && (
-            <SlideCarousel slidesText={studioData.slides} renderers={renderers} />
+          {activeTab === 'slides' && (
+            studioData?.slides ? (
+              <SlideCarousel slidesText={studioData.slides} renderers={renderers} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Slides not generated yet. Use the Studio to generate them.</p>
+              </div>
+            )
           )}
 
-          {activeTab === 'report' && studioData?.report && (
-            <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-300">
-              <ReactMarkdown components={renderers}>{studioData.report}</ReactMarkdown>
-            </div>
+          {activeTab === 'report' && (
+            studioData?.report ? (
+              <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-300">
+                <ReactMarkdown components={renderers}>{studioData.report}</ReactMarkdown>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Report not generated yet. Use the Studio to generate it.</p>
+              </div>
+            )
           )}
 
-          {activeTab === 'mind_map' && studioData?.mind_map && (
-             <MermaidViewer code={studioData.mind_map} />
+          {activeTab === 'mind_map' && (
+            studioData?.mind_map ? (
+              <MermaidViewer code={studioData.mind_map} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Mind Map not generated yet. Use the Studio to generate it.</p>
+              </div>
+            )
           )}
 
-          {activeTab === 'audio' && studioData?.audio && (
-            <div className="space-y-6 max-w-3xl mx-auto">
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4">
-                <button 
-                  onClick={toggleAudio}
-                  className="w-16 h-16 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white shadow-xl shadow-blue-500/20"
-                >
-                  {isPlaying ? <Square className="w-6 h-6" fill="currentColor" /> : <Play className="w-8 h-8 ml-1" fill="currentColor" />}
-                </button>
-                <div className="text-center">
-                  <h4 className="font-semibold text-blue-100">Audio Overview</h4>
-                  <p className="text-xs text-blue-200/70">{isPlaying ? 'Playing...' : 'Click to listen via browser TTS'}</p>
+          {activeTab === 'audio' && (
+            studioData?.audio ? (
+              <div className="space-y-6 max-w-3xl mx-auto">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 flex flex-col items-center justify-center space-y-4">
+                  <button 
+                    onClick={toggleAudio}
+                    className="w-16 h-16 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors flex items-center justify-center text-white shadow-xl shadow-blue-500/20"
+                  >
+                    {isPlaying ? <Square className="w-6 h-6" fill="currentColor" /> : <Play className="w-8 h-8 ml-1" fill="currentColor" />}
+                  </button>
+                  <div className="text-center">
+                    <h4 className="font-semibold text-blue-100">Audio Overview</h4>
+                    <p className="text-xs text-blue-200/70">{isPlaying ? 'Playing...' : 'Click to listen via browser TTS'}</p>
+                  </div>
+                </div>
+                <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-400 bg-white/5 p-6 rounded-2xl border border-white/5">
+                  <h4 className="text-white mb-4">Dialogue Script</h4>
+                  <div className="whitespace-pre-wrap">{studioData.audio}</div>
                 </div>
               </div>
-              <div className="prose prose-invert max-w-none text-sm font-poppins text-slate-400 bg-white/5 p-6 rounded-2xl border border-white/5">
-                <h4 className="text-white mb-4">Dialogue Script</h4>
-                <div className="whitespace-pre-wrap">{studioData.audio}</div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-500 min-h-[300px] space-y-4">
+                <Sparkles className="w-12 h-12 opacity-20" />
+                <p>Audio Overview not generated yet. Use the Studio to generate it.</p>
               </div>
-            </div>
+            )
           )}
 
         </div>

@@ -138,6 +138,7 @@ export const NoteWorkspaceModal = ({
   const [isSavingToMyNotes, setIsSavingToMyNotes] = useState(false);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'editor' | 'sources' | 'studio' | 'chat'>('editor');
   const [showMobileActions, setShowMobileActions] = useState(false);
+  const [dbFileUrl, setDbFileUrl] = useState<string | null>(null);
   const { isAppFullScreen, setIsAppFullScreen } = useTopBarContext();
 
   // On mobile, auto-enable full screen to hide global nav and maximize workspace
@@ -200,12 +201,13 @@ export const NoteWorkspaceModal = ({
   const fetchContent = async (noteId: string | number) => {
     const { data } = await turso
       .from('notes')
-      .select('content, ai_summary, studio_data')
+      .select('content, ai_summary, studio_data, file_url')
       .eq('id', noteId)
       .single();
     if (data) {
       setDbContent(data.content || '');
       setEditContent(data.content || '');
+      if (data.file_url) setDbFileUrl(data.file_url);
       if (data.ai_summary) setAiSummary(data.ai_summary);
       if (data.studio_data) {
         try {
@@ -413,6 +415,8 @@ export const NoteWorkspaceModal = ({
 
   if (!isOpen || !note) return null;
 
+  const activeNote = { ...note, fileUrl: dbFileUrl || note.fileUrl };
+
   return (
     <>
       <AnimatePresence>
@@ -572,7 +576,7 @@ export const NoteWorkspaceModal = ({
                 {/* Panel 1: Sources (Collapsible) — hidden on mobile, shown via bottom tab */}
                 <div className={`${activeMobilePanel === 'sources' ? 'flex absolute inset-0 z-20 md:relative md:inset-auto' : 'hidden md:flex'}`}>
                   <SourcesPane 
-                    note={note} 
+                    note={activeNote} 
                     isCollapsed={isSourcesCollapsed} 
                     onToggleCollapse={() => setIsSourcesCollapsed(!isSourcesCollapsed)}
                     isMobileFullScreen={activeMobilePanel === 'sources'}
@@ -582,7 +586,7 @@ export const NoteWorkspaceModal = ({
                 {/* Panel 2: Main Editor / Document area */}
                 <div className={`flex-1 min-w-0 ${activeMobilePanel !== 'editor' ? 'hidden md:flex' : 'flex'}`}>
                   <EditorPane 
-                    note={note}
+                    note={activeNote}
                     isEditing={isEditing}
                     setIsEditing={setIsEditing}
                     editContent={editContent}
@@ -608,7 +612,7 @@ export const NoteWorkspaceModal = ({
                 {activeMobilePanel === 'studio' && (
                   <div className="flex md:hidden absolute inset-0 z-20 bg-[#0d1017]">
                     <ChatPane 
-                      note={note}
+                      note={activeNote}
                       noteTitle={note.title}
                       noteContent={stripHtml(dbContent)}
                       hasFlashcards={hasFlashcards}
